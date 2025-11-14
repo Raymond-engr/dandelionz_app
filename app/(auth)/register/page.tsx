@@ -48,7 +48,7 @@ export default function RegisterPage() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#030482] text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
             >
               <option value="Customer">Customer</option>
               <option value="Vendor">Vendor</option>
@@ -63,7 +63,7 @@ export default function RegisterPage() {
               type="text"
               value={formData.fullName}
               onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-              className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm"
+              className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
               required
             />
           </div>
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm"
+              className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
               required
             />
           </div>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-              className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm"
+              className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
               required
             />
           </div>
@@ -100,7 +100,7 @@ export default function RegisterPage() {
             <select
               value={formData.stateRegion}
               onChange={(e) => setFormData({...formData, stateRegion: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#030482] text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
             >
               <option>Abia State</option>
               <option>Lagos State</option>
@@ -117,7 +117,7 @@ export default function RegisterPage() {
                 type="text"
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm"
+                className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
                 required={role === 'Vendor'}
               />
             </div>
@@ -132,7 +132,7 @@ export default function RegisterPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm pr-10"
+                className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm pr-10"
                 required
               />
               <button
@@ -156,7 +156,7 @@ export default function RegisterPage() {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                className="w-full px-0 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors text-sm pr-10"
+                className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm pr-10"
                 required
               />
               <button
@@ -177,7 +177,7 @@ export default function RegisterPage() {
               type="checkbox"
               checked={rememberPassword}
               onChange={(e) => setRememberPassword(e.target.checked)}
-              className="w-4 h-4 text-[#030482] border-gray-300 rounded focus:ring-[#030482]"
+              className="w-4 h-4 text-system-blue-light border-gray-300 rounded focus:ring-system-blue-light"
             />
             <span className="text-sm text-gray-700">Remember my Password</span>
           </label>
@@ -185,7 +185,7 @@ export default function RegisterPage() {
           {/* Register Button */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-2"
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-2"
           >
             Register
           </button>
@@ -193,7 +193,7 @@ export default function RegisterPage() {
           {/* Sign In Link */}
           <p className="text-center text-sm text-gray-600 mt-2">
             Already have an account?{' '}
-            <Link href="/login" className="text-[#030482] font-medium">
+            <Link href="/login" className="text-system-blue-light font-medium">
               Sign In
             </Link>
           </p>

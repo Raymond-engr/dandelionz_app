@@ -79,7 +79,7 @@ export default function OrdersPage() {
                 onClick={() => setFilter(status as typeof filter)}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   filter === status
-                    ? 'bg-[#030482] text-white'
+                    ? 'bg-system-blue-light text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -103,7 +103,7 @@ export default function OrdersPage() {
             </p>
             <Link
               href="/"
-              className="px-6 py-3 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
             >
               Start Shopping
             </Link>
@@ -139,7 +139,7 @@ export default function OrdersPage() {
                   <p className="text-sm text-gray-600">
                     {order.items} {order.items === 1 ? 'item' : 'items'}
                   </p>
-                  <p className="text-base font-bold text-[#030482]">
+                  <p className="text-base font-bold text-system-blue-light">
                     ${order.total.toFixed(2)}
                   </p>
                 </div>

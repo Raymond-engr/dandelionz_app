@@ -57,7 +57,7 @@ export default function ProductDetailPage() {
                 key={idx}
                 onClick={() => setSelectedImage(idx)}
                 className={`flex-1 aspect-square bg-gray-100 rounded-lg flex items-center justify-center border-2 ${
-                  selectedImage === idx ? 'border-[#030482]' : 'border-transparent'
+                  selectedImage === idx ? 'border-system-blue-light' : 'border-transparent'
                 }`}
               >
                 <p className="text-xs text-gray-400">Img {idx + 1}</p>
@@ -86,7 +86,7 @@ export default function ProductDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-xs text-gray-500 mb-1">Amount</p>
-              <p className="text-2xl font-bold text-[#030482]">
+              <p className="text-2xl font-bold text-system-blue-light">
                 ${product.price}
               </p>
             </div>
@@ -110,7 +110,7 @@ export default function ProductDetailPage() {
             {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              className="flex-1 h-12 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2"
+              className="flex-1 h-12 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />

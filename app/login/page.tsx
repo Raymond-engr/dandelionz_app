@@ -42,7 +42,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors"
+              className="w-full px-4 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors"
               required
             />
           </div>
@@ -58,7 +58,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border-b border-gray-300 focus:border-[#030482] focus:outline-none transition-colors pr-10"
+                className="w-full px-4 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors pr-10"
                 required
               />
               <button
@@ -78,14 +78,14 @@ export default function LoginPage() {
           </div>
 
           {/* Forgot Password Link */}
-          <Link href="/forgot-password" className="text-sm text-[#030482] font-medium self-start">
+          <Link href="/forgot-password" className="text-sm text-system-blue-light font-medium self-start">
             Forgot Password
           </Link>
 
           {/* Login Button */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-4"
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-4"
           >
             Log In
           </button>
@@ -93,7 +93,7 @@ export default function LoginPage() {
           {/* Sign Up Link */}
           <p className="text-center text-sm text-gray-600 mt-4">
             Don't have an account?{' '}
-            <Link href="/register" className="text-[#030482] font-medium">
+            <Link href="/register" className="text-system-blue-light font-medium">
               Sign up
             </Link>
           </p>

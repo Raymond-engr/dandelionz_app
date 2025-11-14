@@ -36,7 +36,7 @@ export default function WishlistPage() {
             </p>
             <Link
               href="/"
-              className="px-6 py-3 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
             >
               Browse Products
             </Link>

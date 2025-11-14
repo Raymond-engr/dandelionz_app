@@ -17,7 +17,7 @@ export default function LoadingSpinner({
 
   const spinner = (
     <svg 
-      className={`animate-spin text-[#030482] ${sizes[size]}`}
+      className={`animate-spin text-system-blue-light ${sizes[size]}`}
       xmlns="http://www.w3.org/2000/svg" 
       fill="none" 
       viewBox="0 0 24 24"

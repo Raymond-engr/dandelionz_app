@@ -28,7 +28,7 @@ export default function CategorySlider({
             <div className="aspect-square bg-gray-200 rounded-lg mb-2"></div>
             <button
               onClick={() => onCategoryClick?.(category.id)}
-              className="w-full py-2.5 bg-[#030482] text-white rounded-lg text-sm font-semibold"
+              className="w-full py-2.5 bg-system-blue-light text-white rounded-lg text-sm font-semibold"
             >
               {category.name}
             </button>

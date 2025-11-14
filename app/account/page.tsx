@@ -36,8 +36,8 @@ export default function AccountPage() {
         <div className="p-6 bg-gray-50 border-b border-gray-200">
           {user.isLoggedIn ? (
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-[#030482]/10 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-semibold text-[#030482]">
+              <div className="w-16 h-16 bg-system-blue-light/10 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-semibold text-system-blue-light">
                   {user.name.charAt(0)}
                 </span>
               </div>
@@ -49,7 +49,7 @@ export default function AccountPage() {
           ) : (
             <Link
               href="/login"
-              className="block text-center py-3 bg-white border border-[#030482] text-[#030482] rounded-lg font-medium hover:bg-[#030482] hover:text-white transition-colors"
+              className="block text-center py-3 bg-white border border-system-blue-light text-system-blue-light rounded-lg font-medium hover:bg-system-blue-light hover:text-white transition-colors"
             >
               Sign In
             </Link>
@@ -114,7 +114,7 @@ export default function AccountPage() {
           <div className="p-6 pt-8">
             <Link
               href="/login"
-              className="block text-center py-3.5 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              className="block text-center py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
             >
               Sign In
             </Link>

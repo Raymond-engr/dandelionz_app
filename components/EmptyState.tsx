@@ -21,14 +21,14 @@ export default function EmptyState({
   const ActionButton = actionHref ? (
     <Link
       href={actionHref}
-      className="px-6 py-3 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+      className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
     >
       {actionLabel}
     </Link>
   ) : onAction ? (
     <button
       onClick={onAction}
-      className="px-6 py-3 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+      className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
     >
       {actionLabel}
     </button>

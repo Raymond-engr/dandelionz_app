@@ -36,7 +36,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
         <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-[#030482]">
+          <p className="text-base font-bold text-system-blue-light">
             ${product.price.toFixed(2)}
           </p>
           <div className="flex items-center gap-1">

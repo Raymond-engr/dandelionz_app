@@ -85,7 +85,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
             {/* Price Range Slider */}
             <div className="relative h-2 bg-gray-200 rounded-full">
               <div
-                className="absolute h-2 bg-[#030482] rounded-full"
+                className="absolute h-2 bg-system-blue-light rounded-full"
                 style={{
                   left: `${(priceRange[0] / 500) * 100}%`,
                   right: `${100 - (priceRange[1] / 500) * 100}%`,
@@ -116,7 +116,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#030482] appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
             >
               <option>Newly Updated</option>
               <option>Price: Low to High</option>
@@ -137,7 +137,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
                 placeholder="Search Categories"
                 value={searchCategory}
                 onChange={(e) => setSearchCategory(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#030482]"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
               />
             </div>
 
@@ -155,7 +155,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
                       onChange={() => handleCategoryToggle(category)}
                       className="sr-only peer"
                     />
-                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-[#030482] peer-checked:border-[#030482] flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-system-blue-light peer-checked:border-system-blue-light flex items-center justify-center">
                       {selectedCategories.includes(category) && (
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -174,7 +174,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleApply}
-            className="w-full py-3.5 bg-[#030482] text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
           >
             Apply Filter
           </button>
