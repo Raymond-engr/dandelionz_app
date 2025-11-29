@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function AccountPage() {
   const user = {
-    isLoggedIn: false, // Change to true to show logged in state
+    isLoggedIn: true, // Change to true to show logged in state
     name: 'John Doe',
     email: 'john@example.com',
   };
@@ -82,8 +82,8 @@ export default function AccountPage() {
               href="/account/delete"
               className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
             >
-              <span className="text-sm font-medium text-red-600">Delete Account</span>
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="text-sm font-medium text-system-red">Delete Account</span>
+              <svg className="w-5 h-5 text-system-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
