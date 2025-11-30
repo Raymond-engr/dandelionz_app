@@ -9,15 +9,15 @@ export default function VendorBottomNav() {
 
   const navItems = [
     {
-      href: '/',
+      href: '/vendor',
       name: 'Shop',
       icon: (active: boolean) => (
         <Shop className="w-6 h-6" active={active} />
       )
     },
     {
-      href: '/vendor/cart',
-      name: 'Cart',
+      href: '/vendor/product',
+      name: 'Product',
       icon: (active: boolean) => (
         <Cart className="w-6 h-6" active={active} />
       )
