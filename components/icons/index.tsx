@@ -8,3 +8,4 @@ export { Order } from './order';
 export { Wishlist } from './wishlist';
 export { Account } from './account';
 export { Wallet } from './wallet';
+export { Home } from './home';

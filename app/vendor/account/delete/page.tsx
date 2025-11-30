@@ -10,7 +10,7 @@ export default function DeleteAccountPage() {
 
   const handleDelete = () => {
     console.log('Account deleted');
-    router.push('/');
+    router.push('/vendor');
   };
 
   const handleCancel = () => {

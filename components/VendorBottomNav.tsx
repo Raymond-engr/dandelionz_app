@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Shop, Order, Wallet, Account } from './icons'; 
+import { Home, Order, Wallet, Account, Shop } from './icons'; 
 import { usePathname } from 'next/navigation';
 
 export default function VendorBottomNav() {
@@ -12,7 +12,7 @@ export default function VendorBottomNav() {
       href: '/vendor',
       name: 'Shop',
       icon: (active: boolean) => (
-        <Shop className="w-6 h-6" active={active} />
+        <Home className="w-6 h-6" active={active} />
       )
     },
     {
