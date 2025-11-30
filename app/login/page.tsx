@@ -8,15 +8,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Customer');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle login logic
-    console.log('Login:', { email, password });
+    console.log('Login:', { email, password, role });
   };
 
   return (
-    <AppLayout showBottomNav={false}>
+    <AppLayout showBottomNav={false} userRole={role.toLowerCase() as 'customer' | 'vendor'}>
       <div className="min-h-screen flex flex-col p-6">
         {/* Back Button */}
         <button className="self-start mb-8">
@@ -32,6 +33,21 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+          {/* TODO: remove this section ending in line 49 when API integration is being done since it's going to br handled in auth acontext or Redux toolkit */}
+          {/* Role Selection */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-gray-600">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+            >
+              <option value="Customer">Customer</option>
+              <option value="Vendor">Vendor</option>
+            </select>
+          </div>
+
           {/* Email Field */}
           <div className="flex flex-col gap-2">
             <label htmlFor="email" className="text-sm text-gray-600">

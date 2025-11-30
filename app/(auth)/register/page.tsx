@@ -26,7 +26,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <AppLayout showBottomNav={false}>
+    <AppLayout showBottomNav={false} userRole={role.toLowerCase() as 'customer' | 'vendor'}>
       <div className="min-h-screen flex flex-col p-6">
         {/* Back Button */}
         <button className="self-start mb-6">
