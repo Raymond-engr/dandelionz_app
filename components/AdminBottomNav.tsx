@@ -1,43 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Order, Wallet, Account, Shop } from './icons'; 
+import { Home, Order, Account, Shop, Product, Users } from './icons'; 
 import { usePathname } from 'next/navigation';
 
-export default function VendorBottomNav() {
+export default function AdminBottomNav() {
   const pathname = usePathname();
 
   const navItems = [
     {
-      href: '/vendor',
+      href: '/admin',
       name: 'Home',
       icon: (active: boolean) => (
         <Home className="w-6 h-6" active={active} />
       )
     },
     {
-      href: '/vendor/product',
-      name: 'Product',
+      href: '/admin/vendor',
+      name: 'Vendor',
       icon: (active: boolean) => (
         <Shop className="w-6 h-6" active={active} />
       )
     },
     {
-      href: '/vendor/orders',
+      href: '/admin/product',
+      name: 'Product',
+      icon: (active: boolean) => (
+        <Product className="w-6 h-6" active={active} />
+      )
+    },
+    {
+      href: '/admin/users',
+      name: 'Users',
+      icon: (active: boolean) => (
+        <Users className="w-6 h-6" active={active} />
+      )
+    },
+    {
+      href: '/admin/orders',
       name: 'Order',
       icon: (active: boolean) => (
         <Order className="w-6 h-6" active={active} />
       )
     },
     {
-      href: '/vendor/wallet',
-      name: 'Wallet',
-      icon: (active: boolean) => (
-        <Wallet className="w-6 h-6" active={active} />
-      )
-    },
-    {
-      href: '/vendor/account',
+      href: '/admin/account',
       name: 'Account',
       icon: (active: boolean) => (
         <Account className="w-6 h-6" active={active} />
