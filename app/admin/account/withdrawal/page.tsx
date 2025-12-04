@@ -5,8 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 
-// main wallet landing page — it routes to the wallet subpages
-export default function AdminWalletPage() {
+export default function AdminWithdrawalPage() {
   const router = useRouter();
 
   const walletStats = {
