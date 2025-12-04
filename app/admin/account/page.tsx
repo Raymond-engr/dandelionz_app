@@ -92,7 +92,7 @@ export default function AdminAccountPage() {
           </Link>
 
           <Link
-            href="/admin/account/withdraw"
+            href="/admin/account/withdrawal"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
           >
             <span className="text-sm font-medium text-gray-900">Withraw Earnings</span>
