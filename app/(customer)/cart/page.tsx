@@ -43,7 +43,7 @@ export default function CartPage() {
   };
 
   return (
-    <AppLayout showBottomNav={true}>
+    <AppLayout showBottomNav={true} userRole="customer">
       <div className="min-h-screen bg-white pb-24">
         {/* Header */}
         <div className="p-4 border-b border-gray-200">

@@ -27,7 +27,7 @@ export default function PaymentPage() {
   };
 
   return (
-    <AppLayout showBottomNav={false}>
+    <AppLayout showBottomNav={false} userRole="customer">
       <div className="min-h-screen bg-white pb-24">
         {/* Header */}
         <div className="flex items-center justify-center p-4 border-b border-gray-200 relative">

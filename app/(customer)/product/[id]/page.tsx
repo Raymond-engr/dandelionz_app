@@ -30,7 +30,7 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <AppLayout showBottomNav={true}>
+    <AppLayout showBottomNav={true} userRole="customer">
       <div className="min-h-screen bg-white">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">

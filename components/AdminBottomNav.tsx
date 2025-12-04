@@ -64,7 +64,7 @@ export default function AdminBottomNav() {
               className={`flex items-center justify-center flex-1 py-2 h-10 transition-all duration-200 ${
                 isActive
                   ? 'flex-row gap-x-2 bg-system-blue-light text-white rounded-full m-1 px-3'
-                  : 'flex-col gap-y-1 text-gray-700 hover:text-black'
+                  : 'flex-col gap-y-1 text-gray-900 hover:text-black'
               }`}
             >
               {item.icon(isActive)}

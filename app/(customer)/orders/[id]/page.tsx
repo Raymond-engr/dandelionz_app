@@ -15,7 +15,7 @@ export default function OrderDetailsPage() {
   ];
 
   return (
-    <AppLayout showBottomNav={false}>
+    <AppLayout showBottomNav={false} userRole="customer">
       <div className="min-h-screen bg-white">
         {/* Header */}
         <div className="flex items-center p-4 border-b border-gray-200">

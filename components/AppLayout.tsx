@@ -1,14 +1,15 @@
 import React from 'react';
 import BottomNav from './BottomNav';
 import VendorBottomNav from './VendorBottomNav';
+import AdminBottomNav from './AdminBottomNav';
 
 interface AppLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
-  userRole?: 'customer' | 'vendor';
+  userRole?: 'customer' | 'vendor' | 'admin';
 }
 
-export default function AppLayout({ children, showBottomNav = false, userRole = 'vendor' }: AppLayoutProps) {
+export default function AppLayout({ children, showBottomNav = false, userRole = 'admin' }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="mx-auto max-w-[600px] min-h-screen bg-white relative flex flex-col">
@@ -18,7 +19,14 @@ export default function AppLayout({ children, showBottomNav = false, userRole = 
         </main>
         
         {/* Bottom Navigation - conditionally rendered */}
-        {showBottomNav && (userRole === 'vendor' ? <VendorBottomNav /> : <BottomNav />)}
+        {showBottomNav &&
+          (userRole === 'vendor' ? (
+            <VendorBottomNav />
+          ) : userRole === 'admin' ? (
+            <AdminBottomNav />
+          ) : (
+            <BottomNav />
+          ))}
       </div>
     </div>
   );

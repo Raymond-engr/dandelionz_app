@@ -18,7 +18,7 @@ export default function DeleteAccountPage() {
   };
 
   return (
-    <AppLayout showBottomNav={false}>
+    <AppLayout showBottomNav={false} userRole="customer">
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         {showModal && (
           <div className="w-full max-w-sm">

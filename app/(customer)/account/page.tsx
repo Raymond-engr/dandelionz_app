@@ -25,7 +25,7 @@ export default function AccountPage() {
   ];
 
   return (
-    <AppLayout showBottomNav={true}>
+    <AppLayout showBottomNav={true} userRole="customer">
       <div className="min-h-screen bg-white">
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
