@@ -4,7 +4,11 @@ import React, { useState, use } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function EditCategory({ params: paramsPromise }) {
+interface EditCategoryProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditCategory({ params: paramsPromise }: EditCategoryProps) {
   const params = use(paramsPromise);
   const router = useRouter();
   const [name, setName] = useState('Category Name');

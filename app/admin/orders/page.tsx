@@ -13,7 +13,7 @@ const mockOrders = [
 export default function OrderManagement() {
   const router = useRouter();
 
-  const handleOrderClick = (orderId) => {
+  const handleOrderClick = (orderId: string) => {
     router.push(`/admin/orders/${orderId}`);
   };
 

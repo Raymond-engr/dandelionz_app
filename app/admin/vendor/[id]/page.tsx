@@ -4,7 +4,11 @@ import React, { useState, use } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function VendorDetails({ params: paramsPromise }) {
+interface VendorDetailsProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function VendorDetails({ params: paramsPromise }: VendorDetailsProps) {
   const params = use(paramsPromise);
   const router = useRouter();
   const [action, setAction] = useState('Approve Vendor');

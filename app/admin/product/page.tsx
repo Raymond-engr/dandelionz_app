@@ -16,9 +16,9 @@ const mockProducts = [
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-  const handleDeleteCategory = (categoryId) => {
+  const handleDeleteCategory = (categoryId: string) => {
     // Handle delete - replace with API call
     console.log('Deleting category:', categoryId);
     setShowDeleteConfirm(null);

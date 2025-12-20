@@ -13,7 +13,7 @@ const mockUsers = [
 export default function UserManagement() {
   const router = useRouter();
 
-  const handleUserClick = (userId) => {
+  const handleUserClick = (userId: string) => {
     router.push(`/admin/users/${userId}`);
   };
 

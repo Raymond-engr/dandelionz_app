@@ -12,7 +12,7 @@ const mockVendors = [
 export default function VendorManagement() {
   const router = useRouter();
 
-  const handleVendorClick = (vendorId) => {
+  const handleVendorClick = (vendorId: string) => {
     router.push(`/admin/vendor/${vendorId}`);
   };
 

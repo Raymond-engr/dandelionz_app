@@ -4,7 +4,11 @@ import React, { useState, use } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function OrderDetails({ params: paramsPromise }) {
+interface OrderDetailsProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function OrderDetails({ params: paramsPromise }: OrderDetailsProps) {
   const params = use(paramsPromise);
   const router = useRouter();
   const [action, setAction] = useState('Cancel Order');

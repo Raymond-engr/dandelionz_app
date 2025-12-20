@@ -4,7 +4,11 @@ import React, { useState, use } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function ProductDetails({ params: paramsPromise }) {
+interface ProductDetailsProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function ProductDetails({ params: paramsPromise }: ProductDetailsProps) {
   const params = use(paramsPromise);
   const router = useRouter();
   const [action, setAction] = useState('Approve Product');

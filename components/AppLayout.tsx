@@ -9,7 +9,7 @@ interface AppLayoutProps {
   userRole?: 'customer' | 'vendor' | 'admin';
 }
 
-export default function AppLayout({ children, showBottomNav = false, userRole = 'admin' }: AppLayoutProps) {
+export default function AppLayout({ children, showBottomNav = false, userRole = 'customer' }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="mx-auto max-w-[600px] min-h-screen bg-white relative flex flex-col">

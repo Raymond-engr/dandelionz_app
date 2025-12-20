@@ -5,7 +5,15 @@ import { Bell, Users, Store, ShoppingCart, Package } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 
-const StatCard = ({ title, value, change, icon, bgColor = "bg-white" }) => (
+interface StatCardProps {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ReactNode;
+  bgColor?: string;
+}
+
+const StatCard = ({ title, value, change, icon, bgColor = "bg-white" }: StatCardProps) => (
   <div className={`${bgColor} border border-gray-200 rounded-lg p-4`}>
     <div className="flex items-start justify-between mb-2">
       <p className="text-xs text-gray-600">{title}</p>
