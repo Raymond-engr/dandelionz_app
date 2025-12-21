@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -12,15 +13,15 @@ export default function ProductDetailPage() {
   // Dummy product data
   const product = {
     id: '1',
-    name: 'Product Name',
-    price: 29.99,
+    name: 'iPhone 15 Pro Max',
+    price: 1199.99,
     rating: 3.9,
-    description: "Here we'll have a good description of the product it might get very long, but it can be tiny small too.",
-    vendor: "Well it depends heavily on the product and the vendor shit, who knows",
+    description: "The iPhone 15 Pro Max features a stunning 6.7-inch Super Retina XDR display with ProMotion technology. It's powered by the revolutionary A17 Pro chip, delivering unprecedented performance and efficiency.",
+    vendor: "Equipped with a pro camera system featuring a 48MP main camera, this device captures stunning photos and videos in any lighting condition. The titanium design makes it both durable and lightweight.",
     images: [
-      '/placeholder-1.jpg',
-      '/placeholder-2.jpg',
-      '/placeholder-3.jpg',
+      '/products/iphone-15-pro.png',
+      '/products/camera.png',
+      '/products/samsung.png',
     ],
   };
 
@@ -44,23 +45,47 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Product Images */}
-        <div className="p-4">
+        <div className="px-4 pt-4">
+          
           {/* Main Image */}
-          <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-            <p className="text-gray-400">Product Image</p>
+          <div className="relative w-full aspect-video bg-gray-100 rounded-2xl mb-4 overflow-hidden">
+            <Image
+              src={product.images[selectedImage]}
+              alt={product.name}
+              fill 
+              className="object-cover" 
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+              onError={(e) => {
+  const target = e.target as HTMLImageElement;
+  if (target) {
+    target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="#f3f4f6" width="400" height="400"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="16">Product Image</text></svg>';
+  }
+    }}
+            />
           </div>
 
           {/* Thumbnail Images */}
-          <div className="flex gap-2">
+          <div className="flex gap-3 mb-6">
             {[0, 1, 2].map((idx) => (
               <button
                 key={idx}
                 onClick={() => setSelectedImage(idx)}
-                className={`flex-1 aspect-square bg-gray-100 rounded-lg flex items-center justify-center border-2 ${
+                /* Added 'w-20 h-20' to make them small fixed squares like Figma */
+                className={`flex-none w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden border-2 transition-all ${
                   selectedImage === idx ? 'border-system-blue-light' : 'border-transparent'
                 }`}
               >
-                <p className="text-xs text-gray-400">Img {idx + 1}</p>
+                <Image
+  src={product.images[idx]}
+  alt={`Thumbnail ${idx + 1}`}
+  className="w-full h-full object-cover"
+  width={100}
+  height={100}
+  onError={(e) => {
+    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#f3f4f6" width="100" height="100"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="12">' + (idx + 1) + '</text></svg>';
+  }}
+/>
               </button>
             ))}
           </div>

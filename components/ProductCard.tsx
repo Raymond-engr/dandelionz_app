@@ -1,4 +1,5 @@
-import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Product } from './ProductGrid';
 
 interface ProductCardProps {
@@ -7,15 +8,18 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   return (
+    <Link href={`/product/${product.id}`}>
     <div className="flex flex-col bg-white rounded-lg overflow-hidden group">
       {/* Product Image */}
       <div className="relative aspect-square bg-gray-100">
         {product.image ? (
-          <img 
-            src={product.image} 
+          <Image
+            src={product.image}
             alt={product.name}
             className="w-full h-full object-cover"
+            fill
           />
+
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             No Image
@@ -48,5 +52,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
     </div>
+    </Link>
   );
 }

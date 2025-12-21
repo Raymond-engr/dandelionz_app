@@ -109,6 +109,26 @@ export default function AccountPage() {
           ))}
         </div>
 
+        {/* Invite Friends Link */}
+      {user.isLoggedIn && (
+        <div className="py-2 border-t border-gray-200">
+          <Link
+            href="/account/invite-friends"
+            className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+              </svg>
+              <span className="text-sm font-medium text-gray-900">Invite Friends</span>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      )}
+
         {/* Sign In Button at Bottom (when not logged in) */}
         {!user.isLoggedIn && (
           <div className="p-6 pt-8">
