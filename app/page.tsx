@@ -8,12 +8,12 @@ import HeroSlider from '@/components/HeroSlider';
 import CategorySlider from '@/components/CategorySlider';
 
 const categories = [
-  { id: '1', name: 'Electronics' },
-  { id: '2', name: 'Apparel' },
-  { id: '3', name: 'Groceries' },
-  { id: '4', name: 'Furniture' },
-  { id: '5', name: 'Books' },
-  { id: '6', name: 'Toys' },
+  { id: '1', name: 'Electronics', image: '/category-electronics.png' },
+  { id: '2', name: 'Apparel', image: '/category-apparel.png' },
+  { id: '3', name: 'Groceries', image: '/category-groceries.png' },
+  { id: '4', name: 'Furniture', image: '/category-furniture.png' },
+  { id: '5', name: 'Books', image: '/category-books.png' },
+  { id: '6', name: 'Toys', image: '/category-toys.png' },
 ];
 
 export default function ShopPage() {
@@ -55,11 +55,16 @@ export default function ShopPage() {
             {/* Filter Button */}
             <button
               onClick={() => setShowFilter(!showFilter)}
-              className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2.5"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
+              <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth={2} 
+    d="M3 6h18M7 12h10M10 18h4" 
+  />
+</svg>
             </button>
           </div>
         </div>
