@@ -47,7 +47,7 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories }) =>
                   </div>
 
                   {/* Text Area (Bottom 30%) */}
-                  <div className="h-[30%] bg-[#0d1b46] flex items-center justify-center px-1">
+                  <div className="h-[30%] bg-system-blue-light flex items-center justify-center px-1">
                     <span className="text-xs font-medium text-white text-center line-clamp-2 leading-tight">
                       {category.name}
                     </span>

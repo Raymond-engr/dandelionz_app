@@ -44,7 +44,7 @@ export default function HeroSlider() {
               key={index}
               // w-[85%] makes the current slide take mostly full width
               // pr-3 creates the gap between this slide and the peeking one
-              className="w-[85%] shrink-0 relative pr-3 h-48" 
+              className="w-[85%] shrink-0 relative pr-1 min-[300px]:pr-2 sm:pr-3 h-[100px] min-[300px]:h-[130px] min-[350px]:h-[145px] min-[400px]:h-40 sm:h-48"
             >
               <div className="w-full h-full relative rounded-xl overflow-hidden shadow-sm">
                 <Image
