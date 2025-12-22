@@ -491,3 +491,130 @@ post request: https://dandelionz.net/api/user/vendor/change-password/
 "current_password": "string",
 "new_password": "string"
 }
+
+get request to this endpoint: https://dandelionz.net/api/user/vendor/analytics/
+the response: {
+"success": true,
+"data": {
+"total_revenue": 0,
+"top_products": []
+}
+}
+
+get request to this endpoint: https://dandelionz.net/api/user/vendor/notifications/
+the response:
+{
+"success": true,
+"data": []
+}
+
+get request to this endpoint: https://dandelionz.net/api/user/vendor/orders/
+the response: {
+"success": true,
+"data": {
+"pending": 0,
+"paid": 0,
+"shipped": 0,
+"delivered": 0,
+"canceled": 0
+}
+}
+
+get request to this endpoint: https://dandelionz.net/api/user/vendor/products/
+the response: {
+"success": true,
+"data": []
+}
+
+after adding products I got this response:
+{
+"success": true,
+"data": [
+{
+"id": 1,
+"store": 2,
+"store_name": "Unnamed Store",
+"name": "string",
+"slug": "string",
+"description": "string",
+"category": "electronics",
+"price": "600.00",
+"stock": 2147483647,
+"image": "image/upload/string",
+"in_stock": true,
+"created_at": "2025-12-22T13:10:31.095139Z",
+"updated_at": "2025-12-22T13:10:31.095218Z",
+"reviews": []
+},
+{
+"id": 2,
+"store": 2,
+"store_name": "Unnamed Store",
+"name": "Testing",
+"slug": "testing",
+"description": "Just a test product",
+"category": "electronics",
+"price": "700.00",
+"stock": 2147483647,
+"image": "image/upload/test.png",
+"in_stock": true,
+"created_at": "2025-12-22T13:23:53.404555Z",
+"updated_at": "2025-12-22T13:23:53.404595Z",
+"reviews": []
+}
+]
+}
+
+A post request to this endpoint: https://dandelionz.net/api/user/vendor/products/add/
+
+{
+"name": "string",
+"description": "string",
+"category": "electronics",
+"price": "600",
+"stock": 2147483647,
+"image": "string"
+}
+this is the response gotten:
+{
+"success": true,
+"data": {
+"id": 1,
+"name": "string",
+"slug": "string",
+"description": "string",
+"category": "electronics",
+"price": "600.00",
+"stock": 2147483647,
+"image": "image/upload/string",
+"store": "Unnamed Store",
+"created_at": "2025-12-22T13:10:31.095139Z",
+"updated_at": "2025-12-22T13:10:31.095218Z"
+}
+}
+
+added a new product again:
+{
+"name": "Testing",
+"description": "Just a test product",
+"category": "electronics",
+"price": "700",
+"stock": 2147483647,
+"image": "test.png"
+}
+the response: {
+"success": true,
+"data": {
+"id": 2,
+"name": "Testing",
+"slug": "testing",
+"description": "Just a test product",
+"category": "electronics",
+"price": "700.00",
+"stock": 2147483647,
+"image": "image/upload/test.png",
+"store": "Unnamed Store",
+"created_at": "2025-12-22T13:23:53.404555Z",
+"updated_at": "2025-12-22T13:23:53.404595Z"
+}
+}
