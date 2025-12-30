@@ -618,3 +618,189 @@ the response: {
 "updated_at": "2025-12-22T13:23:53.404595Z"
 }
 }
+
+This was gotten from my last prompt:
+
+Redux Toolkit API Integration Foundation
+I'll help you set up a robust RTK Query foundation for your multi-platform e-commerce application. Let me analyze the API structure and create a comprehensive integration plan.
+📋 Analysis of Current API Endpoints
+Based on the api.md file and Swagger images, here's what we have:
+✅ Available Endpoints
+Auth Endpoints:
+
+/api/auth/register/ - POST
+/api/auth/login/ - POST
+/api/auth/token/refresh/ - POST
+/api/auth/password-reset/ - POST
+/api/auth/check-verification/ - GET
+
+Admin Endpoints:
+
+/api/user/admin/analytics/ - GET
+/api/user/admin/profile/ - GET
+/api/user/admin/change-password/ - POST
+/api/user/admin/orders/assign-logistics/ - POST
+/api/user/admin/orders/summary/ - GET
+/api/user/admin/orders/refund/ - POST
+/api/user/admin/payments/ - GET
+/api/user/admin/payouts/trigger/ - POST
+/api/user/admin/vendors/ - GET
+/api/user/admin/products/ - GET
+/api/user/admin/users/suspend/ - POST
+/api/user/admin/vendors/approve/ - POST
+/api/user/admin/vendors/verify-kyc/ - POST
+
+Customer Endpoints:
+
+/api/user/customer/profile/ - GET, PUT, PATCH
+/api/user/customer/change-password/ - POST
+
+Vendor Endpoints:
+
+/api/user/vendor/profile/ - GET, PUT, PATCH
+/api/user/vendor/change-password/ - POST
+
+🚨 Missing Endpoints Analysis
+Admin Missing Endpoints:
+
+User Management:
+
+GET /api/user/admin/users/ - List all users with filters
+GET /api/user/admin/users/{uuid}/ - Get specific user details
+DELETE /api/user/admin/users/{uuid}/ - Delete user account
+
+Vendor Management:
+
+GET /api/user/admin/vendors/{uuid}/ - Get specific vendor details
+GET /api/user/admin/vendors/{uuid}/products/ - Get vendor's products
+GET /api/user/admin/vendors/{uuid}/orders/ - Get vendor's orders
+GET /api/user/admin/vendors/{uuid}/analytics/ - Get vendor analytics
+
+Order Management:
+
+GET /api/user/admin/orders/ - List all orders with filters
+GET /api/user/admin/orders/{uuid}/ - Get specific order details
+PATCH /api/user/admin/orders/{uuid}/ - Update order status
+GET /api/user/admin/orders/{uuid}/items/ - Get order items
+
+Product Management:
+
+GET /api/user/admin/products/{slug}/ - Get specific product
+PATCH /api/user/admin/products/{slug}/ - Approve/reject product
+DELETE /api/user/admin/products/{slug}/delete/ - Delete product
+
+Category Management:
+
+GET /api/user/admin/products/categories/ - List categories
+POST /api/user/admin/products/categories/ - Create category
+PUT /api/user/admin/products/categories/{id}/ - Update category
+DELETE /api/user/admin/products/categories/{id}/ - Delete category
+
+Payment & Settlement Management:
+
+GET /api/user/admin/payments/{id}/ - Get payment details
+GET /api/user/admin/settlements/ - List settlements
+GET /api/user/admin/settlements/vendor/ - Vendor settlements
+GET /api/user/admin/settlements/payout/ - Payout history
+GET /api/user/admin/settlements/disputes/ - Disputes & refunds
+GET /api/user/admin/settlements/disputes/{id}/ - Dispute details
+POST /api/user/admin/settlements/disputes/{id}/resolve/ - Resolve dispute
+
+Notifications:
+
+GET /api/user/admin/notifications/ - List notifications
+POST /api/user/admin/notifications/ - Create notification
+GET /api/user/admin/notifications/{id}/ - Get notification details
+DELETE /api/user/admin/notifications/{id}/ - Delete notification
+
+Withdrawal Management:
+
+GET /api/user/admin/withdrawals/ - List withdrawal requests
+POST /api/user/admin/withdrawals/process/ - Process withdrawal
+
+Vendor Missing Endpoints:
+
+Product Management:
+
+GET /api/user/vendor/products/ - List vendor's products
+POST /api/user/vendor/products/ - Create product
+GET /api/user/vendor/products/{slug}/ - Get product details
+PUT /api/user/vendor/products/{slug}/ - Update product
+PATCH /api/user/vendor/products/{slug}/ - Partial update
+DELETE /api/user/vendor/products/{slug}/ - Delete product
+
+Order Management:
+
+GET /api/user/vendor/orders/ - List vendor's orders
+GET /api/user/vendor/orders/{uuid}/ - Get order details
+PATCH /api/user/vendor/orders/{uuid}/ - Update order status
+
+Analytics:
+
+GET /api/user/vendor/analytics/ - Get vendor analytics
+
+Wallet & Withdrawals:
+
+GET /api/user/vendor/wallet/ - Get wallet balance
+POST /api/user/vendor/wallet/withdraw/ - Request withdrawal
+GET /api/user/vendor/wallet/transactions/ - Transaction history
+
+Payment Settings:
+
+GET /api/user/vendor/payment-settings/ - Get payment settings
+PUT /api/user/vendor/payment-settings/ - Update payment settings
+POST /api/user/vendor/payment-settings/pin/ - Set/change PIN
+POST /api/user/vendor/payment-settings/pin/verify/ - Verify PIN
+POST /api/user/vendor/payment-settings/pin/forgot/ - Forgot PIN
+
+Notifications:
+
+GET /api/user/vendor/notifications/ - List notifications
+PATCH /api/user/vendor/notifications/{id}/read/ - Mark as read
+
+Customer Missing Endpoints:
+
+Product Browsing:
+
+GET /api/store/products/ - List all products
+GET /api/store/products/{slug}/ - Get product details
+GET /api/store/categories/ - List categories
+GET /api/store/products/search/ - Search products
+
+Cart Management:
+
+GET /api/store/cart/ - Get cart
+POST /api/store/cart/add/ - Add to cart
+DELETE /api/store/cart/remove/{product_id}/ - Remove from cart
+PATCH /api/store/cart/update/ - Update cart item
+
+Wishlist:
+
+GET /api/store/favourites/ - Get wishlist
+POST /api/store/favourites/add/ - Add to wishlist
+DELETE /api/store/favourites/remove/{product_id}/ - Remove from wishlist
+
+Orders:
+
+GET /api/transactions/orders/ - List customer orders
+POST /api/transactions/orders/ - Create order
+GET /api/transactions/orders/{uuid}/ - Get order details
+POST /api/transactions/orders/{uuid}/pay/ - Pay for order
+
+Addresses:
+
+GET /api/user/customer/addresses/ - List addresses
+POST /api/user/customer/addresses/ - Add address
+PATCH /api/user/customer/addresses/{id}/ - Update address
+DELETE /api/user/customer/addresses/{id}/ - Delete address
+
+Payment Options:
+
+GET /api/user/customer/payment-options/ - List payment methods
+POST /api/user/customer/payment-options/ - Add payment method
+DELETE /api/user/customer/payment-options/{id}/ - Delete payment method
+
+Reviews:
+
+POST /api/store/products/{slug}/review/add/ - Add review
+GET /api/store/products/{slug}/reviews/ - Get product reviews
