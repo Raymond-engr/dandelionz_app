@@ -3,9 +3,17 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useRegisterMutation } from '@/lib/api/authApi';
+import { useAppDispatch } from '@/lib/hooks';
+import { setCredentials } from '@/lib/features/auth/authSlice';
 
 export default function RegisterPage() {
-  const [role, setRole] = useState('Customer');
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const [register, { isLoading, error }] = useRegisterMutation();
+  
+  const [role, setRole] = useState<'CUSTOMER' | 'VENDOR'>('CUSTOMER');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
@@ -14,22 +22,75 @@ export default function RegisterPage() {
     fullName: '',
     email: '',
     phoneNumber: '',
-    stateRegion: 'Abia State',
     storeName: '', // Only for vendors
     password: '',
     confirmPassword: '',
+    referralCode: '', // Optional referral code
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [validationError, setValidationError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register:', { role, ...formData });
+    setValidationError('');
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setValidationError('Passwords do not match');
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 8) {
+      setValidationError('Password must be at least 8 characters long');
+      return;
+    }
+
+    // Validate vendor store name
+    if (role === 'VENDOR' && !formData.storeName.trim()) {
+      setValidationError('Store name is required for vendors');
+      return;
+    }
+
+    try {
+      const result = await register({
+        email: formData.email,
+        password: formData.password,
+        phone_number: formData.phoneNumber,
+        full_name: formData.fullName,
+        role: role,
+        ...(formData.referralCode && { referral_code: formData.referralCode }),
+      }).unwrap();
+
+      // Store auth data
+      dispatch(setCredentials({
+        user: result.data.user,
+        accessToken: result.data.tokens.access_token,
+        refreshToken: result.data.tokens.refresh_token,
+      }));
+
+      // If email verification is needed, redirect to verification page
+      if (result.data.verification_needed) {
+        router.push('/verify-email/resend');
+      } else {
+        // Redirect based on role
+        if (role === 'VENDOR') {
+          router.push('/vendor');
+        } else {
+          router.push('/');
+        }
+      }
+    } catch (err: any) {
+      console.error('Registration failed:', err);
+      setValidationError(err?.data?.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (
     <AppLayout showBottomNav={false} userRole={role.toLowerCase() as 'customer' | 'vendor'}>
       <div className="min-h-screen flex flex-col p-6">
         {/* Back Button */}
-        <button className="self-start mb-6">
+        <button onClick={() => router.back()} className="self-start mb-6">
           <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -40,6 +101,15 @@ export default function RegisterPage() {
           Create your Dandelionz Account
         </h1>
 
+        {/* Error Message */}
+        {(validationError || error) && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">
+              {validationError || (error as any)?.data?.message || 'An error occurred'}
+            </p>
+          </div>
+        )}
+
         {/* Register Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {/* Role Selection */}
@@ -47,11 +117,11 @@ export default function RegisterPage() {
             <label className="text-xs text-gray-600">Role</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+              onChange={(e) => setRole(e.target.value as 'CUSTOMER' | 'VENDOR')}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-size-[1.25rem] bg-position-[right_0.5rem_center] bg-no-repeat"
             >
-              <option value="Customer">Customer</option>
-              <option value="Vendor">Vendor</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="VENDOR">Vendor</option>
             </select>
           </div>
 
@@ -94,22 +164,8 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* State/Region */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-gray-600">State/Region</label>
-            <select
-              value={formData.stateRegion}
-              onChange={(e) => setFormData({...formData, stateRegion: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
-            >
-              <option>Abia State</option>
-              <option>Lagos State</option>
-              <option>Abuja FCT</option>
-            </select>
-          </div>
-
           {/* Store Name (Vendors only) */}
-          {role === 'Vendor' && (
+          {role === 'VENDOR' && (
             <div className="flex flex-col gap-2">
               <label htmlFor="storeName" className="text-xs text-gray-600">Store Name</label>
               <input
@@ -118,7 +174,7 @@ export default function RegisterPage() {
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
                 className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
-                required={role === 'Vendor'}
+                required={role === 'VENDOR'}
               />
             </div>
           )}
@@ -134,6 +190,7 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm pr-10"
                 required
+                minLength={8}
               />
               <button
                 type="button"
@@ -171,6 +228,21 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Referral Code (Optional) */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="referralCode" className="text-xs text-gray-600">
+              Referral Code <span className="text-gray-400">(Optional)</span>
+            </label>
+            <input
+              id="referralCode"
+              type="text"
+              value={formData.referralCode}
+              onChange={(e) => setFormData({...formData, referralCode: e.target.value.toUpperCase()})}
+              className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
+              placeholder="Enter referral code if you have one"
+            />
+          </div>
+
           {/* Remember Password Checkbox */}
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -185,9 +257,10 @@ export default function RegisterPage() {
           {/* Register Button */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-2"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Register
+            {isLoading ? 'Creating Account...' : 'Register'}
           </button>
 
           {/* Sign In Link */}
