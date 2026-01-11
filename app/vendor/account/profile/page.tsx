@@ -1,25 +1,90 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useGetVendorProfileQuery, usePartialUpdateVendorProfileMutation } from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import Image from 'next/image';
 
 export default function VendorProfilePage() {
   const router = useRouter();
+  const { data: profileData, isLoading, error } = useGetVendorProfileQuery();
+  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateVendorProfileMutation();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const profile = profileData?.data.user;
+  const vendorStoreInfo = {
+    storeName: profileData?.data?.store_name,
+    storeDescription: profileData?.data?.store_description,
+    address: profileData?.data?.address,
+  };
+
   const [formData, setFormData] = useState({
-    fullName: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    storeName: 'Store Name Goes Here',
-    phoneNumber: '08123456789',
-    address: 'No. 13 JB Street, Ekosiodin, Edo State',
-    password: '••••••••',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    storeName: '',
+    storeDescription: '',
+    address: '',
   });
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        fullName: profile.full_name || '',
+        email: profile.email || '',
+        phoneNumber: profile.phone_number || '',
+        storeName: vendorStoreInfo?.storeName || '',
+        storeDescription: vendorStoreInfo?.storeDescription || '',
+        address: vendorStoreInfo?.address || '',
+      });
+    }
+  }, [profile, vendorStoreInfo.address, vendorStoreInfo.storeDescription, vendorStoreInfo.storeName]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({
+        store_name: formData.storeName,
+        store_description: formData.storeDescription,
+        address: formData.address,
+      }).unwrap();
+      alert('Profile updated successfully');
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load profile</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">
@@ -39,7 +104,19 @@ export default function VendorProfilePage() {
           <div className="flex items-center gap-4 mb-8">
             <Link href="/vendor/account/profile/photo" className="relative">
               <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
-                <span className="text-2xl font-semibold text-white">AS</span>
+                {profile?.profile_picture ? (
+                  <Image 
+                                                        src={profile.profile_picture} 
+                                                        alt="Profile" 
+                                                        width={64}
+                                                        height={64}
+                                                        className="w-full h-full rounded-full object-cover"
+                                                      />
+                ) : (
+                  <span className="text-2xl font-semibold text-white">
+                    {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'V'}
+                  </span>
+                )}
               </div>
               <div className="absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,8 +126,8 @@ export default function VendorProfilePage() {
               </div>
             </Link>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Adam Smith</h2>
-              <p className="text-sm text-gray-600">adamsmith@gmail.com</p>
+              <h2 className="text-base font-semibold text-gray-900">{formData.fullName}</h2>
+              <p className="text-sm text-gray-600">{formData.email}</p>
             </div>
           </div>
 
@@ -64,6 +141,7 @@ export default function VendorProfilePage() {
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -73,8 +151,8 @@ export default function VendorProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled
               />
             </div>
 
@@ -86,6 +164,7 @@ export default function VendorProfilePage() {
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -97,6 +176,7 @@ export default function VendorProfilePage() {
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -108,6 +188,7 @@ export default function VendorProfilePage() {
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -117,7 +198,7 @@ export default function VendorProfilePage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
+                  value="••••••••"
                   className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 pr-10"
                   readOnly
                 />
@@ -139,18 +220,43 @@ export default function VendorProfilePage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+            {!isEditing ? (
+                <button
+                onClick={() => setIsEditing(true)}
+                className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (profile) {
+                      setFormData({
+                        fullName: profile.full_name || '',
+                        email: profile.email || '',
+        
+                        phoneNumber: profile.phone_number || '',
+                        storeName: vendorStoreInfo?.storeName || '',
+                        storeDescription: vendorStoreInfo?.storeDescription || '',
+                        address: vendorStoreInfo?.address || '',
+                      });
+                    }
+                  }}
+                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Discard
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

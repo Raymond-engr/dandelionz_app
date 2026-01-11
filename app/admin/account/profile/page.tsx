@@ -1,25 +1,86 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useGetAdminProfileQuery } from '@/lib/api/adminApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminProfilePage() {
   const router = useRouter();
+  const { data: profileData, isLoading, error } = useGetAdminProfileQuery();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const profile = profileData?.data?.user;
+
   const [formData, setFormData] = useState({
-    fullName: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    storeName: 'Store Name Goes Here',
-    phoneNumber: '08123456789',
-    address: 'No. 13 JB Street, Ekosiodin, Edo State',
-    password: '••••••••',
+    fullName: '',
+    email: '',
+    storeName: '',
+    phoneNumber: '',
+    address: '',
   });
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        fullName: profile.full_name || '',
+        email: profile.email || '',
+        storeName: 'Store Name Goes Here', // Placeholder as it's not in the admin model
+        phoneNumber: profile.phone_number || '',
+        address: 'No. 13 JB Street, Ekosiodin, Edo State', // Placeholder as it's not in the admin model
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    // In a real app, you'd call a mutation to update the profile.
+    // For now, we'll just log the data and simulate a save.
     console.log('Saving profile:', formData);
+    try {
+      // Example of what a mutation call would look like:
+      // await updateAdminProfile(formData).unwrap();
+      alert('Profile updated successfully (simulated)');
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile (simulated)');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="admin">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="admin">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load profile</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -38,8 +99,20 @@ export default function AdminProfilePage() {
           {/* Profile Picture */}
           <div className="flex items-center gap-4 mb-8">
             <Link href="/admin/account/profile/photo" className="relative">
-              <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
-                <span className="text-2xl font-semibold text-white">AS</span>
+               <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
+                {profile?.profile_picture ? (
+                  <Image 
+                    src={profile.profile_picture} 
+                    alt="Profile" 
+                    width={64}
+                    height={64}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-semibold text-white">
+                    {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'A'}
+                  </span>
+                )}
               </div>
               <div className="absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,8 +122,8 @@ export default function AdminProfilePage() {
               </div>
             </Link>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Adam Smith</h2>
-              <p className="text-sm text-gray-600">adamsmith@gmail.com</p>
+              <h2 className="text-base font-semibold text-gray-900">{formData.fullName}</h2>
+              <p className="text-sm text-gray-600">{formData.email}</p>
             </div>
           </div>
 
@@ -64,6 +137,7 @@ export default function AdminProfilePage() {
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -73,8 +147,8 @@ export default function AdminProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled
               />
             </div>
 
@@ -86,6 +160,7 @@ export default function AdminProfilePage() {
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -97,6 +172,7 @@ export default function AdminProfilePage() {
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -108,6 +184,7 @@ export default function AdminProfilePage() {
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                disabled={!isEditing}
               />
             </div>
 
@@ -117,7 +194,7 @@ export default function AdminProfilePage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
+                  value="••••••••"
                   className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 pr-10"
                   readOnly
                 />
@@ -139,18 +216,42 @@ export default function AdminProfilePage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+             {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    // Reset form data
+                    if (profile) {
+                      setFormData({
+                        fullName: profile.full_name || '',
+                        email: profile.email || '',
+                        phoneNumber: profile.phone_number || '',
+                        storeName: 'Store Name Goes Here',
+                        address: 'No. 13 JB Street, Ekosiodin, Edo State',
+                      });
+                    }
+                  }}
+                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Discard
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

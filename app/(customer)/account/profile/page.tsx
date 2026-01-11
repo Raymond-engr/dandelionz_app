@@ -1,24 +1,77 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import Image from 'next/image';
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: profileData, isLoading, error } = useGetCustomerProfileQuery();
+  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateCustomerProfileMutation();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const profile = profileData?.user;
+
   const [formData, setFormData] = useState({
-    fullName: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    phoneNumber: '08123456781',
-    address: 'No. 13 JB Street, Ekosiodin, Edo State',
-    password: '••••••••',
+    full_name: '',
+    email: '',
+    phone_number: '',
+    address: '',
   });
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        email: profile.email || '',
+        phone_number: profile.phone_number || '',
+        address: 'No. 13 JB Street, Ekosiodin, Edo State', // Placeholder
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile(formData).unwrap();
+      alert('Profile updated successfully');
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="customer">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="customer">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load profile</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">
@@ -37,7 +90,19 @@ export default function ProfilePage() {
           {/* Profile Picture */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-2">
-              <span className="text-2xl font-semibold text-gray-600">AS</span>
+              {profile?.profile_picture ? (
+                  <Image 
+                                      src={profile.profile_picture} 
+                                      alt="Profile" 
+                                      width={64}
+                                      height={64}
+                                      className="w-full h-full rounded-full object-cover"
+                                    />
+                ) : (
+                  <span className="text-2xl font-semibold text-gray-600">
+                    {formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </span>
+                )}
               <button className="absolute bottom-0 right-0 w-7 h-7 bg-system-blue-light rounded-full flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -45,8 +110,8 @@ export default function ProfilePage() {
                 </svg>
               </button>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Adam Smith</h2>
-            <p className="text-sm text-gray-600">adamsmith@gmail.com</p>
+            <h2 className="text-lg font-semibold text-gray-900">{formData.full_name}</h2>
+            <p className="text-sm text-gray-600">{formData.email}</p>
           </div>
 
           {/* Form Fields */}
@@ -56,10 +121,10 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Full Name</label>
               <input
                 type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                value={formData.full_name}
+                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                disabled={!isEditing}
               />
             </div>
 
@@ -69,9 +134,8 @@ export default function ProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                disabled
               />
             </div>
 
@@ -80,10 +144,10 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Phone Number</label>
               <input
                 type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                value={formData.phone_number}
+                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                disabled={!isEditing}
               />
             </div>
 
@@ -95,7 +159,7 @@ export default function ProfilePage() {
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
                 className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                disabled={!isEditing}
               />
             </div>
 
@@ -105,7 +169,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
+                  value="••••••••"
                   className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none pr-10"
                   readOnly
                 />
@@ -127,18 +191,40 @@ export default function ProfilePage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (profile) {
+                      setFormData({
+                        full_name: profile.full_name || '',
+                        email: profile.email || '',
+                        phone_number: profile.phone_number || '',
+                        address: 'No. 13 JB Street, Ekosiodin, Edo State',
+                      });
+                    }
+                  }}
+                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Discard
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

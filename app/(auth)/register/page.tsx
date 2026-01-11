@@ -46,11 +46,7 @@ export default function RegisterPage() {
       return;
     }
 
-    // Validate vendor store name
-    if (role === 'VENDOR' && !formData.storeName.trim()) {
-      setValidationError('Store name is required for vendors');
-      return;
-    }
+
 
     try {
       const result = await register({
@@ -71,7 +67,7 @@ export default function RegisterPage() {
 
       // If email verification is needed, redirect to verification page
       if (result.data.verification_needed) {
-        router.push('/verify-email/resend');
+        router.push('/registration-success');
       } else {
         // Redirect based on role
         if (role === 'VENDOR') {
@@ -164,20 +160,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Store Name (Vendors only) */}
-          {role === 'VENDOR' && (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="storeName" className="text-xs text-gray-600">Store Name</label>
-              <input
-                id="storeName"
-                type="text"
-                value={formData.storeName}
-                onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
-                required={role === 'VENDOR'}
-              />
-            </div>
-          )}
+
 
           {/* Password */}
           <div className="flex flex-col gap-2">
