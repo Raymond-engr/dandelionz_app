@@ -49,9 +49,9 @@ export default function LoginPage() {
       document.cookie = `access_token=${result.data.tokens.access_token}; path=/`;
       document.cookie = `user_role=${result.data.user.role}; path=/`;
 
-      // Check if email verification is needed
-      if (result.data.verification_needed && !result.data.email_verified) {
-        router.push('/verify-email/resend');
+      // Check if the user's email is verified
+      if (!result.data.user.is_verified) {
+        router.push('/verify-notice');
         return;
       }
 

@@ -53,11 +53,8 @@ interface PasswordResetRequest {
 }
 
 interface VerifyEmailRequest {
+  uid: string;
   token: string;
-}
-
-interface ResendVerificationRequest {
-  email: string;
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -138,18 +135,6 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Auth"],
     }),
-
-    // Resend Verification Email
-    resendVerificationEmail: builder.mutation<
-      { success: boolean; message: string },
-      ResendVerificationRequest
-    >({
-      query: (body) => ({
-        url: "/auth/resend-verification/",
-        method: "POST",
-        body,
-      }),
-    }),
   }),
 });
 
@@ -161,5 +146,4 @@ export const {
   useCheckVerificationQuery,
   useSendVerificationEmailMutation,
   useVerifyEmailMutation,
-  useResendVerificationEmailMutation,
 } = authApi;

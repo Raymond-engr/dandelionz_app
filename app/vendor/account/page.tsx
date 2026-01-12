@@ -3,14 +3,49 @@
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAppSelector, useLogout } from '@/lib/hooks';
+import { useGetVendorProfileQuery } from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { useRouter } from 'next/navigation';
 
 export default function VendorAccountPage() {
+  const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const { data: profileData, isLoading } = useGetVendorProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const logout = useLogout();
+
   const user = {
-    name: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    avatar: null
+    name: profileData?.data.user.full_name || '',
+    email: profileData?.data.user.email || '',
+    avatar: profileData?.data.user.profile_picture || null
   };
 
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={true} userRole="vendor">
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // This is a fallback; middleware should handle primary protection.
+    if (typeof window !== 'undefined') {
+        router.push('/login');
+    }
+    return (
+        <AppLayout showBottomNav={true} userRole="vendor">
+            <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        </AppLayout>
+    );
+  }
+  
   return (
     <AppLayout showBottomNav={true} userRole="vendor">
       <div className="min-h-screen bg-white">
@@ -26,7 +61,7 @@ export default function VendorAccountPage() {
               <Image src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" width={64} height={64} />
             ) : (
               <span className="text-2xl font-semibold text-white">
-                {user.name.split(' ').map(n => n[0]).join('')}
+                {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </span>
             )}
           </div>
@@ -47,7 +82,6 @@ export default function VendorAccountPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-
           <Link
             href="/vendor/account/notifications"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -57,7 +91,6 @@ export default function VendorAccountPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-
           <Link
             href="/vendor/account/payment-settings"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -69,8 +102,14 @@ export default function VendorAccountPage() {
           </Link>
         </div>
 
-        {/* Close Account */}
+        {/* Logout & Close Account */}
         <div className="py-2 border-t border-gray-200">
+          <button
+            onClick={logout}
+            className="flex w-full items-center justify-start px-6 py-4 hover:bg-gray-50 transition-colors text-left"
+          >
+            <span className="text-sm font-medium text-system-red">Logout</span>
+          </button>
           <Link
             href="/vendor/account/delete"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -93,7 +132,6 @@ export default function VendorAccountPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-
           <Link
             href="/vendor/account/terms"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -103,7 +141,6 @@ export default function VendorAccountPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-
           <Link
             href="/contact"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"

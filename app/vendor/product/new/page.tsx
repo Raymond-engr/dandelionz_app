@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import { useCreateProductMutation } from '@/lib/api/vendorApi';
+import Image from 'next/image';
 
 type ProductStep = 'basic' | 'inventory' | 'preview';
 
@@ -22,8 +24,28 @@ interface ProductFormData {
   };
 }
 
+const CATEGORIES = [
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'fashion', label: 'Fashion' },
+    { value: 'home_appliances', label: 'Home Appliances' },
+    { value: 'beauty', label: 'Beauty & Personal Care' },
+    { value: 'sports', label: 'Sports & Outdoors' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'books', label: 'Books' },
+    { value: 'toys', label: 'Toys & Games' },
+    { value: 'groceries', label: 'Groceries' },
+    { value: 'computers', label: 'Computers & Accessories' },
+    { value: 'phones', label: 'Phones & Tablets' },
+    { value: 'jewelry', label: 'Jewelry & Watches' },
+    { value: 'baby', label: 'Baby Products' },
+    { value: 'pets', label: 'Pet Supplies' },
+    { value: 'office', label: 'Office Products' },
+    { value: 'gaming', label: 'Video Games & Consoles' },
+];
+
 export default function AddNewProductPage() {
   const router = useRouter();
+  const [createProduct, { isLoading, isSuccess, isError, error }] = useCreateProductMutation();
   const [currentStep, setCurrentStep] = useState<ProductStep>('basic');
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -34,10 +56,10 @@ export default function AddNewProductPage() {
     tags: '',
     stock: 10,
     price: 550,
-    discountedPrice: 1000,
+    discountedPrice: 0,
     variants: {
-      colors: ['White', 'Black', 'Yellow'],
-      sizes: ['24', '25', '30', '36', '41']
+      colors: [],
+      sizes: []
     }
   });
 
@@ -58,15 +80,55 @@ export default function AddNewProductPage() {
       router.back();
     }
   };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFormData({ ...formData, image: e.target.files[0] });
+    }
+  };
 
   const handleSaveAsDraft = () => {
+    // This would require a specific 'status' field in the API call
     console.log('Saving as draft:', formData);
+    // createProduct({ ...append formData, status: 'draft' })
     router.push('/vendor/product');
   };
 
-  const handlePublish = () => {
-    console.log('Publishing product:', formData);
-    router.push('/vendor/product');
+  const handlePublish = async () => {
+    const productData = new FormData();
+    productData.append('name', formData.name);
+    productData.append('description', formData.description);
+    productData.append('category', formData.category);
+    productData.append('price', formData.price.toString());
+    productData.append('stock', formData.stock.toString());
+    
+    if (formData.image) {
+      productData.append('image', formData.image);
+    }
+    if (formData.brand) {
+      productData.append('brand', formData.brand);
+    }
+    if (formData.tags) {
+      productData.append('tags', formData.tags);
+    }
+    if (formData.discountedPrice > 0) {
+      productData.append('discounted_price', formData.discountedPrice.toString());
+    }
+    if (formData.variants.colors.length > 0) {
+        productData.append('variants.colors', JSON.stringify(formData.variants.colors));
+    }
+    if (formData.variants.sizes.length > 0) {
+        productData.append('variants.sizes', JSON.stringify(formData.variants.sizes));
+    }
+
+    try {
+      await createProduct(productData).unwrap();
+      // On success, redirect to the product list
+      router.push('/vendor/product');
+    } catch (err) {
+      console.error('Failed to create product:', err);
+      // You can set an error state here to show a message to the user
+    }
   };
 
   const toggleColor = (color: string) => {
@@ -214,9 +276,9 @@ export default function AddNewProductPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
                   >
                     <option value="">Select Category</option>
-                    <option>Electronics</option>
-                    <option>Clothing</option>
-                    <option>Food</option>
+                    {CATEGORIES.map(cat => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -235,14 +297,18 @@ export default function AddNewProductPage() {
               <div>
                 <label className="text-xs text-gray-600 mb-2 block">Upload Product Image</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input type="file" className="hidden" id="product-image" />
+                  <input type="file" className="hidden" id="product-image" onChange={handleFileChange} accept="image/*" />
                   <label htmlFor="product-image" className="cursor-pointer">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      {formData.image ? (
+                        <Image src={URL.createObjectURL(formData.image)} alt="Preview" width={48} height={48} className="object-cover rounded-lg" />
+                      ) : (
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600">Upload Product Image</p>
+                    <p className="text-sm text-gray-600">{formData.image ? 'Change Image' : 'Upload Product Image'}</p>
                     <p className="text-xs text-red-500 mt-1">Not less than 150kb</p>
                   </label>
                 </div>
@@ -280,7 +346,7 @@ export default function AddNewProductPage() {
                   <input
                     type="number"
                     value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value) || 0})}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none"
                   />
                   <span className="text-sm text-gray-600">Units</span>
@@ -292,7 +358,7 @@ export default function AddNewProductPage() {
                 <input
                   type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
                   placeholder="₦ 550"
                 />
@@ -303,14 +369,14 @@ export default function AddNewProductPage() {
                 <input
                   type="number"
                   value={formData.discountedPrice}
-                  onChange={(e) => setFormData({...formData, discountedPrice: parseFloat(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, discountedPrice: parseFloat(e.target.value) || 0})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
                   placeholder="₦ 1000"
                 />
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Variants</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Variants (Optional)</h3>
                 
                 {/* Colors */}
                 <div className="mb-4">
@@ -322,6 +388,7 @@ export default function AddNewProductPage() {
                     {['White', 'Black', 'Green', 'Blue', 'Red', 'Yellow'].map((color) => (
                       <button
                         key={color}
+                        type="button"
                         onClick={() => toggleColor(color)}
                         className={`py-2 px-4 rounded-full text-sm font-medium transition-colors ${
                           formData.variants.colors.includes(color)
@@ -345,6 +412,7 @@ export default function AddNewProductPage() {
                     {['24', '25', '26', '27', '28', '29', '30', '36', '37', '38', '39', '40', '41', '42', '43'].map((size) => (
                       <button
                         key={size}
+                        type="button"
                         onClick={() => toggleSize(size)}
                         className={`aspect-square rounded-lg text-sm font-medium transition-colors ${
                           formData.variants.sizes.includes(size)
@@ -376,45 +444,59 @@ export default function AddNewProductPage() {
 
               {/* Product Image */}
               <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center mb-4">
-                <div className="text-center">
-                  <svg className="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm text-gray-500">Product Image will appear here</p>
-                </div>
+                {formData.image ? (
+                    <Image src={URL.createObjectURL(formData.image)} alt={formData.name} width={200} height={200} className="object-cover rounded-lg" />
+                ) : (
+                    <div className="text-center">
+                    <svg className="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-500">No Product Image</p>
+                    </div>
+                )}
               </div>
 
               {/* Product Details */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Product Name</h3>
-                <p className="text-sm text-gray-600 mb-4">Product description goes here...</p>
-                <p className="text-2xl font-bold text-gray-900 mb-4">₦0.00</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{formData.name || 'Product Name'}</h3>
+                <p className="text-sm text-gray-600 mb-4">{formData.description || 'Product description goes here...'}</p>
+                <p className="text-2xl font-bold text-gray-900 mb-4">₦{formData.price.toFixed(2)}</p>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Category:</span>
-                    <span className="text-gray-900 font-medium">Category Name</span>
+                    <span className="text-gray-900 font-medium">{formData.category || 'Category Name'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Stock:</span>
-                    <span className="text-gray-900 font-medium">0 Units</span>
+                    <span className="text-gray-900 font-medium">{formData.stock} Units</span>
                   </div>
                 </div>
               </div>
+              
+              {isError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-600">
+                          {(error as any)?.data?.message || 'Failed to create product. Please check the fields.'}
+                      </p>
+                  </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveAsDraft}
-                  className="flex-1 py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  disabled={isLoading}
+                  className="flex-1 py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Save as Draft
                 </button>
                 <button
                   onClick={handlePublish}
-                  className="flex-1 py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+                  disabled={isLoading}
+                  className="flex-1 py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
-                  Publish Product
+                  {isLoading ? 'Publishing...' : 'Publish Product'}
                 </button>
               </div>
             </div>

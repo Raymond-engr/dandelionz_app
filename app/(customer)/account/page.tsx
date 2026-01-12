@@ -3,13 +3,19 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
+import { useAppSelector, useLogout } from '@/lib/hooks';
+import { useRouter } from 'next/navigation';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AccountPage() {
-  const user = {
-    isLoggedIn: true, // Change to true to show logged in state
-    name: 'John Doe',
-    email: 'john@example.com',
-  };
+  const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const { data: profile, isLoading } = useGetCustomerProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const logout = useLogout();
 
   const accountLinks = [
     { label: 'Profile', href: '/account/profile', icon: UserIcon },
@@ -24,6 +30,23 @@ export default function AccountPage() {
     { label: 'Contact Us', href: '/contact', icon: MailIcon },
   ];
 
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={true} userRole="customer">
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const user = {
+    isLoggedIn: isAuthenticated,
+    name: profile?.user.full_name || '',
+    email: profile?.user.email || '',
+    avatar: profile?.user.profile_picture || null,
+  };
+  
   return (
     <AppLayout showBottomNav={true} userRole="customer">
       <div className="min-h-screen bg-white">
@@ -34,12 +57,16 @@ export default function AccountPage() {
 
         {/* User Info / Sign In */}
         <div className="p-6 bg-gray-50 border-b border-gray-200">
-          {user.isLoggedIn ? (
+          {user.isLoggedIn && profile ? (
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-system-blue-light/10 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-semibold text-system-blue-light">
-                  {user.name.charAt(0)}
-                </span>
+                {user.avatar ? (
+                    <Image src={user.avatar} alt={user.name} width={64} height={64} className="rounded-full object-cover"/>
+                ) : (
+                    <span className="text-2xl font-semibold text-system-blue-light">
+                        {user.name.charAt(0).toUpperCase()}
+                    </span>
+                )}
               </div>
               <div>
                 <h2 className="text-base font-semibold text-gray-900">{user.name}</h2>
@@ -74,10 +101,16 @@ export default function AccountPage() {
             </Link>
           ))}
         </div>
-
-        {/* Delete Account */}
+        
+        {/* Logout & Delete Account */}
         {user.isLoggedIn && (
           <div className="py-2 border-t border-gray-200">
+            <button
+              onClick={logout}
+              className="flex w-full items-center justify-start px-6 py-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              <span className="text-sm font-medium text-system-red">Logout</span>
+            </button>
             <Link
               href="/account/delete"
               className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -110,7 +143,7 @@ export default function AccountPage() {
         </div>
 
         {/* Invite Friends Link */}
-      {user.isLoggedIn && (
+        {user.isLoggedIn && (
         <div className="py-2 border-t border-gray-200">
           <Link
             href="/account/invite-friends"
@@ -127,7 +160,7 @@ export default function AccountPage() {
             </svg>
           </Link>
         </div>
-      )}
+        )}
 
         {/* Sign In Button at Bottom (when not logged in) */}
         {!user.isLoggedIn && (
