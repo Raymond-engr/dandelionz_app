@@ -18,7 +18,7 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories }) =>
           {categories.map((category, index) => (
             <div key={`${category.id}-${index}`} className="shrink-0">
               <Link 
-                href={`/category/${category.id}`}
+                href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
                 className="block group"
               >
                 {/* Card Container */}

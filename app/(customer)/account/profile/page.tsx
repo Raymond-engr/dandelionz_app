@@ -13,37 +13,77 @@ export default function ProfilePage() {
   const { data: profileData, isLoading, error } = useGetCustomerProfileQuery();
   const [updateProfile, { isLoading: isSaving }] = usePartialUpdateCustomerProfileMutation();
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Retained for password visibility toggle
   const [isEditing, setIsEditing] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   
-  const profile = profileData?.user;
-
   const [formData, setFormData] = useState({
-    full_name: '',
+    fullName: '',
     email: '',
-    phone_number: '',
-    address: '',
+    phoneNumber: '',
+    shipping_address: '',
   });
 
   useEffect(() => {
-    if (profile) {
+    if (profileData) {
       setFormData({
-        full_name: profile.full_name || '',
-        email: profile.email || '',
-        phone_number: profile.phone_number || '',
-        address: 'No. 13 JB Street, Ekosiodin, Edo State', // Placeholder
+        fullName: profileData.user.full_name || '',
+        email: profileData.user.email || '',
+        phoneNumber: profileData.user.phone_number || '',
+        shipping_address: profileData.shipping_address || '',
       });
     }
-  }, [profile]);
+  }, [profileData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePictureFile(e.target.files[0]);
+    }
+  };
 
   const handleSave = async () => {
+    const updateData = new FormData();
+    
+    // Append only changed fields
+    if (formData.fullName !== profileData?.user.full_name) {
+      updateData.append('full_name', formData.fullName);
+    }
+    if (formData.phoneNumber !== profileData?.user.phone_number) {
+        updateData.append('phone_number', formData.phoneNumber);
+    }
+    if (formData.shipping_address !== profileData?.shipping_address) {
+      updateData.append('shipping_address', formData.shipping_address);
+    }
+    if (profilePictureFile) {
+      updateData.append('profile_picture', profilePictureFile);
+    }
+
+    if ([...updateData.entries()].length === 0 && !profilePictureFile) { // Check if no changes or new file
+        setIsEditing(false);
+        return;
+    }
+
     try {
-      await updateProfile(formData).unwrap();
+      await updateProfile(updateData).unwrap();
       alert('Profile updated successfully');
       setIsEditing(false);
+      setProfilePictureFile(null);
     } catch (err) {
       console.error(err);
       alert('Failed to update profile');
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setProfilePictureFile(null);
+    if (profileData) {
+        setFormData({
+            fullName: profileData.user.full_name || '',
+            email: profileData.user.email || '',
+            phoneNumber: profileData.user.phone_number || '',
+            shipping_address: profileData.shipping_address || '',
+        });
     }
   };
 
@@ -73,6 +113,9 @@ export default function ProfilePage() {
     );
   }
 
+  const profile = profileData;
+  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
+
   return (
     <AppLayout showBottomNav={false} userRole="customer">
       <div className="min-h-screen bg-white">
@@ -90,27 +133,30 @@ export default function ProfilePage() {
           {/* Profile Picture */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-2">
-              {profile?.profile_picture ? (
+              {currentAvatar ? (
                   <Image 
-                                      src={profile.profile_picture} 
-                                      alt="Profile" 
-                                      width={64}
-                                      height={64}
-                                      className="w-full h-full rounded-full object-cover"
-                                    />
+                      src={currentAvatar} 
+                      alt="Profile" 
+                      width={80}
+                      height={80}
+                      className="w-full h-full rounded-full object-cover"
+                    />
                 ) : (
                   <span className="text-2xl font-semibold text-gray-600">
-                    {formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                    {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                   </span>
                 )}
-              <button className="absolute bottom-0 right-0 w-7 h-7 bg-system-blue-light rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
+              {isEditing && (
+                <label htmlFor="profile-picture-upload" className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 bg-system-blue-light rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input type="file" id="profile-picture-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
+                </label>
+              )}
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">{formData.full_name}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{formData.fullName}</h2>
             <p className="text-sm text-gray-600">{formData.email}</p>
           </div>
 
@@ -121,9 +167,9 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Full Name</label>
               <input
                 type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
+                value={formData.fullName}
+                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
               />
             </div>
@@ -134,7 +180,7 @@ export default function ProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
+                className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                 disabled
               />
             </div>
@@ -144,9 +190,9 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Phone Number</label>
               <input
                 type="tel"
-                value={formData.phone_number}
-                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
               />
             </div>
@@ -156,9 +202,9 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Address</label>
               <input
                 type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
+                value={formData.shipping_address}
+                onChange={(e) => setFormData({...formData, shipping_address: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
               />
             </div>
@@ -167,10 +213,10 @@ export default function ProfilePage() {
             <div>
               <label className="text-xs text-gray-600 mb-2 block">Password</label>
               <div className="relative">
-                <input
+                 <input
                   type={showPassword ? 'text' : 'password'}
                   value="••••••••"
-                  className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none pr-10"
+                  className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                   readOnly
                 />
                 <button
@@ -208,17 +254,7 @@ export default function ProfilePage() {
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    if (profile) {
-                      setFormData({
-                        full_name: profile.full_name || '',
-                        email: profile.email || '',
-                        phone_number: profile.phone_number || '',
-                        address: 'No. 13 JB Street, Ekosiodin, Edo State',
-                      });
-                    }
-                  }}
+                  onClick={handleCancel}
                   className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   Discard

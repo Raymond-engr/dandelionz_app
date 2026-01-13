@@ -327,10 +327,13 @@ get request:
 }
 
 ---
+
 # API INTEGRATION REVIEW GUIDE (Last Updated: 2026-01-12)
+
 This guide provides a comprehensive summary of the frontend application's status for future reference.
 
 ## Core Authentication System
+
 - **`lib/api/baseApi.ts` (Token Refresh Logic):**
   - **Status:** COMPLETE
   - **Details:** The core API query function has been refactored to handle automatic access token refreshing. It uses a mutex lock to prevent race conditions where multiple API calls with an expired token could trigger simultaneous refresh attempts. This is a critical production-ready fix.
@@ -341,6 +344,7 @@ This guide provides a comprehensive summary of the frontend application's status
 ## Page-by-Page Review
 
 ### Authentication Flow
+
 - **Registration (`app/(auth)/register/page.tsx`):**
   - **Status:** COMPLETE
   - **Details:** Refactored the submission logic to correctly redirect users based on the `email_verified: false` flag in the API response, aligning it with the actual API behavior.
@@ -355,6 +359,7 @@ This guide provides a comprehensive summary of the frontend application's status
   - **Details:** Reviewed and confirmed to be correctly implemented. It properly handles role-based redirection and sends unverified users to the `/verify-notice` page after login. No changes were necessary.
 
 ### Account Management Pages
+
 - **Customer Account (`app/(customer)/account/page.tsx`):**
   - **Status:** COMPLETE
   - **Details:** The page was fully refactored from a static mock page to a dynamic one. It now uses `useGetCustomerProfileQuery` to fetch live data, displays a loading state, and uses the `useLogout` hook for a functional logout button. The UI was also updated to use the Next.js `<Image>` component for avatars.
@@ -366,6 +371,7 @@ This guide provides a comprehensive summary of the frontend application's status
   - **Details:** Refactored to be a fully dynamic page using `useGetAdminProfileQuery` and a functional `useLogout` hook.
 
 ### Vendor Features
+
 - **Add New Product (`app/vendor/product/new/page.tsx`):**
   - **Status:** COMPLETE
   - **Details:** This multi-step form was heavily refactored. It now correctly handles image file uploads by using a `FormData` object. The form now submits all required product data to the `useCreateProductMutation` hook, including optional variants and the official, hardcoded category list.
@@ -380,9 +386,179 @@ This guide provides a comprehensive summary of the frontend application's status
   - **Notes for Improvement:** The dashboard currently uses `useGetVendorAnalyticsQuery`, which only provides `total_revenue`. To make the dashboard's "Total Orders," "Product Sold," and "New Customer" cards functional, the `/user/vendor/analytics/` API endpoint needs to be expanded on the backend to provide this summary data.
 
 ### Admin Features
+
 - **Vendor Management List (`app/admin/vendor/page.tsx`):**
   - **Status:** COMPLETE
   - **Details:** Reviewed and confirmed to be correctly implemented. It uses `useGetAllVendorsQuery` to fetch and display the list of vendors and their status.
 - **Vendor Details Page (`app/admin/vendor/[id]/page.tsx`):**
   - **Status:** COMPLETE
   - **Details:** Reviewed and confirmed to be correctly implemented. It uses the appropriate hooks (`useApproveVendorMutation`, `useSuspendUserMutation`, `useVerifyVendorKYCMutation`) to manage vendors. The UI is functional and provides clear feedback to the admin.
+
+this is the public get product endpoint with all the filters for the customer:
+https://api.dandelionz.com.ng/store/products/
+response with no filters: {
+"success": true,
+"data": [
+{
+"id": 1,
+"store": 11,
+"store_name": "Unnamed Store",
+"name": "Classic Test Product",
+"slug": "classic-test-product",
+"description": "A high-quality product for all your testing needs.",
+"category": "electronics",
+"price": "199.99",
+"stock": 100,
+"image": null,
+"in_stock": true,
+"created_at": "2026-01-11T21:05:47.679253Z",
+"updated_at": "2026-01-11T21:05:47.679292Z",
+"reviews": []
+}
+]
+} but then this filters can be applied as query parameters:
+store, price, category (this will be harcoded in the frontend like before), search (A search term), ordering (Which field to use when ordering the results) I don't know much about the ordering filter and check the frontend for what's missing in the filter and how to integrate the API tell me of the plan before taking any actions
+
+https://api.dandelionz.com.ng/user/vendor/profile/
+
+get request: {
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "",
+"bank_name": "",
+"account_number": "",
+"recipient_code": "",
+"is_verified_vendor": true
+}
+}
+patch request to the same endpoint:
+This are the fields that can be sent for the patch: {
+"user": {},
+"store_name": "string",
+"store_description": "string",
+"business_registration_number": "string",
+"address": "string",
+"bank_name": "string",
+"account_number": "string",
+"recipient_code": "string"
+},
+this is the request body I sent for the patch:
+{
+"user": {},
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489"
+}
+the response gotten:
+{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "",
+"bank_name": "",
+"account_number": "",
+"recipient_code": "",
+"is_verified_vendor": true
+},
+"message": "Profile updated successfully"
+}
+
+the data didn't reflect immediately but when I did the get request for the profile it was all updated. so implement a refresh for the get endpoint after the patch is successful to get the current data? or what should be done?
+I tried this: {
+"full_name": "Tester",
+"phone_number": "00000008889",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489"
+}
+
+and got this:{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Tester",
+"phone_number": "00000008889",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489",
+"recipient_code": "",
+"is_verified_vendor": true
+},
+"message": "Profile updated successfully"
+}
+meaning the fields in the user object should just be used directly in the request body without it being inside of the user object.
+also please do the profile picture upload functionality in the frontend the same way it was done when adding a product by the vendor. the profile_picture field can be added in the user object in the patch request.
+add validation on the frontend, the account number is just ten digits.
+
+this will work now for the customer profile page the patch request:
+{
+"full_name": "Customer Rayweb",
+"phone_number": "000000657400",
+"shipping_address": "Jgbt street"
+}
+now for the customer endpoint in the current implementation you can't even edit the user fields remove that you can now update them with the patch endpoint, do the profile photo upload functionality too, Implement the same refresh too to get fresh data after a successful patch request.
+
+check the admin vendor page, I now have an endpoint to view details, it's a get request you'll pass the user_uuid as the parameter for the get request, it'll look this: https://api.dandelionz.com.ng/user/admin/vendors/344c535a-fc24-4660-8c5f-0fd4ba401f84/
+this is the response gotten: {
+"success": true,
+"data": {
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Tester",
+"phone_number": "00000008889",
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489",
+"recipient_code": "",
+"is_verified_vendor": true,
+"is_active": true,
+"is_verified": true
+}
+}

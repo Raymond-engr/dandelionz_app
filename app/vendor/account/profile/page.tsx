@@ -13,16 +13,9 @@ export default function VendorProfilePage() {
   const { data: profileData, isLoading, error } = useGetVendorProfileQuery();
   const [updateProfile, { isLoading: isSaving }] = usePartialUpdateVendorProfileMutation();
 
-  const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   
-  const profile = profileData?.data.user;
-  const vendorStoreInfo = {
-    storeName: profileData?.data?.store_name,
-    storeDescription: profileData?.data?.store_description,
-    address: profileData?.data?.address,
-  };
-
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -33,32 +26,80 @@ export default function VendorProfilePage() {
   });
 
   useEffect(() => {
-    if (profile) {
+    if (profileData?.data) {
+      const { user, ...vendorInfo } = profileData.data;
       setFormData({
-        fullName: profile.full_name || '',
-        email: profile.email || '',
-        phoneNumber: profile.phone_number || '',
-        storeName: vendorStoreInfo?.storeName || '',
-        storeDescription: vendorStoreInfo?.storeDescription || '',
-        address: vendorStoreInfo?.address || '',
+        fullName: user.full_name || '',
+        email: user.email || '',
+        phoneNumber: user.phone_number || '',
+        storeName: vendorInfo.store_name || '',
+        storeDescription: vendorInfo.store_description || '',
+        address: vendorInfo.address || '',
       });
     }
-  }, [profile, vendorStoreInfo.address, vendorStoreInfo.storeDescription, vendorStoreInfo.storeName]);
+  }, [profileData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePictureFile(e.target.files[0]);
+    }
+  };
 
   const handleSave = async () => {
+    const updateData = new FormData();
+
+    // Only append fields that have changed to be efficient
+    if (formData.fullName !== profileData?.data.user.full_name) {
+        updateData.append('full_name', formData.fullName);
+    }
+    if (formData.phoneNumber !== profileData?.data.user.phone_number) {
+        updateData.append('phone_number', formData.phoneNumber);
+    }
+    if (formData.storeName !== profileData?.data.store_name) {
+        updateData.append('store_name', formData.storeName);
+    }
+    if (formData.storeDescription !== profileData?.data.store_description) {
+        updateData.append('store_description', formData.storeDescription);
+    }
+    if (formData.address !== profileData?.data.address) {
+        updateData.append('address', formData.address);
+    }
+    if (profilePictureFile) {
+        updateData.append('profile_picture', profilePictureFile);
+    }
+    
+    // Check if any data has been changed
+    if ([...updateData.entries()].length === 0) {
+        setIsEditing(false);
+        return;
+    }
+
     try {
-      await updateProfile({
-        store_name: formData.storeName,
-        store_description: formData.storeDescription,
-        address: formData.address,
-      }).unwrap();
+      await updateProfile(updateData).unwrap();
       alert('Profile updated successfully');
       setIsEditing(false);
+      setProfilePictureFile(null); // Reset file input after successful upload
     } catch (err) {
       console.error(err);
       alert('Failed to update profile');
     }
   };
+  
+  const handleCancel = () => {
+    setIsEditing(false);
+    setProfilePictureFile(null);
+    if (profileData?.data) {
+        const { user, ...vendorInfo } = profileData.data;
+        setFormData({
+            fullName: user.full_name || '',
+            email: user.email || '',
+            phoneNumber: user.phone_number || '',
+            storeName: vendorInfo.store_name || '',
+            storeDescription: vendorInfo.store_description || '',
+            address: vendorInfo.address || '',
+        });
+    }
+  }
 
   if (isLoading) {
     return (
@@ -85,6 +126,9 @@ export default function VendorProfilePage() {
       </AppLayout>
     );
   }
+  
+  const profile = profileData?.data;
+  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">
@@ -102,29 +146,32 @@ export default function VendorProfilePage() {
         <div className="p-6">
           {/* Profile Picture */}
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/vendor/account/profile/photo" className="relative">
-              <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
-                {profile?.profile_picture ? (
-                  <Image 
-                                                        src={profile.profile_picture} 
-                                                        alt="Profile" 
-                                                        width={64}
-                                                        height={64}
-                                                        className="w-full h-full rounded-full object-cover"
-                                                      />
-                ) : (
-                  <span className="text-2xl font-semibold text-white">
-                    {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'V'}
-                  </span>
+              <div className="relative">
+                <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
+                    {currentAvatar ? (
+                    <Image 
+                        src={currentAvatar} 
+                        alt="Profile" 
+                        width={64}
+                        height={64}
+                        className="w-full h-full rounded-full object-cover"
+                    />
+                    ) : (
+                    <span className="text-2xl font-semibold text-white">
+                        {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'V'}
+                    </span>
+                    )}
+                </div>
+                {isEditing && (
+                    <label htmlFor="profile-picture-upload" className="cursor-pointer absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input type="file" id="profile-picture-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
+                    </label>
                 )}
               </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            </Link>
             <div>
               <h2 className="text-base font-semibold text-gray-900">{formData.fullName}</h2>
               <p className="text-sm text-gray-600">{formData.email}</p>
@@ -140,7 +187,7 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
               />
             </div>
@@ -151,7 +198,7 @@ export default function VendorProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                 disabled
               />
             </div>
@@ -163,8 +210,20 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
+              />
+            </div>
+            
+            {/* Store Description */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Store Description</label>
+              <textarea
+                value={formData.storeDescription}
+                onChange={(e) => setFormData({...formData, storeDescription: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+                rows={3}
               />
             </div>
 
@@ -175,7 +234,7 @@ export default function VendorProfilePage() {
                 type="tel"
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
               />
             </div>
@@ -187,8 +246,33 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
                 disabled={!isEditing}
+              />
+            </div>
+
+            {/* Bank Name */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
+              <input
+                type="text"
+                value={formData.bank_name}
+                onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+              />
+            </div>
+
+            {/* Account Number */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
+              <input
+                type="tel" // Use tel type for numeric input, but allow for leading zeros
+                value={formData.account_number}
+                onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+                maxLength={10}
               />
             </div>
 
@@ -197,20 +281,11 @@ export default function VendorProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Password</label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type="password"
                   value="••••••••"
-                  className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 pr-10"
+                  className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                   readOnly
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
               </div>
               <Link href="/vendor/account/change-password" className="text-sm text-system-blue-light font-medium mt-2 inline-block">
                 Change Password
@@ -237,20 +312,7 @@ export default function VendorProfilePage() {
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    if (profile) {
-                      setFormData({
-                        fullName: profile.full_name || '',
-                        email: profile.email || '',
-        
-                        phoneNumber: profile.phone_number || '',
-                        storeName: vendorStoreInfo?.storeName || '',
-                        storeDescription: vendorStoreInfo?.storeDescription || '',
-                        address: vendorStoreInfo?.address || '',
-                      });
-                    }
-                  }}
+                  onClick={handleCancel}
                   className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   Discard

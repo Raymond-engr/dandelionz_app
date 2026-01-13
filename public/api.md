@@ -804,3 +804,85 @@ Reviews:
 
 POST /api/store/products/{slug}/review/add/ - Add review
 GET /api/store/products/{slug}/reviews/ - Get product reviews
+
+https://api.dandelionz.com.ng/user/customer/profile/
+
+{
+"user": {
+"uuid": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+"email": "taspugolti@necub.com",
+"full_name": "Customer Ray",
+"phone_number": "00000000000",
+"profile_picture": null,
+"role": "CUSTOMER",
+"referral_code": "9377C50F4AAB",
+"is_verified": false,
+"is_active": true,
+"created_at": "2026-01-12T08:43:53.702690Z",
+"updated_at": "2026-01-12T08:43:54.548176Z"
+},
+"shipping_address": "",
+"city": "",
+"country": "",
+"postal_code": "",
+"loyalty_points": 0
+}
+
+patch request: https://api.dandelionz.com.ng/user/customer/profile/
+
+{
+"shipping_address": "Jb street",
+"city": "Benin",
+"country": "Nigeria",
+"postal_code": "867840"
+}
+response:
+{
+"user": {
+"uuid": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+"email": "taspugolti@necub.com",
+"full_name": "Customer Ray",
+"phone_number": "00000000000",
+"profile_picture": null,
+"role": "CUSTOMER",
+"referral_code": "9377C50F4AAB",
+"is_verified": false,
+"is_active": true,
+"created_at": "2026-01-12T08:43:53.702690Z",
+"updated_at": "2026-01-12T08:43:54.548176Z"
+},
+"shipping_address": "Jb street",
+"city": "Benin",
+"country": "Nigeria",
+"postal_code": "867840",
+"loyalty_points": 0
+}
+
+put request: https://api.dandelionz.com.ng/user/customer/profile/
+{
+"shipping_address": "Jb street",
+"city": "Edo",
+"country": "Nigeria",
+"postal_code": "867840"
+}
+response:
+{
+"user": {
+"uuid": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+"email": "taspugolti@necub.com",
+"full_name": "Customer Ray",
+"phone_number": "00000000000",
+"profile_picture": null,
+"role": "CUSTOMER",
+"referral_code": "9377C50F4AAB",
+"is_verified": false,
+"is_active": true,
+"created_at": "2026-01-12T08:43:53.702690Z",
+"updated_at": "2026-01-12T08:43:54.548176Z"
+},
+"shipping_address": "Jb street",
+"city": "Edo",
+"country": "Nigeria",
+"postal_code": "867840",
+"loyalty_points": 0
+}

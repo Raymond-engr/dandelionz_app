@@ -1,54 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (filters: FilterState) => void;
+  categories: { id: string; name: string; image?: string }[]; // New prop for dynamic categories
+  initialFilters: {
+    priceRange: [number, number];
+    sortBy: string;
+    category: string;
+  };
 }
 
 interface FilterState {
-  priceRange: [number, number];
-  sortBy: string;
-  category: string; // Changed from string[] to string
+  price_min?: number;
+  price_max?: number;
+  ordering?: string; // Corresponds to sortBy
+  category?: string;
 }
 
-export default function FilterModal({ isOpen, onClose, onApply }: FilterModalProps) {
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
-  const [sortBy, setSortBy] = useState('Newly Updated');
-  
-  // State is now a single string, not an array
-  const [selectedCategory, setSelectedCategory] = useState<string>('Electronics');
+const ALL_CATEGORIES = [
+    { value: '', label: 'All Categories' }, // Option to select all
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'fashion', label: 'Fashion' },
+    { value: 'home_appliances', label: 'Home Appliances' },
+    { value: 'beauty', label: 'Beauty & Personal Care' },
+    { value: 'sports', label: 'Sports & Outdoors' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'books', label: 'Books' },
+    { value: 'toys', label: 'Toys & Games' },
+    { value: 'groceries', label: 'Groceries' },
+    { value: 'computers', label: 'Computers & Accessories' },
+    { value: 'phones', label: 'Phones & Tablets' },
+    { value: 'jewelry', label: 'Jewelry & Watches' },
+    { value: 'baby', label: 'Baby Products' },
+    { value: 'pets', label: 'Pet Supplies' },
+    { value: 'office', label: 'Office Products' },
+    { value: 'gaming', label: 'Video Games & Consoles' },
+];
+
+export default function FilterModal({ isOpen, onClose, onApply, categories, initialFilters }: FilterModalProps) {
+  const [maxPrice, setMaxPrice] = useState(initialFilters.priceRange[1]);
+  const [sortBy, setSortBy] = useState(initialFilters.sortBy || '');
+  const [selectedCategory, setSelectedCategory] = useState(initialFilters.category || '');
   const [searchCategory, setSearchCategory] = useState('');
 
-  const categories = [
-    { id: '1', name: 'Electronics', image: '/category-electronics.png' },
-    { id: '2', name: 'Apparel', image: '/category-apparel.png' },
-    { id: '3', name: 'Groceries', image: '/category-groceries.png' },
-    { id: '4', name: 'Furniture', image: '/category-furniture.png' },
-    { id: '5', name: 'Books', image: '/category-books.png' },
-    { id: '6', name: 'Toys', image: '/category-toys.png' },
-  ];
+  // Sync internal state with external initialFilters when modal opens
+  useEffect(() => {
+    setMaxPrice(initialFilters.priceRange[1]);
+    setSortBy(initialFilters.sortBy);
+    setSelectedCategory(initialFilters.category);
+  }, [initialFilters]);
 
   if (!isOpen) return null;
 
-  // Simplified handler: Just set the clicked category as the active one
-  const handleCategorySelect = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-  };
-
   const handleApply = () => {
     onApply({
-      priceRange,
-      sortBy,
-      category: selectedCategory, // Passing single string
+      price: maxPrice,
+      ordering: sortBy,
+      category: selectedCategory === 'All Categories' ? undefined : selectedCategory,
     });
     onClose();
   };
 
-  const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(searchCategory.toLowerCase())
+  const filteredCategories = ALL_CATEGORIES.filter(cat =>
+    cat.label.toLowerCase().includes(searchCategory.toLowerCase())
   );
-
+  
   const activeColorClass = "bg-[#1a1a80]";
 
   return (
@@ -75,40 +93,28 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
           <div className="mb-8">
             <h3 className="text-base font-semibold text-gray-900 mb-6">Price</h3>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-semibold text-gray-900">${priceRange[0]}</span>
-              <span className="text-base font-semibold text-gray-900">${priceRange[1]}</span>
+              <span className="text-base font-semibold text-gray-900">₦0</span>
+              <span className="text-base font-semibold text-gray-900">₦{maxPrice}</span>
             </div>
             
             <div className="relative h-1 bg-gray-100 rounded-full mt-2">
               <div
                 className={`absolute h-1 ${activeColorClass} rounded-full`}
                 style={{
-                  left: `${(priceRange[0] / 500) * 100}%`,
-                  right: `${100 - (priceRange[1] / 500) * 100}%`,
+                  left: '0%',
+                  width: `${(maxPrice / 500) * 100}%`,
                 }}
               />
               <div
                 className={`absolute w-5 h-5 ${activeColorClass} border-2 border-white rounded-full -top-2 cursor-pointer shadow-md`}
-                style={{ left: `calc(${(priceRange[0] / 500) * 100}% - 10px)` }}
-              />
-              <div
-                className={`absolute w-5 h-5 ${activeColorClass} border-2 border-white rounded-full -top-2 cursor-pointer shadow-md`}
-                style={{ left: `calc(${(priceRange[1] / 500) * 100}% - 10px)` }}
+                style={{ left: `calc(${(maxPrice / 500) * 100}% - 10px)` }}
               />
               <input
                 type="range"
                 min="0"
                 max="500"
-                value={priceRange[0]}
-                onChange={(e) => setPriceRange([Math.min(parseInt(e.target.value), priceRange[1] - 10), priceRange[1]])}
-                className="absolute w-full h-1 opacity-0 cursor-pointer z-10"
-              />
-              <input
-                type="range"
-                min="0"
-                max="500"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], Math.max(parseInt(e.target.value), priceRange[0] + 10)])}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(parseInt(e.target.value))}
                 className="absolute w-full h-1 opacity-0 cursor-pointer z-10"
               />
             </div>
@@ -123,11 +129,7 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50 border-none rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-900 appearance-none cursor-pointer"
               >
-                <option>Newly Updated</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Most Popular</option>
-                <option>Best Rating</option>
+                <option value="">Newly Updated</option>
               </select>
               <svg 
                 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
@@ -155,31 +157,30 @@ export default function FilterModal({ isOpen, onClose, onApply }: FilterModalPro
             </div>
 
             <div className="space-y-4">
-              {filteredCategories.map((category) => {
-                // Check exact match instead of includes
-                const isSelected = selectedCategory === category.name;
+              {filteredCategories.map((cat) => {
+                const isSelected = selectedCategory === cat.value;
                 return (
                   <label
-                    key={category.id}
+                    key={cat.value}
                     className="flex items-center gap-3 cursor-pointer group"
                   >
                     <div className="relative flex items-center justify-center">
                       <input
-                        type="radio" // Changed to radio semantic
+                        type="radio"
                         name="category_selection"
+                        value={cat.value}
                         checked={isSelected}
-                        onChange={() => handleCategorySelect(category.name)}
+                        onChange={() => setSelectedCategory(cat.value)}
                         className="sr-only"
                       />
                       <div className={`w-6 h-6 rounded-full border transition-all duration-200 flex items-center justify-center
                         ${isSelected ? `${activeColorClass} border-transparent` : 'bg-white border-blue-900'}`
                       }>
-                         {/* Optional: Add a small white dot in center if you want a traditional radio look */}
                          {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
                     </div>
                     <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                      {category.name}
+                      {cat.label}
                     </span>
                   </label>
                 );
