@@ -13,8 +13,7 @@ interface FilterModalProps {
 }
 
 interface FilterState {
-  price_min?: number;
-  price_max?: number;
+  price?: number;
   ordering?: string; // Corresponds to sortBy
   category?: string;
 }
@@ -39,6 +38,14 @@ const ALL_CATEGORIES = [
     { value: 'gaming', label: 'Video Games & Consoles' },
 ];
 
+const SORT_OPTIONS = [
+  { value: '', label: 'Newly Updated' },
+  { value: 'price', label: 'Price: Low to High' },
+  { value: '-price', label: 'Price: High to Low' },
+  { value: 'name', label: 'Name: A-Z' },
+  { value: '-name', label: 'Name: Z-A' },
+];
+
 export default function FilterModal({ isOpen, onClose, onApply, categories, initialFilters }: FilterModalProps) {
   const [maxPrice, setMaxPrice] = useState(initialFilters.priceRange[1]);
   const [sortBy, setSortBy] = useState(initialFilters.sortBy || '');
@@ -58,7 +65,7 @@ export default function FilterModal({ isOpen, onClose, onApply, categories, init
     onApply({
       price: maxPrice,
       ordering: sortBy,
-      category: selectedCategory === 'All Categories' ? undefined : selectedCategory,
+      category: selectedCategory,
     });
     onClose();
   };
@@ -129,7 +136,11 @@ export default function FilterModal({ isOpen, onClose, onApply, categories, init
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50 border-none rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-900 appearance-none cursor-pointer"
               >
-                <option value="">Newly Updated</option>
+                {SORT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
               <svg 
                 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"

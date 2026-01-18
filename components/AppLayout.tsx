@@ -65,8 +65,10 @@ export default function AppLayout({
           {children}
         </main>
         
-        {/* Bottom Navigation - conditionally rendered based on auth */}
-        {showBottomNav && isAuthenticated && bottomNavComponent}
+        {/* Bottom Navigation - conditionally rendered */}
+        {showBottomNav && (
+          isAuthenticated ? bottomNavComponent : <BottomNav />
+        )}
       </div>
     </div>
   );

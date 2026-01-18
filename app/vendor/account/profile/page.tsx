@@ -23,6 +23,8 @@ export default function VendorProfilePage() {
     storeName: '',
     storeDescription: '',
     address: '',
+    bank_name: '',
+    account_number: '',
   });
 
   useEffect(() => {
@@ -35,6 +37,8 @@ export default function VendorProfilePage() {
         storeName: vendorInfo.store_name || '',
         storeDescription: vendorInfo.store_description || '',
         address: vendorInfo.address || '',
+        bank_name: vendorInfo.bank_name || '',
+        account_number: vendorInfo.account_number || '',
       });
     }
   }, [profileData]);
@@ -46,6 +50,12 @@ export default function VendorProfilePage() {
   };
 
   const handleSave = async () => {
+    // Validation
+    if (formData.account_number && !/^\d{10}$/.test(formData.account_number)) {
+      alert('Account number must be exactly 10 digits.');
+      return;
+    }
+
     const updateData = new FormData();
 
     // Only append fields that have changed to be efficient
@@ -63,6 +73,12 @@ export default function VendorProfilePage() {
     }
     if (formData.address !== profileData?.data.address) {
         updateData.append('address', formData.address);
+    }
+    if (formData.bank_name !== profileData?.data.bank_name) {
+        updateData.append('bank_name', formData.bank_name);
+    }
+    if (formData.account_number !== profileData?.data.account_number) {
+        updateData.append('account_number', formData.account_number);
     }
     if (profilePictureFile) {
         updateData.append('profile_picture', profilePictureFile);
@@ -97,6 +113,8 @@ export default function VendorProfilePage() {
             storeName: vendorInfo.store_name || '',
             storeDescription: vendorInfo.store_description || '',
             address: vendorInfo.address || '',
+            bank_name: vendorInfo.bank_name || '',
+            account_number: vendorInfo.account_number || '',
         });
     }
   }
@@ -267,7 +285,7 @@ export default function VendorProfilePage() {
             <div>
               <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
               <input
-                type="tel" // Use tel type for numeric input, but allow for leading zeros
+                type="tel" 
                 value={formData.account_number}
                 onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                 className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"

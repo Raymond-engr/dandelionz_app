@@ -32,46 +32,25 @@ const CATEGORIES_FOR_NAV = [
 export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilter, setShowFilter] = useState(false);
-  const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500); // Default max price, assuming range from FilterModal
   const [selectedCategory, setSelectedCategory] = useState('');
   const [ordering, setOrdering] = useState('');
 
-  const { data: productsData, isLoading: productsLoading, error: productsError } = useGetProductsQuery({
+  const { data: productsData, isLoading: productsLoading, isFetching, error: productsError, refetch } = useGetProductsQuery({
     search: searchQuery || undefined,
     category: selectedCategory || undefined,
-    price_min: minPrice > 0 ? minPrice : undefined, // Only send if > 0
-    price_max: maxPrice < 500 ? maxPrice : undefined, // Only send if changed from default
+    price: maxPrice < 500 ? maxPrice : undefined, // Only send if changed from default
     ordering: ordering || undefined,
   });
 
-  const handleApplyFilter = (filters: { price_min?: number; price_max?: number; ordering?: string; category?: string }) => {
-    setMinPrice(filters.price_min || 0);
-    setMaxPrice(filters.price_max || 500);
+  const handleApplyFilter = (filters: { price?: number; ordering?: string; category?: string }) => {
+    setMaxPrice(filters.price || 500);
     setOrdering(filters.ordering || '');
     setSelectedCategory(filters.category || '');
     setShowFilter(false);
   };
 
   const products = productsData?.data || [];
-
-  if (productsError) {
-    return (
-      <AppLayout showBottomNav={true}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Failed to load products.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout showBottomNav={true}>
@@ -125,8 +104,18 @@ export default function ShopPage() {
         {/* Products Section */}
         <div className="pb-4">
           <h2 className="text-xl font-bold text-gray-900 mb-4">All Products</h2>
-          {productsLoading ? (
+          {isFetching ? (
             <LoadingSpinner />
+          ) : productsError ? (
+            <div className="text-center">
+              <p className="text-red-600 mb-4">Failed to load products.</p>
+              <button 
+                onClick={() => refetch()}
+                className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+              >
+                Retry
+              </button>
+            </div>
           ) : (
             <ProductGrid products={products} />
           )}
@@ -139,7 +128,7 @@ export default function ShopPage() {
           onApply={handleApplyFilter}
           categories={CATEGORIES_FOR_NAV.map(cat => ({id: cat.id, name: cat.name, image: cat.image}))}
           initialFilters={{
-            priceRange: [minPrice, maxPrice],
+            priceRange: [0, maxPrice],
             sortBy: ordering,
             category: selectedCategory,
           }}

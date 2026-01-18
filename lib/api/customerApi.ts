@@ -64,7 +64,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     partialUpdateCustomerProfile: builder.mutation<
       CustomerProfile,
-      Partial<CustomerProfile>
+      FormData
     >({
       query: (body) => ({
         url: "/user/customer/profile/",

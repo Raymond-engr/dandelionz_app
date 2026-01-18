@@ -1,22 +1,5 @@
 import ProductCard from './ProductCard';
-
-export interface Product {
-  id: number; // Changed from string to number based on flow.md response
-  name: string;
-  price: string; // Changed from number to string based on flow.md response
-  rating?: number; // Optional as not always present in flow.md
-  image?: string | null; // Can be null
-  slug?: string; // Added based on flow.md
-  store?: number; // Added based on flow.md
-  store_name?: string; // Added based on flow.md
-  description?: string; // Added based on flow.md
-  category?: string; // Added based on flow.md
-  stock?: number; // Added based on flow.md
-  in_stock?: boolean; // Added based on flow.md
-  created_at?: string; // Added based on flow.md
-  updated_at?: string; // Added based on flow.md
-  reviews?: any[]; // Added based on flow.md
-}
+import { Product } from '@/lib/api/publicApi';
 
 interface ProductGridProps {
   products: Product[];

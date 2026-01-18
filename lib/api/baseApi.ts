@@ -12,12 +12,20 @@ const BASE_URL =
 // Base query with auth token injection
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
-  prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.accessToken;
+  prepareHeaders: (headers, api) => {
+    const token = (api.getState() as RootState).auth.accessToken;
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set('Authorization', `Bearer ${token}`);
     }
-    headers.set("Content-Type", "application/json");
+
+    // Access the body from the arguments passed to the query
+    const { body } = (api as any).arg;
+
+    if (body instanceof FormData) {
+      // let browser set Content-Type for FormData
+    } else {
+      headers.set('Content-Type', 'application/json');
+    }
     return headers;
   },
 });

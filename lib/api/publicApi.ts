@@ -1,10 +1,21 @@
 import { baseApi } from "./baseApi";
 
-interface Product {
+export interface Product {
   id: number;
   name: string;
-  price: number;
-  // ...
+  price: string;
+  rating?: number;
+  image?: string | null;
+  slug?: string;
+  store?: number;
+  store_name?: string;
+  description?: string;
+  category?: string;
+  stock?: number;
+  in_stock?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  reviews?: any[];
 }
 
 type GetProductsResponse = {
