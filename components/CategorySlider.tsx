@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 
 type Category = {
   id: string;
@@ -8,6 +9,20 @@ type Category = {
 };
 
 const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories }) => {
+  const [imageErrors, setImageErrors] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    setImageErrors(Array(categories.length).fill(false));
+  }, [categories]);
+
+  const handleImageError = (index: number) => {
+    setImageErrors(prevErrors => {
+      const newErrors = [...prevErrors];
+      newErrors[index] = true;
+      return newErrors;
+    });
+  };
+
   return (
     <div className="mb-6">
       <h2 className="text-xl font-bold text-gray-900 mb-4 px-1">Categories</h2>
@@ -18,7 +33,7 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories }) =>
           {categories.map((category, index) => (
             <div key={`${category.id}-${index}`} className="shrink-0">
               <Link 
-                href={`/category/${category.id}`}
+                href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
                 className="block group"
               >
                 {/* Card Container */}
@@ -26,24 +41,22 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories }) =>
                   
                   {/* Image Area (Top 70%) - Changed to object-cover and removed padding */}
                   <div className="h-[70%] bg-white relative">
-                    <Image
-                      src={category.image || '/placeholder-category.png'}
-                      alt={category.name}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="112px"
-                      onError={(e: React.SyntheticEvent<Element, Event>) => {
-                        const target = e.target as HTMLElement;
-                        target.style.display = 'none';
-                        target.parentElement!.innerHTML = `
-                          <div class="w-full h-full flex items-center justify-center bg-gray-50">
-                             <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                             </svg>
-                          </div>
-                        `;
-                      }}
-                    />
+                    {imageErrors[index] ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                         <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                         </svg>
+                      </div>
+                    ) : (
+                      <Image
+                        src={category.image || '/placeholder-category.png'}
+                        alt={category.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="112px"
+                        onError={() => handleImageError(index)}
+                      />
+                    )}
                   </div>
 
                   {/* Text Area (Bottom 30%) */}

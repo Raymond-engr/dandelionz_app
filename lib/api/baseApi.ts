@@ -12,15 +12,42 @@ const BASE_URL =
 // Base query with auth token injection
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
-  prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.accessToken;
+  prepareHeaders: (headers, api) => {
+    const token = (api.getState() as RootState).auth.accessToken;
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set('Authorization', `Bearer ${token}`);
     }
-    headers.set("Content-Type", "application/json");
+
+    // Access the body from the arguments passed to the query
+    const { body } = (api as any).arg;
+
+    if (body instanceof FormData) {
+      // let browser set Content-Type for FormData
+    } else {
+      headers.set('Content-Type', 'application/json');
+    }
     return headers;
   },
 });
+
+// A simple mutex to ensure we only refresh the token once.
+const mutex = {
+  isLocked: false,
+  resolveQueue: () => {},
+  wait: function() {
+    return new Promise<void>((resolve) => {
+      this.resolveQueue = resolve;
+    });
+  },
+  lock: function() {
+    this.isLocked = true;
+  },
+  unlock: function() {
+    this.isLocked = false;
+    this.resolveQueue();
+  }
+};
+
 
 // Base query with automatic token refresh
 const baseQueryWithReauth: BaseQueryFn<
@@ -28,43 +55,62 @@ const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
+  // wait until the mutex is available
+  if (mutex.isLocked) {
+    await mutex.wait();
+  }
   let result = await baseQuery(args, api, extraOptions);
-
+  
   if (result.error && result.error.status === 401) {
-    const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken;
+    // Check if the mutex is locked again, in case another request refreshed the token while we were waiting
+    if (!mutex.isLocked) {
+      mutex.lock();
+      const state = api.getState() as RootState;
+      const refreshToken = state.auth.refreshToken;
 
-    if (refreshToken) {
-      // Try to refresh token
-      const refreshResult = await baseQuery(
-        {
-          url: "/auth/token/refresh/",
-          method: "POST",
-          body: { refresh_token: refreshToken },
-        },
-        api,
-        extraOptions
-      );
+      if (refreshToken) {
+        try {
+          // Try to refresh token
+          const refreshResult = await baseQuery(
+            {
+              url: "/auth/token/refresh/",
+              method: "POST",
+              body: { refresh_token: refreshToken },
+            },
+            api,
+            extraOptions
+          );
 
-      if (refreshResult.data) {
-        const { access_token, refresh_token } = (refreshResult.data as any)
-          .data;
+          if (refreshResult.data) {
+            const { access_token, refresh_token } = (refreshResult.data as any)
+              .data;
 
-        // Update tokens in state
-        api.dispatch({
-          type: "auth/setTokens",
-          payload: { accessToken: access_token, refreshToken: refresh_token },
-        });
+            // Update tokens in state
+            api.dispatch({
+              type: "auth/setTokens",
+              payload: { accessToken: access_token, refreshToken: refresh_token },
+            });
 
-        // Retry original request
-        result = await baseQuery(args, api, extraOptions);
+            // Retry the original query with the new token
+            result = await baseQuery(args, api, extraOptions);
+          } else {
+            // Refresh failed - logout user
+            api.dispatch({ type: "auth/logout" });
+          }
+        } catch (e) {
+            api.dispatch({ type: "auth/logout" });
+        } finally {
+          mutex.unlock();
+        }
       } else {
-        // Refresh failed - logout user
+        // No refresh token - logout user and unlock
         api.dispatch({ type: "auth/logout" });
+        mutex.unlock();
       }
     } else {
-      // No refresh token - logout user
-      api.dispatch({ type: "auth/logout" });
+        // Mutex was locked, so refresh was in-progress. Await it, then retry the request.
+        await mutex.wait();
+        result = await baseQuery(args, api, extraOptions);
     }
   }
 

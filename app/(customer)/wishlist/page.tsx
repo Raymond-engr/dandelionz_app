@@ -3,15 +3,15 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import ProductCard from '@/components/ProductCard';
-import { Product } from '@/components/ProductGrid';
+import { Product } from '@/lib/api/publicApi';
 import Link from 'next/link';
 
 const wishlistItems: Product[] = [
   // Uncomment these to show products
-   { id: '1', name: 'Product Name', price: 29.99, rating: 4.7 },
-  { id: '2', name: 'Product Name', price: 39.99, rating: 4.2 },
-  // { id: '3', name: 'Product Name', price: 19.99, rating: 3.1 },
-  // { id: '4', name: 'Product Name', price: 49.99, rating: 4.6 },
+   { id: 1, name: 'Product Name', price: '29.99', rating: 4.7 },
+  { id: 2, name: 'Product Name', price: '39.99', rating: 4.2 },
+  // { id: 3, name: 'Product Name', price: '19.99', rating: 3.1 },
+  // { id: 4, name: 'Product Name', price: '49.99', rating: 4.6 },
 ];
 
 export default function WishlistPage() {

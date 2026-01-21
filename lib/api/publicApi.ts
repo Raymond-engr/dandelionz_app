@@ -1,10 +1,21 @@
 import { baseApi } from "./baseApi";
 
-interface Product {
+export interface Product {
   id: number;
   name: string;
-  price: number;
-  // ...
+  price: string;
+  rating?: number;
+  image?: string | null;
+  slug?: string;
+  store?: number;
+  store_name?: string;
+  description?: string;
+  category?: string;
+  stock?: number;
+  in_stock?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  reviews?: any[];
 }
 
 type GetProductsResponse = {
@@ -18,7 +29,14 @@ export const publicApi = baseApi.injectEndpoints({
     // Products
     getProducts: builder.query<
       GetProductsResponse,
-      { category?: string; search?: string; page?: number }
+      { 
+        category?: string; 
+        search?: string; 
+        page?: number;
+        store?: string;
+        price?: number; // Use single 'price' for max price
+        ordering?: string;
+      }
     >({
       query: (params) => ({
         url: "/store/products/",
@@ -29,17 +47,6 @@ export const publicApi = baseApi.injectEndpoints({
 
     getProductBySlug: builder.query<{ success: boolean; data: Product }, string>({
       query: (slug) => `/store/products/${slug}/`,
-      providesTags: ["Product"],
-    }),
-
-    searchProducts: builder.query<
-      { success: boolean; data: Product[] },
-      { q: string }
-    >({
-      query: (params) => ({
-        url: "/store/products/search/",
-        params,
-      }),
       providesTags: ["Product"],
     }),
 
@@ -182,7 +189,6 @@ export const publicApi = baseApi.injectEndpoints({
 export const {
   useGetProductsQuery,
   useGetProductBySlugQuery,
-  useSearchProductsQuery,
   useGetCategoriesQuery,
   useGetCartQuery,
   useAddToCartMutation,

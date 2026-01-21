@@ -132,7 +132,7 @@ export const vendorApi = baseApi.injectEndpoints({
 
     partialUpdateVendorProfile: builder.mutation<
       { success: boolean; data: VendorProfile },
-      Partial<VendorProfile>
+      FormData
     >({
       query: (body) => ({
         url: "/user/vendor/profile/",

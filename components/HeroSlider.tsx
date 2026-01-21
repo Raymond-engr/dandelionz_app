@@ -15,6 +15,8 @@ export default function HeroSlider() {
     '/slider5.png',
   ];
 
+  const [imageErrors, setImageErrors] = useState(() => Array(slides.length).fill(false));
+
   useEffect(() => {
     if (!isAutoPlaying) return;
 
@@ -29,6 +31,14 @@ export default function HeroSlider() {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
     setTimeout(() => setIsAutoPlaying(true), 5000);
+  };
+  
+  const handleImageError = (index: number) => {
+    setImageErrors(prevErrors => {
+      const newErrors = [...prevErrors];
+      newErrors[index] = true;
+      return newErrors;
+    });
   };
 
   return (
@@ -47,25 +57,23 @@ export default function HeroSlider() {
               className="w-[85%] shrink-0 relative pr-1 min-[300px]:pr-2 sm:pr-3 h-[100px] min-[300px]:h-[130px] min-[350px]:h-[145px] min-[400px]:h-40 sm:h-48"
             >
               <div className="w-full h-full relative rounded-xl overflow-hidden shadow-sm">
-                <Image
-                  src={slide}
-                  alt={`Slide ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                  onError={(e: React.SyntheticEvent<HTMLImageElement | HTMLObjectElement>) => {
-                    const target = e.target as HTMLElement;
-                    target.style.display = 'none';
-                    target.parentElement!.innerHTML = `
-                      <div class="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <div class="text-white text-center px-4">
-                          <div class="text-xl font-bold mb-1">PAY SMALL SMALL</div>
-                          <div class="text-xs bg-white/20 py-1 px-3 rounded-full inline-block">Shop Now</div>
-                        </div>
-                      </div>
-                    `;
-                  }}
-                />
+                {imageErrors[index] ? (
+                  <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <div className="text-white text-center px-4">
+                      <div className="text-xl font-bold mb-1">PAY SMALL SMALL</div>
+                      <div className="text-xs bg-white/20 py-1 px-3 rounded-full inline-block">Shop Now</div>
+                    </div>
+                  </div>
+                ) : (
+                  <Image
+                    src={slide}
+                    alt={`Slide ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                    onError={() => handleImageError(index)}
+                  />
+                )}
               </div>
             </div>
           ))}

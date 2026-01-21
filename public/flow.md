@@ -1,0 +1,638 @@
+{
+"email": "rulufaly@fxzig.com",
+"password": "SecureAdminPassword123",
+"phone_number": "0000000000",
+"full_name": "Test",
+"role": "VENDOR",
+"referral_code": ""
+}
+
+{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"is_verified": false,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"referral_code": "F17CA70008F7"
+},
+"tokens": {
+"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY4MTI4ODIxLCJpYXQiOjE3NjgxMjc5MjEsImp0aSI6ImRiOTJlYzc4LTBlMGYtNGZkYy04ODZlLTNlMjg3MTM2MDFhNiIsInVzZXJfdXVpZCI6IjM0NGM1MzVhLWZjMjQtNDY2MC04YzVmLTBmZDRiYTQwMWY4NCIsImlzX3N0YWZmIjpmYWxzZSwiZW1haWwiOiJydWx1ZmFseUBmeHppZy5jb20iLCJpc192ZXJpZmllZCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.GDIh3AFxMkL7NW6neItYyk3l_3id05NMOWAm3pb5jJY",
+"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2OTMzNzUyMSwiaWF0IjoxNzY4MTI3OTIxLCJqdGkiOiIyZDQwZTU4Ni0wOWFhLTQ2ZTktOTcwMS03MDYzOWRiNTEwMzAiLCJ1c2VyX3V1aWQiOiIzNDRjNTM1YS1mYzI0LTQ2NjAtOGM1Zi0wZmQ0YmE0MDFmODQiLCJpc19zdGFmZiI6ZmFsc2UsImVtYWlsIjoicnVsdWZhbHlAZnh6aWcuY29tIiwiaXNfdmVyaWZpZWQiOmZhbHNlLCJ0eXBlIjoicmVmcmVzaCJ9.ekhKpKehrSzbPYJThl2qqyGV0VoYJd-nYnuAzbeJLw0",
+"token_type": "Bearer",
+"expires_in": 900,
+"refresh_expires_in": 1209600,
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"issued_at": 1768127922
+},
+"is_new_user": true,
+"email_verified": false
+}
+}
+
+I recieved this in my email:
+
+http://dandelionz.com.ng/api/auth/email-verify?uid=MzQ0YzUzNWEtZmMyNC00NjYwLThjNWYtMGZkNGJhNDAxZjg0&token=d28lki-c8cf91dc823ebb7308e2ee9d34544e2f
+
+{
+"success": true,
+"data": {
+"user": {
+"uuid": "488da72e-1842-4a79-a91c-122b08a7bfd0",
+"email": "yadodi3168@gopicta.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"is_verified": true,
+"created_at": "2026-01-11T12:30:48.605888Z",
+"referral_code": "60160F80A134"
+}
+},
+"message": "Email verification successful."
+}
+
+to login:
+{
+"email": "rulufaly@fxzig.com",
+"password": "SecureAdminPassword123"
+}
+
+{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"is_verified": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"referral_code": "F17CA70008F7"
+},
+"tokens": {
+"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY4MTM3ODkxLCJpYXQiOjE3NjgxMzY5OTEsImp0aSI6ImIxN2JhODkyLTBhYjMtNGI2MC04NGI0LWFkYmZhYTU5NDFlZCIsInVzZXJfdXVpZCI6IjM0NGM1MzVhLWZjMjQtNDY2MC04YzVmLTBmZDRiYTQwMWY4NCIsImlzX3N0YWZmIjpmYWxzZSwiZW1haWwiOiJydWx1ZmFseUBmeHppZy5jb20iLCJpc192ZXJpZmllZCI6dHJ1ZSwidHlwZSI6ImFjY2VzcyJ9.yGuZgrQ7f6fxyPSenHUn8Q9kM8PEUpoc3FAqj3RFk4w",
+"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2OTM0NjU5MSwiaWF0IjoxNzY4MTM2OTkxLCJqdGkiOiIzMWZiMTQ4Ni0xMjRjLTRkYjMtOTU3Yi1hOTFjNDk5MjdhMTIiLCJ1c2VyX3V1aWQiOiIzNDRjNTM1YS1mYzI0LTQ2NjAtOGM1Zi0wZmQ0YmE0MDFmODQiLCJpc19zdGFmZiI6ZmFsc2UsImVtYWlsIjoicnVsdWZhbHlAZnh6aWcuY29tIiwiaXNfdmVyaWZpZWQiOnRydWUsInR5cGUiOiJyZWZyZXNoIn0.InHEsgjasAcx6uBcG7uGQjW5WP5rNvMubSbqg3jq8iU",
+"token_type": "Bearer",
+"expires_in": 900,
+"refresh_expires_in": 1209600,
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"issued_at": 1768136991
+},
+"email_verified": true,
+"verification_needed": false
+}
+}
+
+now check for this: https://dandelionz.com.ng/api/auth/password-reset/
+the request body:
+{
+"email": "rulufaly@fxzig.com"
+}
+
+the reponse: {
+"success": true,
+"message": "If an account exists with this email, a password reset link will be sent."
+} then I got the email which contained this link in a button to verify: http://dandelionz.com.ng/api/auth/password-reset-confirm?uid=MzQ0YzUzNWEtZmMyNC00NjYwLThjNWYtMGZkNGJhNDAxZjg0&token=d28v2t-b967dad865875615b33f9f9bcac0e2eb
+so we already know this isn't going to any frontend page and even clicking on the link took me to the django backend not found page, so now using this endpoint: https://dandelionz.com.ng/api/auth/password-reset/confirm/
+this request in the swagger: {
+"uid": "MzQ0YzUzNWEtZmMyNC00NjYwLThjNWYtMGZkNGJhNDAxZjg0",
+"token": "d28v2t-b967dad865875615b33f9f9bcac0e2eb",
+"new_password": "SecureAdminPassword1236"
+}
+
+I got this response and I'm trying to find out why: {
+"success": false,
+"error": "Password reset failed. Please try again."
+}
+
+but just confirms if this is the flow my frontend takes now and send the correction to the link sent in the email to be sent to the backend engineer
+
+check if this endpoint is being used: https://dandelionz.com.ng/api/auth/token/validate/; this is its description: Verify the validity of an access token and retrieve user information. Requires a valid Bearer token in the Authorization header. Returns user details if the token is valid and not expired. Use this endpoint to verify token status on application startup or periodically. is it needed in this project if it's not being used or we can do without it?
+
+made request to this endpoint: https://dandelionz.com.ng/api/auth/token/refresh/
+{
+"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2OTM1MDU5OSwiaWF0IjoxNzY4MTQwOTk5LCJqdGkiOiJlOTYyOWEzMy04YTM2LTQxNzctOTZlYi00NjUzNWQ3MGU0OTEiLCJ1c2VyX3V1aWQiOiIzNDRjNTM1YS1mYzI0LTQ2NjAtOGM1Zi0wZmQ0YmE0MDFmODQiLCJpc19zdGFmZiI6ZmFsc2UsImVtYWlsIjoicnVsdWZhbHlAZnh6aWcuY29tIiwiaXNfdmVyaWZpZWQiOnRydWUsInR5cGUiOiJyZWZyZXNoIn0.86JIWptRO9l5fpZ5oXbsByNFoSfsKgxNyf7fLIr8mJY"
+}
+
+response: {
+"success": true,
+"data": {
+"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY4MTQyMTgyLCJpYXQiOjE3NjgxNDEyODIsImp0aSI6ImM2OGIyYTlkLWIwYjQtNGZiNS05ZGZjLTZlOTQ5ZjU4ZDBlMyIsInVzZXJfdXVpZCI6IjM0NGM1MzVhLWZjMjQtNDY2MC04YzVmLTBmZDRiYTQwMWY4NCIsImlzX3N0YWZmIjpmYWxzZSwiZW1haWwiOiJydWx1ZmFseUBmeHppZy5jb20iLCJpc192ZXJpZmllZCI6dHJ1ZSwidHlwZSI6ImFjY2VzcyJ9.Ypsn1vT3RpGXb0I3UID7lD8gl-9T6bwsSCcWKaswcAU",
+"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2OTM1MDg4MiwiaWF0IjoxNzY4MTQxMjgyLCJqdGkiOiJkOTQ4Zjk2Ny05NjE5LTQwMTUtYTU4OS0yNDhjNGQ2MjQ2YjIiLCJ1c2VyX3V1aWQiOiIzNDRjNTM1YS1mYzI0LTQ2NjAtOGM1Zi0wZmQ0YmE0MDFmODQiLCJpc19zdGFmZiI6ZmFsc2UsImVtYWlsIjoicnVsdWZhbHlAZnh6aWcuY29tIiwiaXNfdmVyaWZpZWQiOnRydWUsInR5cGUiOiJyZWZyZXNoIn0.kZuIowZLpLqCsw4pFPtWJ-AebkM60DBeUT6EqqVuKjw",
+"token_type": "Bearer",
+"expires_in": 900
+}
+}
+
+Tell me how the logout functionality works too
+
+---
+
+# API INTEGRATION REVIEW GUIDE (Last Updated: 2026-01-11)
+
+This document summarizes the review status of key authentication pages and flows.
+
+## Core Authentication Logic
+
+- **Token Refresh (`lib/api/baseApi.ts`):**
+  - **Status:** Reviewed & Refactored
+  - **Notes:** Implemented a mutex to prevent race conditions during token refresh. This is a critical fix for stability.
+- **Logout (`lib/hooks.ts`):**
+  - **Status:** Reviewed & Implemented
+  - **Notes:** Created a `useLogout` hook that correctly clears both the Redux state and the authentication cookies.
+
+## Page-by-Page Review
+
+- **Registration (`app/(auth)/register/page.tsx`):**
+
+  - **Status:** Reviewed & Refactored
+  - **Notes:** The redirection logic was updated to correctly use the `email_verified` flag from the API response.
+
+- **Email Verification (`app/verify-email/page.tsx`):**
+
+  - **Status:** Reviewed & Refactored
+  - **Notes:**
+    - The page was updated to correctly extract both `uid` and `token` from the URL, as required by the backend.
+    - The "Resend" button flow was corrected to point users to the login page, allowing them to use the authenticated resend endpoint.
+    - An optimization was added to prevent the verification API from being called multiple times on re-renders.
+
+- **Verification Notice (`app/verify-notice/page.tsx`):**
+
+  - **Status:** Reviewed
+  - **Notes:** This page correctly handles the flow for an authenticated but unverified user, allowing them to resend the verification email. No changes were needed.
+
+- **Login (`app/login/page.tsx`):**
+
+  - **Status:** Reviewed
+  - **Notes:** The page correctly handles role-based redirection and redirects unverified users to the `/verify-notice` page. No changes were needed.
+
+- **Customer Account Page (`app/(customer)/account/page.tsx`):**
+
+  - **Status:** Reviewed & Refactored
+  - **Notes:**
+    - The page now fetches live profile data instead of using mock data.
+    - A functional "Logout" button has been added.
+    - The UI has been updated to use the Next.js `<Image>` component and a `<LoadingSpinner/>`.
+
+- **Vendor Account Page (`app/vendor/account/page.tsx`):**
+
+  - **Status:** Reviewed & Refactored
+  - **Notes:**
+    - The page now fetches live profile data instead of using mock data.
+    - A functional "Logout" button has been added.
+    - The UI has been updated to handle loading/unauthenticated states correctly.
+
+- **Admin Account Page (`app/admin/account/page.tsx`):**
+
+  - **Status:** Reviewed & Refactored
+  - **Notes:** - The page now fetches live profile data instead of using mock data. - A functional "Logout" button has been added. - The UI has been updated to handle loading/unauthenticated states correctly.
+
+                        response for the https://dandelionz.com.ng/api/user/vendor/products/add/
+                        {
+
+                    "success": true,
+                    "data": {
+                    "id": 1,
+                    "name": "Classic Test Product",
+                    "slug": "classic-test-product",
+                    "description": "A high-quality product for all your testing needs.",
+                    "category": "electronics",
+                    "price": "199.99",
+                    "stock": 100,
+                    "image": null,
+                    "store": "Unnamed Store",
+                    "created_at": "2026-01-11T21:05:47.679253Z",
+                    "updated_at": "2026-01-11T21:05:47.679292Z"
+                    }
+                    }
+
+                in the app is the image upload fuctionlaity implemented well?
+
+
+        https://api.dandelionz.com.ng/user/admin/vendors/approve/
+            {
+            "user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+            "approve": true
+            }
+
+    {
+    "success": true,
+    "approved": true
+    }
+
+https://api.dandelionz.com.ng/user/admin/vendors/
+get request with this response: {
+"success": true,
+"data": [
+{
+"user_uuid": "488da72e-1842-4a79-a91c-122b08a7bfd0",
+"email": "yadodi3168@gopicta.com",
+"store_name": "Unnamed Store",
+"is_verified_vendor": false,
+"is_active": true
+},
+{
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"store_name": "Unnamed Store",
+"is_verified_vendor": true,
+"is_active": true
+}
+]
+}
+
+https://api.dandelionz.com.ng/user/admin/vendors/verify-kyc/
+{
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84"
+}
+{
+"success": true,
+"message": "Vendor KYC verified"
+}
+
+https://api.dandelionz.com.ng/user/admin/users/suspend/
+{
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"suspend": true
+}
+changing the suspend field to false does the opposite or revert it back to not being suspended.
+{
+"success": true,
+"suspended": true
+}
+I think if you are suspended, the vendor suspended won't be able to login
+
+These are the categories the backend expects: ('electronics', 'Electronics'),
+('fashion', 'Fashion'),
+('home_appliances', 'Home Appliances'),
+('beauty', 'Beauty & Personal Care'),
+('sports', 'Sports & Outdoors'),
+('automotive', 'Automotive'),
+('books', 'Books'),
+('toys', 'Toys & Games'),
+('groceries', 'Groceries'),
+('computers', 'Computers & Accessories'),
+('phones', 'Phones & Tablets'),
+('jewelry', 'Jewelry & Watches'),
+('baby', 'Baby Products'),
+('pets', 'Pet Supplies'),
+('office', 'Office Products'),
+('gaming', 'Video Games & Consoles'),
+
+https://api.dandelionz.com.ng/user/vendor/products/
+Retrieve all products in the vendor's store with their details, pricing, and status.
+it's a get request with this response
+{
+"success": true,
+"data": [
+{
+"id": 1,
+"store": 11,
+"store_name": "Unnamed Store",
+"name": "Classic Test Product",
+"slug": "classic-test-product",
+"description": "A high-quality product for all your testing needs.",
+"category": "electronics",
+"price": "199.99",
+"stock": 100,
+"image": null,
+"in_stock": true,
+"created_at": "2026-01-11T21:05:47.679253Z",
+"updated_at": "2026-01-11T21:05:47.679292Z",
+"reviews": []
+}
+]
+}
+
+https://api.dandelionz.com.ng/user/vendor/orders/
+Get a count of vendor's orders grouped by status (pending, paid, shipped, delivered, canceled).
+get request:
+{
+"success": true,
+"data": {
+"pending": 0,
+"paid": 0,
+"shipped": 0,
+"delivered": 0,
+"canceled": 0
+}
+}
+
+---
+
+# API INTEGRATION REVIEW GUIDE (Last Updated: 2026-01-12)
+
+This guide provides a comprehensive summary of the frontend application's status for future reference.
+
+## Core Authentication System
+
+- **`lib/api/baseApi.ts` (Token Refresh Logic):**
+  - **Status:** COMPLETE
+  - **Details:** The core API query function has been refactored to handle automatic access token refreshing. It uses a mutex lock to prevent race conditions where multiple API calls with an expired token could trigger simultaneous refresh attempts. This is a critical production-ready fix.
+- **`lib/hooks.ts` (Logout Hook):**
+  - **Status:** COMPLETE
+  - **Details:** A `useLogout` hook was created to centralize logout logic. It dispatches the Redux `logout` action to clear the session state and also explicitly clears the `access_token` and `user_role` cookies to prevent state mismatches.
+
+## Page-by-Page Review
+
+### Authentication Flow
+
+- **Registration (`app/(auth)/register/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Refactored the submission logic to correctly redirect users based on the `email_verified: false` flag in the API response, aligning it with the actual API behavior.
+- **Email Verification (`app/verify-email/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** This page was significantly refactored. It now correctly extracts both the `uid` and `token` from the URL to send in the `POST` request to the verification endpoint. The user flow for a failed token was also improved; the "Resend" button now correctly directs the user to `/verify-notice`, which will either show the resend option (if authenticated) or trigger a redirect to the login page (if unauthenticated).
+- **Verification Notice (`app/verify-notice/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Reviewed and confirmed to be correctly implemented. It serves authenticated but unverified users, allowing them to trigger the resend-verification endpoint. No changes were necessary.
+- **Login (`app/login/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Reviewed and confirmed to be correctly implemented. It properly handles role-based redirection and sends unverified users to the `/verify-notice` page after login. No changes were necessary.
+
+### Account Management Pages
+
+- **Customer Account (`app/(customer)/account/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** The page was fully refactored from a static mock page to a dynamic one. It now uses `useGetCustomerProfileQuery` to fetch live data, displays a loading state, and uses the `useLogout` hook for a functional logout button. The UI was also updated to use the Next.js `<Image>` component for avatars.
+- **Vendor Account (`app/vendor/account/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Refactored to be a fully dynamic page using `useGetVendorProfileQuery` and a functional `useLogout` hook.
+- **Admin Account (`app/admin/account/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Refactored to be a fully dynamic page using `useGetAdminProfileQuery` and a functional `useLogout` hook.
+
+### Vendor Features
+
+- **Add New Product (`app/vendor/product/new/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** This multi-step form was heavily refactored. It now correctly handles image file uploads by using a `FormData` object. The form now submits all required product data to the `useCreateProductMutation` hook, including optional variants and the official, hardcoded category list.
+- **Vendor Products List (`app/vendor/product/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Reviewed and confirmed to be well-implemented. It correctly uses `useGetVendorProductsQuery` to fetch products and then filters them into "Published" and "Draft" categories on the client-side.
+- **Vendor Orders Page (`app/vendor/orders/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Refactored from a static mock page to a dynamic one using `useGetVendorOrdersQuery` to display order summary statistics and a list of orders.
+- **Vendor Dashboard (`app/vendor/page.tsx`):**
+  - **Status:** REVIEWED
+  - **Notes for Improvement:** The dashboard currently uses `useGetVendorAnalyticsQuery`, which only provides `total_revenue`. To make the dashboard's "Total Orders," "Product Sold," and "New Customer" cards functional, the `/user/vendor/analytics/` API endpoint needs to be expanded on the backend to provide this summary data.
+
+### Admin Features
+
+- **Vendor Management List (`app/admin/vendor/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Reviewed and confirmed to be correctly implemented. It uses `useGetAllVendorsQuery` to fetch and display the list of vendors and their status.
+- **Vendor Details Page (`app/admin/vendor/[id]/page.tsx`):**
+  - **Status:** COMPLETE
+  - **Details:** Reviewed and confirmed to be correctly implemented. It uses the appropriate hooks (`useApproveVendorMutation`, `useSuspendUserMutation`, `useVerifyVendorKYCMutation`) to manage vendors. The UI is functional and provides clear feedback to the admin.
+
+this is the public get product endpoint with all the filters for the customer:
+https://api.dandelionz.com.ng/store/products/
+response with no filters: {
+"success": true,
+"data": [
+{
+"id": 1,
+"store": 11,
+"store_name": "Unnamed Store",
+"name": "Classic Test Product",
+"slug": "classic-test-product",
+"description": "A high-quality product for all your testing needs.",
+"category": "electronics",
+"price": "199.99",
+"stock": 100,
+"image": null,
+"in_stock": true,
+"created_at": "2026-01-11T21:05:47.679253Z",
+"updated_at": "2026-01-11T21:05:47.679292Z",
+"reviews": []
+}
+]
+} but then this filters can be applied as query parameters:
+store, price, category (this will be harcoded in the frontend like before), search (A search term), ordering (Which field to use when ordering the results) I don't know much about the ordering filter and check the frontend for what's missing in the filter and how to integrate the API tell me of the plan before taking any actions
+
+https://api.dandelionz.com.ng/user/vendor/profile/
+
+get request: {
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "",
+"bank_name": "",
+"account_number": "",
+"recipient_code": "",
+"is_verified_vendor": true
+}
+}
+patch request to the same endpoint:
+This are the fields that can be sent for the patch: {
+"user": {},
+"store_name": "string",
+"store_description": "string",
+"business_registration_number": "string",
+"address": "string",
+"bank_name": "string",
+"account_number": "string",
+"recipient_code": "string"
+},
+this is the request body I sent for the patch:
+{
+"user": {},
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489"
+}
+the response gotten:
+{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Test",
+"phone_number": "0000000000",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "",
+"bank_name": "",
+"account_number": "",
+"recipient_code": "",
+"is_verified_vendor": true
+},
+"message": "Profile updated successfully"
+}
+
+the data didn't reflect immediately but when I did the get request for the profile it was all updated. so implement a refresh for the get endpoint after the patch is successful to get the current data? or what should be done?
+I tried this: {
+"full_name": "Tester",
+"phone_number": "00000008889",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489"
+}
+
+and got this:{
+"success": true,
+"data": {
+"user": {
+"uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Tester",
+"phone_number": "00000008889",
+"profile_picture": null,
+"role": "VENDOR",
+"referral_code": "F17CA70008F7",
+"is_verified": true,
+"is_active": true,
+"created_at": "2026-01-11T10:38:40.242820Z",
+"updated_at": "2026-01-11T10:38:41.405733Z"
+},
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489",
+"recipient_code": "",
+"is_verified_vendor": true
+},
+"message": "Profile updated successfully"
+}
+meaning the fields in the user object should just be used directly in the request body without it being inside of the user object.
+also please do the profile picture upload functionality in the frontend the same way it was done when adding a product by the vendor. the profile_picture field can be added in the user object in the patch request.
+add validation on the frontend, the account number is just ten digits.
+
+this will work now for the customer profile page the patch request:
+{
+"full_name": "Customer Rayweb",
+"phone_number": "000000657400",
+"shipping_address": "Jgbt street"
+}
+now for the customer endpoint in the current implementation you can't even edit the user fields remove that you can now update them with the patch endpoint, do the profile photo upload functionality too, Implement the same refresh too to get fresh data after a successful patch request.
+
+check the admin vendor page, I now have an endpoint to view details, it's a get request you'll pass the user_uuid as the parameter for the get request, it'll look this: https://api.dandelionz.com.ng/user/admin/vendors/344c535a-fc24-4660-8c5f-0fd4ba401f84/
+this is the response gotten: {
+"success": true,
+"data": {
+"user_uuid": "344c535a-fc24-4660-8c5f-0fd4ba401f84",
+"email": "rulufaly@fxzig.com",
+"full_name": "Tester",
+"phone_number": "00000008889",
+"store_name": "Test Vendor Store",
+"store_description": "Your one-stop shop for quality test items!",
+"business_registration_number": "",
+"address": "Ekosodin",
+"bank_name": "Opay",
+"account_number": "09876567489",
+"recipient_code": "",
+"is_verified_vendor": true,
+"is_active": true,
+"is_verified": true
+}
+}
+
+Endpoint supports server-side sorting using the ordering query param.
+Allowed fields Only these fields are sortable:
+price
+name
+
+Syntax
+Ascending: ordering=field
+Descending: ordering=-field
+Multiple fields: ordering=field1,field2
+
+Valid examples
+Lowest price first: ?ordering=price
+Highest price first: ?ordering=-price
+
+Name A–Z: ?ordering=name
+Name Z–A: ?ordering=-name
+
+Price ASC then Name ASC: ?ordering=price,name
+Price DESC then Name ASC: ?ordering=-price,name
+
+Important rules
+Any field not in (price, name) is ignored
+Ordering runs after filters and search
+
+If ordering is not sent, default DB order is used
+
+# Frontend Integration & Review Guide (Generated by Gemini)
+
+This guide summarizes the status of key components and features that have been reviewed and refactored. It is intended to provide context for future development and reviews.
+
+## Core Systems
+
+### `lib/api/baseApi.ts` - Core API & Authentication Logic
+*   **Status:** Reviewed
+*   **Summary:** This file contains the base RTK Query setup. It features an advanced `baseQueryWithReauth` function that automatically handles token refreshing on 401 errors.
+*   **Key Logic:** It uses a mutex lock to prevent race conditions during token refresh, ensuring only one refresh attempt occurs at a time. If refresh fails, it dispatches a logout action.
+*   **Notes:** The `token/validate` endpoint is not used by this core logic, which is an acceptable design choice as the system is reactive to API errors. The implementation is robust.
+
+## Components
+
+### `components/HeroSlider.tsx` & `components/CategorySlider.tsx` - Sliders
+*   **Status:** Refactored & Reviewed
+*   **Initial Problem:** Both components contained a latent bug in their `onError` handlers for images. They used direct DOM manipulation (`innerHTML = ...`) to show a fallback UI, which is an anti-pattern in React. This caused the app to crash with a "Cannot set properties of null (setting 'innerHTML')" error when the components' render lifecycle changed.
+*   **Resolution:** The components were refactored to use a declarative, state-based approach. An `imageErrors` state array was introduced to track images that fail to load. The components now use conditional rendering to show either the image or a fallback UI. This is the correct, stable "React way" to handle such cases.
+
+## Pages
+
+### `app/page.tsx` - Homepage
+*   **Status:** Refactored & Reviewed
+*   **Summary:** This page displays the main hero slider, category navigation, and a grid of all products with filtering capabilities.
+*   **Initial Problem:**
+    1.  **Filtering:** The page was incorrectly sending `price_min` and `price_max` to the API, which only expects a single `price` parameter for the maximum price. The "Sort by" dropdown was also missing options.
+    2.  **Error Handling:** A product fetching error would replace the entire page with an error message, blocking all other content.
+    3.  **UX:** The "Retry" button did not show a loading indicator because it was checking for `isLoading` which is only true on the initial load, not on `refetch`.
+*   **Resolution:**
+    1.  **Filtering:** The filter logic was corrected. The page now only manages and sends a single `price` parameter. The `FilterModal.tsx` component was updated to include all supported sorting options (`price`, `-price`, `name`, `-name`).
+    2.  **Error Handling:** The page was refactored to use inline error handling. Now, only the "All Products" section is replaced by an error message and a "Retry" button if the fetch fails, leaving the rest of the page interactive.
+    3.  **UX:** The loading logic was changed from using `isLoading` to `isFetching` to ensure the loading spinner is displayed on all fetch attempts, including retries.
+
+### `app/vendor/account/profile/page.tsx` - Vendor Profile Page
+*   **Status:** Refactored & Reviewed
+*   **Summary:** A page that allows vendors to view and edit their profile information, including store details and bank account information.
+*   **Initial Problem:** The page existed but was incomplete. It was missing the functionality to view or edit the `bank_name` and `account_number`.
+*   **Resolution:** The component was updated to include `bank_name` and `account_number` in its state and form. The save/cancel logic was updated to handle these fields. A validation check was added to the `handleSave` function to ensure the account number is exactly 10 digits before sending the update to the API.
+
+### `app/(customer)/category/[name]/page.tsx` - Category Details Page
+*   **Status:** Refactored & Reviewed
+*   **Summary:** This page displays products belonging to a specific category, determined by the `[name]` parameter in the URL.
+*   **Initial Problem:** A persistent server-side warning (`params is a Promise`) caused the page to fail to read the `params.name` correctly. This resulted in the category name not being displayed in the title and the product fetch failing, showing a "No products found" message.
+*   **Resolution:** The page was refactored into a two-component architecture to align with Next.js App Router best practices:
+    1.  **`page.tsx` (Server Component):** This parent component is now `async`. Its sole responsibility is to safely `await` and resolve the `params` from the URL.
+    2.  **`CategoryClientPage.tsx` (Client Component):** A new child component was created to contain all client-side logic (data fetching with `useGetProductsQuery`, state, error handling, etc.). It receives the resolved `categoryName` as a simple string prop from the parent Server Component.
+    This architecture cleanly separates server and client concerns and resolves the underlying framework-related error. Inline error handling with a "Retry" button was also added for consistency.

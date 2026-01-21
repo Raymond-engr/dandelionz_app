@@ -1,25 +1,152 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useGetVendorProfileQuery, usePartialUpdateVendorProfileMutation } from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import Image from 'next/image';
 
 export default function VendorProfilePage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const { data: profileData, isLoading, error } = useGetVendorProfileQuery();
+  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateVendorProfileMutation();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  
   const [formData, setFormData] = useState({
-    fullName: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    storeName: 'Store Name Goes Here',
-    phoneNumber: '08123456789',
-    address: 'No. 13 JB Street, Ekosiodin, Edo State',
-    password: '••••••••',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    storeName: '',
+    storeDescription: '',
+    address: '',
+    bank_name: '',
+    account_number: '',
   });
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
+  useEffect(() => {
+    if (profileData?.data) {
+      const { user, ...vendorInfo } = profileData.data;
+      setFormData({
+        fullName: user.full_name || '',
+        email: user.email || '',
+        phoneNumber: user.phone_number || '',
+        storeName: vendorInfo.store_name || '',
+        storeDescription: vendorInfo.store_description || '',
+        address: vendorInfo.address || '',
+        bank_name: vendorInfo.bank_name || '',
+        account_number: vendorInfo.account_number || '',
+      });
+    }
+  }, [profileData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePictureFile(e.target.files[0]);
+    }
   };
+
+  const handleSave = async () => {
+    // Validation
+    if (formData.account_number && !/^\d{10}$/.test(formData.account_number)) {
+      alert('Account number must be exactly 10 digits.');
+      return;
+    }
+
+    const updateData = new FormData();
+
+    // Only append fields that have changed to be efficient
+    if (formData.fullName !== profileData?.data.user.full_name) {
+        updateData.append('full_name', formData.fullName);
+    }
+    if (formData.phoneNumber !== profileData?.data.user.phone_number) {
+        updateData.append('phone_number', formData.phoneNumber);
+    }
+    if (formData.storeName !== profileData?.data.store_name) {
+        updateData.append('store_name', formData.storeName);
+    }
+    if (formData.storeDescription !== profileData?.data.store_description) {
+        updateData.append('store_description', formData.storeDescription);
+    }
+    if (formData.address !== profileData?.data.address) {
+        updateData.append('address', formData.address);
+    }
+    if (formData.bank_name !== profileData?.data.bank_name) {
+        updateData.append('bank_name', formData.bank_name);
+    }
+    if (formData.account_number !== profileData?.data.account_number) {
+        updateData.append('account_number', formData.account_number);
+    }
+    if (profilePictureFile) {
+        updateData.append('profile_picture', profilePictureFile);
+    }
+    
+    // Check if any data has been changed
+    if ([...updateData.entries()].length === 0) {
+        setIsEditing(false);
+        return;
+    }
+
+    try {
+      await updateProfile(updateData).unwrap();
+      alert('Profile updated successfully');
+      setIsEditing(false);
+      setProfilePictureFile(null); // Reset file input after successful upload
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    }
+  };
+  
+  const handleCancel = () => {
+    setIsEditing(false);
+    setProfilePictureFile(null);
+    if (profileData?.data) {
+        const { user, ...vendorInfo } = profileData.data;
+        setFormData({
+            fullName: user.full_name || '',
+            email: user.email || '',
+            phoneNumber: user.phone_number || '',
+            storeName: vendorInfo.store_name || '',
+            storeDescription: vendorInfo.store_description || '',
+            address: vendorInfo.address || '',
+            bank_name: vendorInfo.bank_name || '',
+            account_number: vendorInfo.account_number || '',
+        });
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load profile</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+  
+  const profile = profileData?.data;
+  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">
@@ -37,20 +164,35 @@ export default function VendorProfilePage() {
         <div className="p-6">
           {/* Profile Picture */}
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/vendor/account/profile/photo" className="relative">
-              <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
-                <span className="text-2xl font-semibold text-white">AS</span>
+              <div className="relative">
+                <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
+                    {currentAvatar ? (
+                    <Image 
+                        src={currentAvatar} 
+                        alt="Profile" 
+                        width={64}
+                        height={64}
+                        className="w-full h-full rounded-full object-cover"
+                    />
+                    ) : (
+                    <span className="text-2xl font-semibold text-white">
+                        {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'V'}
+                    </span>
+                    )}
+                </div>
+                {isEditing && (
+                    <label htmlFor="profile-picture-upload" className="cursor-pointer absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input type="file" id="profile-picture-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
+                    </label>
+                )}
               </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 bg-system-blue-light rounded-full flex items-center justify-center border-2 border-white">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            </Link>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Adam Smith</h2>
-              <p className="text-sm text-gray-600">adamsmith@gmail.com</p>
+              <h2 className="text-base font-semibold text-gray-900">{formData.fullName}</h2>
+              <p className="text-sm text-gray-600">{formData.email}</p>
             </div>
           </div>
 
@@ -63,7 +205,8 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
               />
             </div>
 
@@ -73,8 +216,8 @@ export default function VendorProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
+                disabled
               />
             </div>
 
@@ -85,7 +228,20 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.storeName}
                 onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+              />
+            </div>
+            
+            {/* Store Description */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Store Description</label>
+              <textarea
+                value={formData.storeDescription}
+                onChange={(e) => setFormData({...formData, storeDescription: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+                rows={3}
               />
             </div>
 
@@ -96,7 +252,8 @@ export default function VendorProfilePage() {
                 type="tel"
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
               />
             </div>
 
@@ -107,7 +264,33 @@ export default function VendorProfilePage() {
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+              />
+            </div>
+
+            {/* Bank Name */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
+              <input
+                type="text"
+                value={formData.bank_name}
+                onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+              />
+            </div>
+
+            {/* Account Number */}
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
+              <input
+                type="tel" 
+                value={formData.account_number}
+                onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
+                maxLength={10}
               />
             </div>
 
@@ -116,20 +299,11 @@ export default function VendorProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Password</label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 pr-10"
+                  type="password"
+                  value="••••••••"
+                  className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                   readOnly
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
               </div>
               <Link href="/vendor/account/change-password" className="text-sm text-system-blue-light font-medium mt-2 inline-block">
                 Change Password
@@ -139,18 +313,30 @@ export default function VendorProfilePage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+            {!isEditing ? (
+                <button
+                onClick={() => setIsEditing(true)}
+                className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Discard
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

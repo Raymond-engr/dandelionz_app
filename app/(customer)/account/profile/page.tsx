@@ -1,24 +1,120 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import Image from 'next/image';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const { data: profileData, isLoading, error } = useGetCustomerProfileQuery();
+  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateCustomerProfileMutation();
+
+  const [showPassword, setShowPassword] = useState(false); // Retained for password visibility toggle
+  const [isEditing, setIsEditing] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  
   const [formData, setFormData] = useState({
-    fullName: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    phoneNumber: '08123456781',
-    address: 'No. 13 JB Street, Ekosiodin, Edo State',
-    password: '••••••••',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    shipping_address: '',
   });
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
+  useEffect(() => {
+    if (profileData) {
+      setFormData({
+        fullName: profileData.user.full_name || '',
+        email: profileData.user.email || '',
+        phoneNumber: profileData.user.phone_number || '',
+        shipping_address: profileData.shipping_address || '',
+      });
+    }
+  }, [profileData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePictureFile(e.target.files[0]);
+    }
   };
+
+  const handleSave = async () => {
+    const updateData = new FormData();
+    
+    // Append only changed fields
+    if (formData.fullName !== profileData?.user.full_name) {
+      updateData.append('full_name', formData.fullName);
+    }
+    if (formData.phoneNumber !== profileData?.user.phone_number) {
+        updateData.append('phone_number', formData.phoneNumber);
+    }
+    if (formData.shipping_address !== profileData?.shipping_address) {
+      updateData.append('shipping_address', formData.shipping_address);
+    }
+    if (profilePictureFile) {
+      updateData.append('profile_picture', profilePictureFile);
+    }
+
+    if ([...updateData.entries()].length === 0 && !profilePictureFile) { // Check if no changes or new file
+        setIsEditing(false);
+        return;
+    }
+
+    try {
+      await updateProfile(updateData).unwrap();
+      alert('Profile updated successfully');
+      setIsEditing(false);
+      setProfilePictureFile(null);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setProfilePictureFile(null);
+    if (profileData) {
+        setFormData({
+            fullName: profileData.user.full_name || '',
+            email: profileData.user.email || '',
+            phoneNumber: profileData.user.phone_number || '',
+            shipping_address: profileData.shipping_address || '',
+        });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="customer">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="customer">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load profile</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const profile = profileData;
+  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">
@@ -37,16 +133,31 @@ export default function ProfilePage() {
           {/* Profile Picture */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-2">
-              <span className="text-2xl font-semibold text-gray-600">AS</span>
-              <button className="absolute bottom-0 right-0 w-7 h-7 bg-system-blue-light rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
+              {currentAvatar ? (
+                  <Image 
+                      src={currentAvatar} 
+                      alt="Profile" 
+                      width={80}
+                      height={80}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                ) : (
+                  <span className="text-2xl font-semibold text-gray-600">
+                    {formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </span>
+                )}
+              {isEditing && (
+                <label htmlFor="profile-picture-upload" className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 bg-system-blue-light rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input type="file" id="profile-picture-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
+                </label>
+              )}
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Adam Smith</h2>
-            <p className="text-sm text-gray-600">adamsmith@gmail.com</p>
+            <h2 className="text-lg font-semibold text-gray-900">{formData.fullName}</h2>
+            <p className="text-sm text-gray-600">{formData.email}</p>
           </div>
 
           {/* Form Fields */}
@@ -58,8 +169,8 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
               />
             </div>
 
@@ -69,9 +180,8 @@ export default function ProfilePage() {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
+                disabled
               />
             </div>
 
@@ -82,8 +192,8 @@ export default function ProfilePage() {
                 type="tel"
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
               />
             </div>
 
@@ -92,10 +202,10 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-600 mb-2 block">Address</label>
               <input
                 type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none"
-                readOnly
+                value={formData.shipping_address}
+                onChange={(e) => setFormData({...formData, shipping_address: e.target.value})}
+                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                disabled={!isEditing}
               />
             </div>
 
@@ -103,10 +213,10 @@ export default function ProfilePage() {
             <div>
               <label className="text-xs text-gray-600 mb-2 block">Password</label>
               <div className="relative">
-                <input
+                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900 focus:outline-none pr-10"
+                  value="••••••••"
+                  className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
                   readOnly
                 />
                 <button
@@ -127,18 +237,30 @@ export default function ProfilePage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Discard
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
