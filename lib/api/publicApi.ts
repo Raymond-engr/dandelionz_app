@@ -34,7 +34,9 @@ export const publicApi = baseApi.injectEndpoints({
         search?: string; 
         page?: number;
         store?: string;
-        price?: number; // Use single 'price' for max price
+        min_price?: number;
+        max_price?: number;
+        price?: number; // for exact price match
         ordering?: string;
       }
     >({

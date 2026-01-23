@@ -4,31 +4,50 @@ import React, { useState } from 'react';
 import { Package, Filter, Edit2, Trash2, Plus } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-
-const mockCategories = [
-  { id: '1', name: 'Category Name', products: 0, sales: 0 },
-];
-
-const mockProducts = [
-  { id: '1', name: 'Product Name', vendor: 'Vendor Name', category: 'Category Name', price: '₦0.00', status: 'Status' },
-];
+import { 
+  useGetAllCategoriesQuery, 
+  useGetAllProductsQuery,
+  useDeleteCategoryMutation // Will be used in handleDeleteCategory
+} from '@/lib/api/adminApi';
+import AdminCategoryListItem from '@/components/AdminCategoryListItem';
+import Link from 'next/link';
 
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
 
-  const handleDeleteCategory = (categoryId: string) => {
-    // Handle delete - replace with API call
-    console.log('Deleting category:', categoryId);
-    setShowDeleteConfirm(null);
+  // Fetch categories
+  const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
+  const categories = categoriesData?.data || [];
+
+  // Fetch products
+  const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useGetAllProductsQuery({});
+  const products = productsData?.data || [];
+
+  // Delete category mutation
+  const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    try {
+      await deleteCategory(categoryId).unwrap();
+      refetchCategories(); // Refresh categories after deletion
+      setShowDeleteConfirm(null);
+    } catch (err) {
+      console.error('Failed to delete category:', err);
+      // Handle error, maybe show a toast notification
+    }
+  };
+
+  const handleEditCategory = (categoryId: number) => {
+    router.push(`/admin/product/category/${categoryId}/edit`);
   };
 
   return (
     <AppLayout showBottomNav={true} userRole="admin">
       <div className="min-h-screen bg-white pb-20">
         <div className="p-4 border-b border-gray-200 text-center">
-          <h1 className="text-lg font-semibold text-gray-900">Products</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Products</h1>
         </div>
 
         <div className="p-4">
@@ -59,41 +78,32 @@ export default function ProductManagement() {
 
           {activeTab === 'categories' ? (
             <div>
-              {mockCategories.map((category) => (
-                <div key={category.id} className="mb-4 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">
-                        {category.name}
-                      </h3>
-                      <p className="text-xs text-gray-600">No of Products: {category.products}</p>
-                      <p className="text-xs text-gray-600">No. of Sales: {category.sales}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => router.push(`/admin/product/category/${category.id}/edit`)}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
-                      >
-                        <Edit2 className="w-5 h-5 text-gray-600" />
-                      </button>
-                      <button 
-                        onClick={() => setShowDeleteConfirm(category.id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
-                      >
-                        <Trash2 className="w-5 h-5 text-red-600" />
-                      </button>
-                    </div>
-                  </div>
+              {isLoadingCategories ? (
+                <div className="text-center text-gray-500">Loading categories...</div>
+              ) : categoriesError ? (
+                <div className="text-center text-red-500">Failed to load categories.</div>
+              ) : (
+                <div className="space-y-3">
+                  {categories.map((category) => (
+                    <AdminCategoryListItem
+                      key={category.id}
+                      id={category.id}
+                      name={category.name}
+                      productCount={0} // Backend needs to provide this
+                      totalSales={0} // Backend needs to provide this
+                      onEdit={handleEditCategory}
+                      onDelete={() => setShowDeleteConfirm(category.id)}
+                    />
+                  ))}
                 </div>
-              ))}
+              )}
 
-              <button
-                onClick={() => router.push('/admin/product/category/new')}
-                className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-system-blue-light font-semibold hover:border-system-blue-light hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
+                        <Link
+                          href="/admin/product/category/new/edit"
+                          className="bg-[#f5f7fa] flex items-center justify-center gap-4 p-5 rounded-lg cursor-pointer w-full max-w-[370px] h-[101px] mx-auto shadow-sm hover:shadow-md transition-shadow text-system-blue-light font-semibold text-2xl"
+                        >                <Plus className="w-8 h-8" />
                 Add New Category
-              </button>
+              </Link>
             </div>
           ) : (
             <div>
@@ -101,60 +111,66 @@ export default function ProductManagement() {
                 <div className="bg-system-blue-light text-white rounded-lg p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm opacity-90 mb-1">Total Products</p>
-                    <p className="text-3xl font-bold">0</p>
+                    <p className="text-3xl font-bold">{products.length}</p>
                   </div>
                   <Package className="w-12 h-12 opacity-80" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 rounded-lg p-3">
+                  <div className="bg-[rgba(77,255,151,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Approved Products</p>
-                    <p className="text-xl font-bold text-gray-900">0</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Approved').length}</p>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-3">
+                  <div className="bg-[rgba(255,77,77,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Rejected Products</p>
-                    <p className="text-xl font-bold text-gray-900">0</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Rejected').length}</p>
                   </div>
                 </div>
 
-                <div className="bg-yellow-50 rounded-lg p-3">
+                <div className="bg-[rgba(255,212,59,0.5)] rounded-lg p-3">
                   <p className="text-xs text-gray-700 mb-1">Pending Products</p>
-                  <p className="text-xl font-bold text-gray-900">0</p>
+                  <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Pending').length}</p>
+                  </div>
                 </div>
-              </div>
 
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-gray-900">Products</h2>
                 <button><Filter className="w-5 h-5 text-gray-600" /></button>
               </div>
 
-              <div className="space-y-3">
-                {mockProducts.map((product, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => router.push(`/admin/product/${product.id}`)}
-                    className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="text-left flex-1">
-                        <p className="text-sm font-semibold text-gray-900">{product.name}</p>
-                        <p className="text-xs text-gray-600">{product.vendor}</p>
-                        <p className="text-xs text-gray-600">{product.category}</p>
+              {isLoadingProducts ? (
+                <div className="text-center text-gray-500">Loading products...</div>
+              ) : productsError ? (
+                <div className="text-center text-red-500">Failed to load products.</div>
+              ) : (
+                <div className="space-y-3">
+                  {products.map((product) => (
+                    <button
+                      key={product.slug}
+                      onClick={() => router.push(`/admin/product/${product.slug}`)}
+                      className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-900">{product.name}</p>
+                          <p className="text-xs text-gray-600">{product.vendor?.store_name || 'N/A'}</p>
+                          <p className="text-xs text-gray-600">{product.category}</p>
+                        </div>
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                          {product.status}
+                        </span>
                       </div>
-                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                        {product.status}
-                      </span>
-                    </div>
-                    <p className="text-base font-bold text-gray-900 text-left">{product.price}</p>
-                  </button>
-                ))}
-              </div>
+                      <p className="text-base font-bold text-gray-900 text-left">₦{product.price}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
+        {showDeleteConfirm !== null && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Category?</h2>
@@ -163,16 +179,16 @@ export default function ProductManagement() {
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
                   className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                  disabled={isDeletingCategory}
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    handleDeleteCategory(showDeleteConfirm);
-                  }}
+                  onClick={() => handleDeleteCategory(showDeleteConfirm)}
                   className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                  disabled={isDeletingCategory}
                 >
-                  Delete
+                  {isDeletingCategory ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>

@@ -4,22 +4,26 @@ interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (filters: FilterState) => void;
-  categories: { id: string; name: string; image?: string }[]; // New prop for dynamic categories
+  categories: { id: string; name: string; image?: string }[];
   initialFilters: {
-    priceRange: [number, number];
+    minPrice: number;
+    maxPrice: number;
+    price: number;
     sortBy: string;
     category: string;
   };
 }
 
 interface FilterState {
+  min_price?: number;
+  max_price?: number;
   price?: number;
-  ordering?: string; // Corresponds to sortBy
+  ordering?: string;
   category?: string;
 }
 
 const ALL_CATEGORIES = [
-    { value: '', label: 'All Categories' }, // Option to select all
+    { value: '', label: 'All Categories' },
     { value: 'electronics', label: 'Electronics' },
     { value: 'fashion', label: 'Fashion' },
     { value: 'home_appliances', label: 'Home Appliances' },
@@ -47,14 +51,17 @@ const SORT_OPTIONS = [
 ];
 
 export default function FilterModal({ isOpen, onClose, onApply, categories, initialFilters }: FilterModalProps) {
-  const [maxPrice, setMaxPrice] = useState(initialFilters.priceRange[1]);
+  const [minPrice, setMinPrice] = useState(initialFilters.minPrice);
+  const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice);
+  const [price, setPrice] = useState(initialFilters.price);
   const [sortBy, setSortBy] = useState(initialFilters.sortBy || '');
   const [selectedCategory, setSelectedCategory] = useState(initialFilters.category || '');
   const [searchCategory, setSearchCategory] = useState('');
 
-  // Sync internal state with external initialFilters when modal opens
   useEffect(() => {
-    setMaxPrice(initialFilters.priceRange[1]);
+    setMinPrice(initialFilters.minPrice);
+    setMaxPrice(initialFilters.maxPrice);
+    setPrice(initialFilters.price);
     setSortBy(initialFilters.sortBy);
     setSelectedCategory(initialFilters.category);
   }, [initialFilters]);
@@ -63,7 +70,9 @@ export default function FilterModal({ isOpen, onClose, onApply, categories, init
 
   const handleApply = () => {
     onApply({
-      price: maxPrice,
+      min_price: minPrice,
+      max_price: maxPrice,
+      price: price,
       ordering: sortBy,
       category: selectedCategory,
     });
@@ -96,34 +105,34 @@ export default function FilterModal({ isOpen, onClose, onApply, categories, init
 
         {/* Content */}
         <div className="p-6 max-h-[65vh] overflow-y-auto">
-          {/* Price Range */}
+          {/* Price */}
           <div className="mb-8">
             <h3 className="text-base font-semibold text-gray-900 mb-6">Price</h3>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-semibold text-gray-900">₦0</span>
-              <span className="text-base font-semibold text-gray-900">₦{maxPrice}</span>
-            </div>
-            
-            <div className="relative h-1 bg-gray-100 rounded-full mt-2">
-              <div
-                className={`absolute h-1 ${activeColorClass} rounded-full`}
-                style={{
-                  left: '0%',
-                  width: `${(maxPrice / 500) * 100}%`,
-                }}
-              />
-              <div
-                className={`absolute w-5 h-5 ${activeColorClass} border-2 border-white rounded-full -top-2 cursor-pointer shadow-md`}
-                style={{ left: `calc(${(maxPrice / 500) * 100}% - 10px)` }}
-              />
               <input
-                type="range"
-                min="0"
-                max="500"
+                type="number"
+                placeholder="Min price"
+                value={minPrice}
+                onChange={(e) => setMinPrice(parseInt(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-900 placeholder-gray-400"
+              />
+              <span className="mx-4">to</span>
+              <input
+                type="number"
+                placeholder="Max price"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(parseInt(e.target.value))}
-                className="absolute w-full h-1 opacity-0 cursor-pointer z-10"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-900 placeholder-gray-400"
               />
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <input
+                  type="number"
+                  placeholder="Exact price"
+                  value={price}
+                  onChange={(e) => setPrice(parseInt(e.target.value))}
+                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-900 placeholder-gray-400"
+                />
             </div>
           </div>
 
