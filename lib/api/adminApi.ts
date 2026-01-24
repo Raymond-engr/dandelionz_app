@@ -421,7 +421,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     createCategory: builder.mutation<
       { success: boolean; data: Category },
-      Partial<Category>
+      FormData
     >({
       query: (body) => ({
         url: "/user/admin/products/categories/",
@@ -433,7 +433,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     updateCategory: builder.mutation<
       { success: boolean; data: Category },
-      { id: number; data: Partial<Category> }
+      { id: number; data: FormData }
     >({
       query: ({ id, data }) => ({
         url: `/user/admin/products/categories/${id}/`,

@@ -70,7 +70,7 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
         // Backend API for updateCategory in adminApi.ts currently takes { id: number; data: Partial<Category> }
         // If it expects FormData for image, we might need to adjust adminApi.ts or send only image via separate endpoint.
         // For now, let's adjust the update mutation to also take FormData.
-        await updateCategory({ id: parseInt(categoryId), data: formData as any }).unwrap(); // Cast to any for now
+        await updateCategory({ id: parseInt(categoryId), data: formData }).unwrap();
       }
       router.push('/admin/product/category'); // Redirect to category list on success
     } catch (err: any) {
