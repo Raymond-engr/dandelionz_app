@@ -32,19 +32,25 @@ const CATEGORIES_FOR_NAV = [
 export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilter, setShowFilter] = useState(false);
-  const [maxPrice, setMaxPrice] = useState(500); // Default max price, assuming range from FilterModal
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [price, setPrice] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [ordering, setOrdering] = useState('');
 
   const { data: productsData, isLoading: productsLoading, isFetching, error: productsError, refetch } = useGetProductsQuery({
     search: searchQuery || undefined,
     category: selectedCategory || undefined,
-    price: maxPrice < 500 ? maxPrice : undefined, // Only send if changed from default
+    min_price: minPrice > 0 ? minPrice : undefined,
+    max_price: maxPrice < 500 ? maxPrice : undefined,
+    price: price > 0 ? price : undefined,
     ordering: ordering || undefined,
   });
 
-  const handleApplyFilter = (filters: { price?: number; ordering?: string; category?: string }) => {
-    setMaxPrice(filters.price || 500);
+  const handleApplyFilter = (filters: { min_price?: number; max_price?: number; price?: number; ordering?: string; category?: string }) => {
+    setMinPrice(filters.min_price || 0);
+    setMaxPrice(filters.max_price || 500);
+    setPrice(filters.price || 0);
     setOrdering(filters.ordering || '');
     setSelectedCategory(filters.category || '');
     setShowFilter(false);
@@ -128,7 +134,9 @@ export default function ShopPage() {
           onApply={handleApplyFilter}
           categories={CATEGORIES_FOR_NAV.map(cat => ({id: cat.id, name: cat.name, image: cat.image}))}
           initialFilters={{
-            priceRange: [0, maxPrice],
+            minPrice: minPrice,
+            maxPrice: maxPrice,
+            price: price,
             sortBy: ordering,
             category: selectedCategory,
           }}

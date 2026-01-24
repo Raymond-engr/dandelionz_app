@@ -84,6 +84,24 @@ interface Product {
   stock: number;
 }
 
+interface AdminProduct {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  price: string;
+  category: string; // Name of the category
+  stock: number;
+  image: string | null; // Product image URL
+  uploadDate: string; // Date when the product was uploaded
+  vendor: {
+    uuid: string;
+    store_name: string;
+    email: string;
+  };
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Specific status for admin actions
+}
+
 interface Category {
   id: number;
   name: string;
@@ -345,6 +363,14 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Product"],
     }),
 
+    getAdminProductDetails: builder.query<
+      { success: boolean; data: AdminProduct },
+      string
+    >({
+      query: (slug) => `/store/admin/products/${slug}/`,
+      providesTags: ["Product"],
+    }),
+
     approveProduct: builder.mutation<
       { success: boolean; message: string },
       { slug: string; approve: boolean }
@@ -353,6 +379,17 @@ export const adminApi = baseApi.injectEndpoints({
         url: `/user/admin/products/${slug}/`,
         method: "PATCH",
         body,
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
+    approveProductAdmin: builder.mutation<
+      { success: boolean; message: string },
+      string // Only slug is required in the URL
+    >({
+      query: (slug) => ({
+        url: `/store/admin/products/${slug}/approve/`,
+        method: "POST",
       }),
       invalidatesTags: ["Product"],
     }),
@@ -377,9 +414,14 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Category"],
     }),
 
+    getCategory: builder.query<{ success: boolean; data: Category }, number>({
+      query: (id) => `/user/admin/products/categories/${id}/`,
+      providesTags: ["Category"],
+    }),
+
     createCategory: builder.mutation<
       { success: boolean; data: Category },
-      Partial<Category>
+      FormData
     >({
       query: (body) => ({
         url: "/user/admin/products/categories/",
@@ -391,7 +433,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     updateCategory: builder.mutation<
       { success: boolean; data: Category },
-      { id: number; data: Partial<Category> }
+      { id: number; data: FormData }
     >({
       query: ({ id, data }) => ({
         url: `/user/admin/products/categories/${id}/`,
@@ -576,9 +618,12 @@ export const {
   useGetOrderItemsQuery,
   useGetAllProductsQuery,
   useGetProductDetailsQuery,
+  useGetAdminProductDetailsQuery,
   useApproveProductMutation,
+  useApproveProductAdminMutation,
   useDeleteProductMutation,
   useGetAllCategoriesQuery,
+  useGetCategoryQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,

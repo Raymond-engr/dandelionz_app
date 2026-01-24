@@ -858,6 +858,7 @@ response:
 "loyalty_points": 0
 }
 
+```json
 put request: https://api.dandelionz.com.ng/user/customer/profile/
 {
 "shipping_address": "Jb street",
@@ -886,3 +887,4 @@ response:
 "postal_code": "867840",
 "loyalty_points": 0
 }
+```
