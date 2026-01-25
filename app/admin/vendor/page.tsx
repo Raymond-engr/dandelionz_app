@@ -4,15 +4,15 @@ import React from 'react';
 import { Store, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useGetAllVendorsQuery } from '@/lib/api/adminApi';
+import { useGetAllVendorsQuery, Vendor } from '@/lib/api/adminApi';
 
 export default function VendorManagement() {
   const router = useRouter();
   const { data, isLoading, error } = useGetAllVendorsQuery();
 
   const vendors = data?.data || [];
-  const activeVendors = vendors.filter(v => v.is_active).length;
-  const suspendedVendors = vendors.filter(v => !v.is_active).length;
+  const activeVendors = vendors.filter((v: Vendor) => v.is_active).length;
+  const suspendedVendors = vendors.filter((v: Vendor) => !v.is_active).length;
 
   const handleVendorClick = (vendorId: string) => {
     router.push(`/admin/vendor/${vendorId}`);
@@ -107,7 +107,7 @@ export default function VendorManagement() {
             </div>
           ) : (
             <div className="space-y-3">
-              {vendors.map((vendor) => (
+              {vendors.map((vendor: Vendor) => (
                 <button 
                   key={vendor.user_uuid}
                   onClick={() => handleVendorClick(vendor.user_uuid)}

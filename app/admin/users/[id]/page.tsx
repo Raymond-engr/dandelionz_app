@@ -1,32 +1,65 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { useState, use, useEffect } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useGetUserDetailsQuery, useUpdateUserStatusMutation } from '@/lib/api/adminApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { format } from 'date-fns';
 
 interface UserDetailsProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
-export default function UserDetails({ params: paramsPromise }: UserDetailsProps) {
-  const params = use(paramsPromise);
+export default function UserDetails({ params }: UserDetailsProps) {
   const router = useRouter();
-  const [action, setAction] = useState('Suspend User');
+  const [action, setAction] = useState<'suspend' | 'activate' | 'delete'>('suspend');
   const [reason, setReason] = useState('');
 
   const userId = params.id;
-  // Mock user data - replace with API call
-  const user = {
-    id: userId,
-    name: 'Adam Smith',
-    email: 'adamsmith@gmail.com',
-    status: 'Active',
-    phone: '08123467598',
-    address: 'No. 13 JB Street, Ekosoidn, Edo State',
-    registrationDate: '4th Dec 2025',
-    totalSpend: '₦0.00',
-    totalOrders: '0',
+
+  const { data: userData, isLoading, error, refetch } = useGetUserDetailsQuery(userId);
+  const [updateUserStatus, { isLoading: isUpdating }] = useUpdateUserStatusMutation();
+
+  const user = userData?.data;
+
+  const handleAction = async () => {
+    if (!user) return;
+
+    if (action === 'delete') {
+      // Implement delete logic, maybe with useDeleteUserMutation
+      console.log('Delete action not implemented');
+      return;
+    }
+
+    try {
+      await updateUserStatus({ uuid: user.uuid, action, reason }).unwrap();
+      setReason('');
+      refetch(); // Refetch user data to show updated status
+    } catch (err) {
+      console.error('Failed to update user status:', err);
+      // You can add a toast notification here to show the error
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <p className="text-red-500 mb-4">Failed to load user details.</p>
+        <button onClick={() => router.back()} className="px-4 py-2 bg-system-blue-light text-white rounded-lg">
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -42,13 +75,13 @@ export default function UserDetails({ params: paramsPromise }: UserDetailsProps)
           <div className="p-4">
             <div className="flex items-start gap-4 mb-6">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl font-semibold flex-shrink-0">
-                {user.name.split(' ').map(n => n[0]).join('')}
+                {user.full_name.split(' ').map((n: string) => n[0]).join('')}
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900">{user.name}</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{user.full_name}</h2>
                 <p className="text-sm text-gray-600">{user.email}</p>
-                <span className="inline-block mt-1 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                  {user.status}
+                <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {user.is_active ? 'Active' : 'Suspended'}
                 </span>
               </div>
             </div>
@@ -56,18 +89,18 @@ export default function UserDetails({ params: paramsPromise }: UserDetailsProps)
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="bg-green-50 rounded-lg p-3">
                 <p className="text-xs text-gray-700 mb-1">Total Spend</p>
-                <p className="text-xl font-bold text-gray-900">{user.totalSpend}</p>
+                <p className="text-xl font-bold text-gray-900">₦{parseFloat(user.total_spend || '0').toLocaleString()}</p>
               </div>
               <div className="bg-purple-50 rounded-lg p-3">
                 <p className="text-xs text-gray-700 mb-1">Total Order</p>
-                <p className="text-xl font-bold text-gray-900">{user.totalOrders}</p>
+                <p className="text-xl font-bold text-gray-900">{user.total_orders || '0'}</p>
               </div>
             </div>
 
             <div className="space-y-4 mb-6">
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Full Name</label>
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Email Address</label>
@@ -75,27 +108,26 @@ export default function UserDetails({ params: paramsPromise }: UserDetailsProps)
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Phone Number</label>
-                <p className="text-sm font-medium text-gray-900">{user.phone}</p>
+                <p className="text-sm font-medium text-gray-900">{user.phone_number}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">State/Region</label>
-                <p className="text-sm font-medium text-gray-900">{user.address}</p>
+                <p className="text-sm font-medium text-gray-900">{user.address || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Registration Date</label>
-                <p className="text-sm font-medium text-gray-900">{user.registrationDate}</p>
+                <p className="text-sm font-medium text-gray-900">{format(new Date(user.created_at), 'PPP')}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <select
                 value={action}
-                onChange={(e) => setAction(e.target.value)}
+                onChange={(e) => setAction(e.target.value as 'suspend' | 'activate' | 'delete')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
               >
-                <option>Suspend User</option>
-                <option>Activate User</option>
-                <option>Delete User</option>
+                <option value="suspend">Suspend User</option>
+                <option value="activate">Activate User</option>
               </select>
 
               <textarea
@@ -103,15 +135,15 @@ export default function UserDetails({ params: paramsPromise }: UserDetailsProps)
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[80px] resize-none"
+                disabled={action === 'delete'}
               />
 
-              <button className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                <Send className="w-4 h-4" />
-                Send
-              </button>
-
-              <button className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors">
-                Confirm Action
+              <button 
+                onClick={handleAction}
+                className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:bg-gray-400"
+                disabled={isUpdating || (action !== 'delete' && !reason)}
+              >
+                {isUpdating ? <LoadingSpinner /> : 'Confirm Action'}
               </button>
             </div>
           </div>

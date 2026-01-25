@@ -1,41 +1,79 @@
 'use client';
 
 import React, { useState, use } from 'react';
-import { ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useGetOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation } from '@/lib/api/adminApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { OrderItem } from '@/lib/api/adminApi';
 
 interface OrderDetailsProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
-export default function OrderDetails({ params: paramsPromise }: OrderDetailsProps) {
-  const params = use(paramsPromise);
+export default function OrderDetails({ params }: OrderDetailsProps) {
   const router = useRouter();
-  const [action, setAction] = useState('Cancel Order');
+  const [action, setAction] = useState<'cancel' | 'process' | 'complete'>('cancel');
   const [reason, setReason] = useState('');
 
   const orderId = params.id;
-  // Mock order data - replace with API call
-  const order = {
-    id: orderId,
-    customerName: 'Adam Smith',
-    customerEmail: 'adamsmith@gmail.com',
-    customerPhone: '08132467598',
-    vendorName: 'Store Name Goes Here',
-    vendorEmail: 'adamsmith@gmail.com',
-    productName: 'Product Name',
-    quantity: '0 Units',
-    amount: '₦0.00',
-    deliveryFee: '₦0.00',
-    totalAmount: '₦0.00',
-  };
+  
+  const { data: orderData, isLoading, error, refetch } = useGetOrderDetailsQuery(orderId);
+  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
+  const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
 
+  const order = orderData?.data;
+
+  const handleAction = async () => {
+    if (!order) return;
+
+    try {
+      if (action === 'cancel') {
+        if (!reason) {
+          alert('Please provide a reason for cancellation.');
+          return;
+        }
+        await cancelOrder({ order_id: order.order_id, reason }).unwrap();
+      } else if (action === 'process') {
+        await updateOrderStatus({ uuid: order.uuid, status: 'PROCESSING' }).unwrap();
+      } else if (action === 'complete') {
+        await updateOrderStatus({ uuid: order.uuid, status: 'DELIVERED' }).unwrap();
+      }
+      refetch();
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+      // You can add a toast notification here to show the error
+    }
+  };
+  
   const trackingSteps = [
-    { label: 'Order Placed', date: 'Associated Date', active: true },
-    { label: 'Product Shipped', date: 'Associated Date', active: true },
-    { label: 'Ready for pickup', date: 'Associated Date', active: false },
-    { label: 'Collected', date: 'Associated Date', active: false },
+    { label: 'Order Placed', date: 'Associated Date', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
+    { label: 'Product Shipped', date: 'Associated Date', active: order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
+    { label: 'Ready for pickup', date: 'Associated Date', active: order?.status === 'DELIVERED' },
+    { label: 'Collected', date: 'Associated Date', active: false }, // This would need another status
   ];
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <p className="text-red-500 mb-4">Failed to load order details.</p>
+        <button onClick={() => router.back()} className="px-4 py-2 bg-system-blue-light text-white rounded-lg">
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  const deliveryFee = 0; // Assuming this might come from the API in the future
+  const totalAmount = parseFloat(order.total_amount) + deliveryFee;
 
   return (
     <div className="min-h-screen bg-white">
@@ -53,15 +91,15 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-3 mb-6">
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Full Name</label>
-                <p className="text-sm font-medium text-gray-900">{order.customerName}</p>
+                <p className="text-sm font-medium text-gray-900">{order.customer.full_name}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Email Address</label>
-                <p className="text-sm font-medium text-gray-900">{order.customerEmail}</p>
+                <p className="text-sm font-medium text-gray-900">{order.customer.email}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Phone Number</label>
-                <p className="text-sm font-medium text-gray-900">{order.customerPhone}</p>
+                <p className="text-sm font-medium text-gray-900">{order.customer.phone_number || 'N/A'}</p>
               </div>
             </div>
 
@@ -69,35 +107,34 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-3 mb-6">
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Store Name</label>
-                <p className="text-sm font-medium text-gray-900">{order.vendorName}</p>
+                <p className="text-sm font-medium text-gray-900">{order.vendor.store_name}</p>
               </div>
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Email Address</label>
-                <p className="text-sm font-medium text-gray-900">{order.vendorEmail}</p>
-              </div>
+              {/* The mock had vendor email, but the Order interface doesn't. This can be added if needed. */}
             </div>
 
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Order Summary</h2>
-            <div className="space-y-3 mb-6">
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Product Name</label>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-900">Quantity/Stock:</span>
-                    <span className="text-sm font-medium text-gray-900">{order.quantity}</span>
+            <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              {order.order_items?.map((item: OrderItem, index: number) => (
+                <div key={index} className="pb-2 border-b border-gray-200 last:border-b-0">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">{item.product_name}</p>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Quantity:</span>
+                    <span className="font-medium text-gray-900">{item.quantity}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-900">Amount:</span>
-                    <span className="text-sm font-medium text-gray-900">{order.amount}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium text-gray-900">₦{parseFloat(item.item_subtotal).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-900">Delivery Fee:</span>
-                    <span className="text-sm font-medium text-gray-900">{order.deliveryFee}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                    <span className="text-sm font-semibold text-gray-900">Total Amount:</span>
-                    <span className="text-sm font-bold text-gray-900">{order.totalAmount}</span>
-                  </div>
+                </div>
+              ))}
+              <div className="pt-2 border-t border-gray-200">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Delivery Fee:</span>
+                  <span className="font-medium text-gray-900">₦{deliveryFee.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-300">
+                  <span className="text-base font-semibold text-gray-900">Total Amount:</span>
+                  <span className="text-base font-bold text-gray-900">₦{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -108,28 +145,14 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                 {trackingSteps.map((step, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <div className="flex flex-col items-center">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                          step.active
-                            ? 'bg-system-blue-light'
-                            : 'border-2 border-gray-300 bg-white'
-                        }`}
-                      >
-                        {step.active && (
-                          <div className="w-3 h-3 rounded-full bg-white"></div>
-                        )}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${ step.active ? 'bg-system-blue-light' : 'border-2 border-gray-300 bg-white' }`}>
+                        {step.active && (<div className="w-3 h-3 rounded-full bg-white"></div>)}
                       </div>
-                      {idx < 3 && (
-                        <div
-                          className={`w-0.5 h-8 ${
-                            idx < 1 ? 'bg-system-blue-light' : 'bg-gray-300'
-                          }`}
-                        ></div>
-                      )}
+                      {idx < trackingSteps.length - 1 && (<div className={`w-0.5 h-8 ${ idx < trackingSteps.findIndex(s => s.active === false) -1 ? 'bg-system-blue-light' : 'bg-gray-300' }`}></div>)}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{step.label}</p>
-                      <p className="text-xs text-gray-600">{step.date}</p>
+                      {/* Date can be added here if available */}
                     </div>
                   </div>
                 ))}
@@ -139,28 +162,29 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-3">
               <select
                 value={action}
-                onChange={(e) => setAction(e.target.value)}
-                className="w-full px-4 py-3 border border-red-300 text-red-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                onChange={(e) => setAction(e.target.value as 'cancel' | 'process' | 'complete')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
               >
-                <option>Cancel Order</option>
-                <option>Process Order</option>
-                <option>Complete Order</option>
+                <option value="cancel">Cancel Order</option>
+                <option value="process">Process Order</option>
+                <option value="complete">Complete Order</option>
               </select>
 
-              <textarea
-                placeholder="Reason for action..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[80px] resize-none"
-              />
+              {action === 'cancel' && (
+                <textarea
+                  placeholder="Reason for action..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[80px] resize-none"
+                />
+              )}
 
-              <button className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                <Send className="w-4 h-4" />
-                Send
-              </button>
-
-              <button className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors">
-                Confirm Action
+              <button 
+                onClick={handleAction}
+                className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:bg-gray-400"
+                disabled={isCancelling || isUpdating || (action === 'cancel' && !reason)}
+              >
+                {isCancelling || isUpdating ? <LoadingSpinner /> : 'Confirm Action'}
               </button>
 
               <button

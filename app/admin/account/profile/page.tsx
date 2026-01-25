@@ -5,16 +5,16 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useGetAdminProfileQuery } from '@/lib/api/adminApi';
+import { useGetAdminProfileQuery, useUpdateAdminProfileMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminProfilePage() {
   const router = useRouter();
-  const { data: profileData, isLoading, error } = useGetAdminProfileQuery();
+  const { data: profileData, isLoading, error, refetch } = useGetAdminProfileQuery();
+  const [updateAdminProfile, { isLoading: isSaving }] = useUpdateAdminProfileMutation();
 
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const profile = profileData?.data?.user;
 
@@ -23,7 +23,6 @@ export default function AdminProfilePage() {
     email: '',
     storeName: '',
     phoneNumber: '',
-    address: '',
   });
 
   useEffect(() => {
@@ -33,26 +32,22 @@ export default function AdminProfilePage() {
         email: profile.email || '',
         storeName: 'Store Name Goes Here', // Placeholder as it's not in the admin model
         phoneNumber: profile.phone_number || '',
-        address: 'No. 13 JB Street, Ekosiodin, Edo State', // Placeholder as it's not in the admin model
       });
     }
   }, [profile]);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    // In a real app, you'd call a mutation to update the profile.
-    // For now, we'll just log the data and simulate a save.
-    console.log('Saving profile:', formData);
     try {
-      // Example of what a mutation call would look like:
-      // await updateAdminProfile(formData).unwrap();
-      alert('Profile updated successfully (simulated)');
+      await updateAdminProfile({
+        full_name: formData.fullName,
+        phone_number: formData.phoneNumber,
+      }).unwrap();
+      alert('Profile updated successfully');
       setIsEditing(false);
+      refetch();
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile (simulated)');
-    } finally {
-      setIsSaving(false);
+      alert('Failed to update profile');
     }
   };
 
@@ -101,9 +96,9 @@ export default function AdminProfilePage() {
             <Link href="/admin/account/profile/photo" className="relative">
                <div className="w-16 h-16 bg-system-blue-light rounded-full flex items-center justify-center">
                 {profile?.profile_picture ? (
-                  <Image 
-                    src={profile.profile_picture} 
-                    alt="Profile" 
+                  <Image
+                    src={profile.profile_picture}
+                    alt="Profile"
                     width={64}
                     height={64}
                     className="w-full h-full rounded-full object-cover"
@@ -176,18 +171,6 @@ export default function AdminProfilePage() {
               />
             </div>
 
-            {/* Address */}
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Address</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
-                disabled={!isEditing}
-              />
-            </div>
-
             {/* Password */}
             <div>
               <label className="text-xs text-gray-600 mb-2 block">Password</label>
@@ -242,7 +225,6 @@ export default function AdminProfilePage() {
                         email: profile.email || '',
                         phoneNumber: profile.phone_number || '',
                         storeName: 'Store Name Goes Here',
-                        address: 'No. 13 JB Street, Ekosiodin, Edo State',
                       });
                     }
                   }}

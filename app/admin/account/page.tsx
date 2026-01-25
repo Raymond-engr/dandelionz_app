@@ -59,10 +59,9 @@ export default function AdminAccountPage() {
             {user.avatar ? (
               <Image src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" width={64} height={64} />
             ) : (
-              <span className="text-2xl font-semibold text-white">
-                {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'A'}
-              </span>
-            )}
+                              <span className="text-2xl font-semibold text-white">
+                                  {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'A'}
+                              </span>            )}
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-gray-900 truncate">{user.name}</h2>

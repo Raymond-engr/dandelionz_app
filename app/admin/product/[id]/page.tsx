@@ -8,7 +8,7 @@ import Image from 'next/image';
 import {
   useGetAdminProductDetailsQuery,
   useApproveProductAdminMutation,
-  // Assuming there will be a rejectProductAdminMutation later
+  useRejectProductAdminMutation
 } from '@/lib/api/adminApi';
 
 interface ProductDetailsProps {
@@ -32,15 +32,14 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
 
   // Approve product mutation
   const [approveProductAdmin, { isLoading: isApprovingProduct }] = useApproveProductAdminMutation();
-  // Placeholder for reject mutation
-  // const [rejectProductAdmin, { isLoading: isRejectingProduct }] = useRejectProductAdminMutation();
+  // Reject product mutation
+  const [rejectProductAdmin, { isLoading: isRejectingProduct }] = useRejectProductAdminMutation();
 
 
   const handleConfirmAction = async () => {
     setSubmissionError(null);
     setSubmissionSuccess(null);
 
-    // Only approve for now, as reject API is not provided
     if (action === 'Approve Product') {
       try {
         await approveProductAdmin(productId).unwrap();
@@ -51,12 +50,18 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
         setSubmissionError(err?.data?.message || 'Failed to approve product.');
       }
     } else if (action === 'Reject Product') {
-      // Logic for rejecting product (needs reject API)
-      setSubmissionError('Reject functionality not yet implemented. Only approval is available.');
+      try {
+        await rejectProductAdmin({ slug: productId, reason: reason || undefined }).unwrap();
+        setSubmissionSuccess('Product rejected successfully!');
+        refetchProduct(); // Refresh product data
+      } catch (err: any) {
+        console.error('Failed to reject product:', err);
+        setSubmissionError(err?.data?.message || 'Failed to reject product.');
+      }
     }
   };
 
-  const isSubmitting = isApprovingProduct; // || isRejectingProduct;
+  const isSubmitting = isApprovingProduct || isRejectingProduct;
   const showLoading = isLoadingProduct || isSubmitting;
 
   if (isLoadingProduct) {

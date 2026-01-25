@@ -7,7 +7,7 @@ import type {
 import { RootState } from "../store";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://dandelionz.net/api";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.dandelionz.com.ng/";
 
 // Base query with auth token injection
 const baseQuery = fetchBaseQuery({
@@ -15,7 +15,7 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: (headers, api) => {
     const token = (api.getState() as RootState).auth.accessToken;
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     // Access the body from the arguments passed to the query
@@ -24,7 +24,7 @@ const baseQuery = fetchBaseQuery({
     if (body instanceof FormData) {
       // let browser set Content-Type for FormData
     } else {
-      headers.set('Content-Type', 'application/json');
+      headers.set("Content-Type", "application/json");
     }
     return headers;
   },
@@ -34,20 +34,19 @@ const baseQuery = fetchBaseQuery({
 const mutex = {
   isLocked: false,
   resolveQueue: () => {},
-  wait: function() {
+  wait: function () {
     return new Promise<void>((resolve) => {
       this.resolveQueue = resolve;
     });
   },
-  lock: function() {
+  lock: function () {
     this.isLocked = true;
   },
-  unlock: function() {
+  unlock: function () {
     this.isLocked = false;
     this.resolveQueue();
-  }
+  },
 };
-
 
 // Base query with automatic token refresh
 const baseQueryWithReauth: BaseQueryFn<
@@ -60,7 +59,7 @@ const baseQueryWithReauth: BaseQueryFn<
     await mutex.wait();
   }
   let result = await baseQuery(args, api, extraOptions);
-  
+
   if (result.error && result.error.status === 401) {
     // Check if the mutex is locked again, in case another request refreshed the token while we were waiting
     if (!mutex.isLocked) {
@@ -78,7 +77,7 @@ const baseQueryWithReauth: BaseQueryFn<
               body: { refresh_token: refreshToken },
             },
             api,
-            extraOptions
+            extraOptions,
           );
 
           if (refreshResult.data) {
@@ -88,7 +87,10 @@ const baseQueryWithReauth: BaseQueryFn<
             // Update tokens in state
             api.dispatch({
               type: "auth/setTokens",
-              payload: { accessToken: access_token, refreshToken: refresh_token },
+              payload: {
+                accessToken: access_token,
+                refreshToken: refresh_token,
+              },
             });
 
             // Retry the original query with the new token
@@ -98,7 +100,7 @@ const baseQueryWithReauth: BaseQueryFn<
             api.dispatch({ type: "auth/logout" });
           }
         } catch (e) {
-            api.dispatch({ type: "auth/logout" });
+          api.dispatch({ type: "auth/logout" });
         } finally {
           mutex.unlock();
         }
@@ -108,9 +110,9 @@ const baseQueryWithReauth: BaseQueryFn<
         mutex.unlock();
       }
     } else {
-        // Mutex was locked, so refresh was in-progress. Await it, then retry the request.
-        await mutex.wait();
-        result = await baseQuery(args, api, extraOptions);
+      // Mutex was locked, so refresh was in-progress. Await it, then retry the request.
+      await mutex.wait();
+      result = await baseQuery(args, api, extraOptions);
     }
   }
 
