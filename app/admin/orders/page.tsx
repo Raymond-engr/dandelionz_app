@@ -68,8 +68,8 @@ export default function OrderManagement() {
             <div className="space-y-3">
               {orders.map((order: Order) => (
                 <button
-                  key={order.uuid}
-                  onClick={() => handleOrderClick(order.uuid)}
+                  key={order.order_id}
+                  onClick={() => handleOrderClick(order.order_id)}
                   className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
                 >
                   <div className="flex items-start justify-between mb-2">

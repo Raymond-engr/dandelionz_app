@@ -3,41 +3,18 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useGetAllNotificationsQuery } from '@/lib/api/adminApi';
+import { format } from 'date-fns';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-const mockNotifications = [
-  { 
-    id: '1', 
-    title: 'Welcome message!', 
-    message: 'Welcome Admin, enjoy seamless sales management, product and users overseeing amd smooth withdrawals with the Dandelionz platform',
-    date: 'Nov 8th, 2025',
-    status: null
-  },
-  { 
-    id: '2', 
-    title: 'Welcome message!', 
-    message: 'Welcome Admin, enjoy seamless sales management, product and users overseeing amd smooth withdrawals with the Dandelionz platform',
-    date: 'Nov 8th, 2025',
-    status: 'Sent'
-  },
-  { 
-    id: '3', 
-    title: 'Welcome message!', 
-    message: 'Welcome Admin, enjoy seamless sales management, product and users overseeing amd smooth withdrawals with the Dandelionz platform',
-    date: 'Nov 8th, 2025',
-    status: 'Draft'
-  },
-  { 
-    id: '4', 
-    title: 'Welcome message!', 
-    message: 'Welcome Admin, enjoy seamless sales management, product and users overseeing amd smooth withdrawals with the Dandelionz platform',
-    date: 'Nov 8th, 2025',
-    status: 'Scheduled'
-  },
-];
 
 export default function NotificationManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('general');
+
+  const { data, isLoading, isError } = useGetAllNotificationsQuery();
+
+  const notifications = data?.data || [];
 
   return (
     <div className="min-h-screen bg-white">
@@ -86,41 +63,49 @@ export default function NotificationManagement() {
 
             {activeTab === 'created' && (
               <div className="space-y-3 mb-6">
-                {mockNotifications.map((notif) => (
-                  <div key={notif.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-base font-semibold text-gray-900 flex-1">
-                        {notif.title}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {notif.status && (
-                          <span
-                            className={`px-3 py-1 text-xs rounded-full font-medium ${
-                              notif.status === 'Sent'
-                                ? 'bg-gray-200 text-gray-700'
-                                : notif.status === 'Draft'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-purple-100 text-purple-700'
-                            }`}
-                          >
-                            {notif.status}
-                          </span>
-                        )}
-                        {notif.status === 'Sent' ? (
-                          <button className="px-4 py-1.5 bg-system-blue-light text-white text-xs rounded-lg font-medium">
-                            Resend
-                          </button>
-                        ) : notif.status === 'Draft' ? (
-                          <button className="px-4 py-1.5 bg-system-blue-light text-white text-xs rounded-lg font-medium">
-                            Send
-                          </button>
-                        ) : null}
-                        <span className="text-xs text-gray-600 whitespace-nowrap">{notif.date}</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{notif.message}</p>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <LoadingSpinner />
                   </div>
-                ))}
+                ) : isError ? (
+                  <div className="text-center text-red-500">Failed to load notifications.</div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-base font-semibold text-gray-900 flex-1">
+                          {notif.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {notif.status && (
+                            <span
+                              className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                notif.status === 'Sent'
+                                  ? 'bg-gray-200 text-gray-700'
+                                  : notif.status === 'Draft'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-purple-100 text-purple-700'
+                              }`}
+                            >
+                              {notif.status}
+                            </span>
+                          )}
+                          {notif.status === 'Sent' ? (
+                            <button className="px-4 py-1.5 bg-system-blue-light text-white text-xs rounded-lg font-medium">
+                              Resend
+                            </button>
+                          ) : notif.status === 'Draft' ? (
+                            <button className="px-4 py-1.5 bg-system-blue-light text-white text-xs rounded-lg font-medium">
+                              Send
+                            </button>
+                          ) : null}
+                          <span className="text-xs text-gray-600 whitespace-nowrap">{format(new Date(notif.created_at), 'MMM do, yyyy')}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{notif.message}</p>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -145,6 +130,7 @@ export default function NotificationManagement() {
               <Plus className="w-5 h-5" />
               Create Notification
             </button>
+.
           </div>
         </div>
       </div>

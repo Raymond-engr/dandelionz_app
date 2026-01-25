@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useCreateProductMutation } from '@/lib/api/vendorApi';
+import {
+  useCreateStoreProductMutation,
+  useCreateDraftMutation,
+} from '@/lib/api/vendorApi';
 import Image from 'next/image';
 
 type ProductStep = 'basic' | 'inventory' | 'preview';
@@ -45,7 +48,9 @@ const CATEGORIES = [
 
 export default function AddNewProductPage() {
   const router = useRouter();
-  const [createProduct, { isLoading, isSuccess, isError, error }] = useCreateProductMutation();
+  const [createStoreProduct, { isLoading: isPublishing, error: publishError }] = useCreateStoreProductMutation();
+  const [createDraft, { isLoading: isSavingDraft, error: draftError }] = useCreateDraftMutation();
+
   const [currentStep, setCurrentStep] = useState<ProductStep>('basic');
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -62,6 +67,10 @@ export default function AddNewProductPage() {
       sizes: []
     }
   });
+
+  const isLoading = isPublishing || isSavingDraft;
+  const isError = !!(publishError || draftError);
+  const error = publishError || draftError;
 
   const handleProceed = () => {
     if (currentStep === 'basic') {
@@ -87,14 +96,7 @@ export default function AddNewProductPage() {
     }
   };
 
-  const handleSaveAsDraft = () => {
-    // This would require a specific 'status' field in the API call
-    console.log('Saving as draft:', formData);
-    // createProduct({ ...append formData, status: 'draft' })
-    router.push('/vendor/product');
-  };
-
-  const handlePublish = async () => {
+  const buildProductData = () => {
     const productData = new FormData();
     productData.append('name', formData.name);
     productData.append('description', formData.description);
@@ -120,14 +122,28 @@ export default function AddNewProductPage() {
     if (formData.variants.sizes.length > 0) {
         productData.append('variants.sizes', JSON.stringify(formData.variants.sizes));
     }
+    return productData;
+  }
 
+  const handleSaveAsDraft = async () => {
+    const productData = buildProductData();
     try {
-      await createProduct(productData).unwrap();
-      // On success, redirect to the product list
+      await createDraft(productData).unwrap();
+      alert('Product saved as draft!');
+      router.push('/vendor/product');
+    } catch (err) {
+      console.error('Failed to save draft:', err);
+    }
+  };
+
+  const handlePublish = async () => {
+    const productData = buildProductData();
+    try {
+      await createStoreProduct(productData).unwrap();
+      alert('Product published successfully!');
       router.push('/vendor/product');
     } catch (err) {
       console.error('Failed to create product:', err);
-      // You can set an error state here to show a message to the user
     }
   };
 
@@ -489,14 +505,14 @@ export default function AddNewProductPage() {
                   disabled={isLoading}
                   className="flex-1 py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
-                  Save as Draft
+                  {isSavingDraft ? 'Saving...' : 'Save as Draft'}
                 </button>
                 <button
                   onClick={handlePublish}
                   disabled={isLoading}
                   className="flex-1 py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
-                  {isLoading ? 'Publishing...' : 'Publish Product'}
+                  {isPublishing ? 'Publishing...' : 'Publish Product'}
                 </button>
               </div>
             </div>

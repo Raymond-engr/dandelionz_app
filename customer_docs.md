@@ -445,39 +445,199 @@ JSON
 7. Post-Purchase (Orders & Wallet)
 History and balance tracking.
 
-List Order History
-Endpoint: GET /transactions/orders/ Response:
+Here is the complete documentation for every endpoint under /transactions/orders, covering listing, creating, updating, deleting, and managing items within an order.
+
+Dandelionz API Documentation - Orders & Transactions
+Base URL: https://api.dandelionz.com.ng
+
+1. General Order Management
+List Orders
+Endpoint: GET /transactions/orders/ Description: Retrieve a list of orders. Customers see their own; Admins see all. Response:
 
 JSON
 [
   {
-    "order_id": "ORD-2026-5501",
-    "status": "PAID",
-    "total_price": "1200000.00",
+    "id": 105,
+    "order_id": "ORD-2026-8899",
+    "customer": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+    "customer_email": "customer.joy@example.com",
+    "status": "PENDING",
+    "payment_status": "PAID",
+    "total_price": "45000.00",
+    "delivery_fee": "2000.00",
+    "discount": "0.00",
+    "total_with_delivery": "47000.00",
     "is_delivered": false,
-    "ordered_at": "2026-01-24T16:30:00Z"
+    "ordered_at": "2026-01-25T14:30:00Z"
   }
 ]
-Get Order Receipt/Details
-Endpoint: GET /transactions/orders/{order_id}/receipt/ Response:
+Create Order
+Endpoint: POST /transactions/orders/ Description: Create a new order manually (usually called automatically via checkout, but available here). Request:
 
 JSON
 {
-  "order_id": "ORD-2026-5501",
-  "customer_email": "customer.joy@example.com",
-  "total_price": "1200000.00",
-  "payment_status": "PAID",
+  "customer": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+  "total_price": "45000.00",
+  "delivery_fee": "2000.00",
   "shipping_address": {
-    "address": "45 Bennet Drive",
-    "city": "Benin City"
+    "full_name": "Joy Okon",
+    "address": "12 Admiralty Way",
+    "city": "Lekki",
+    "state": "Lagos",
+    "country": "Nigeria",
+    "postal_code": "105102",
+    "phone_number": "08055551234"
+  }
+}
+Response:
+
+JSON
+{
+  "id": 106,
+  "order_id": "ORD-2026-9000",
+  "status": "PENDING",
+  "total_price": "45000.00",
+  "created_at": "2026-01-25T15:00:00Z"
+}
+2. Specific Order Operations (ID Required)
+Get Order Details
+Endpoint: GET /transactions/orders/{order_id}/ Description: Retrieve full details of a specific order. Response:
+
+JSON
+{
+  "id": 105,
+  "order_id": "ORD-2026-8899",
+  "customer": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+  "customer_email": "customer.joy@example.com",
+  "status": "SHIPPED",
+  "payment_status": "PAID",
+  "total_price": "45000.00",
+  "delivery_fee": "2000.00",
+  "tracking_number": "TRACK-882211",
+  "shipping_address": {
+    "full_name": "Joy Okon",
+    "address": "12 Admiralty Way",
+    "city": "Lekki",
+    "state": "Lagos",
+    "country": "Nigeria"
+  },
+  "order_items": [
+    {
+      "product_name": "Wireless Headphones",
+      "quantity": 1,
+      "item_subtotal": "45000.00"
+    }
+  ],
+  "logs": "Order placed on 2026-01-25..."
+}
+Update Order (Full)
+Endpoint: PUT /transactions/orders/{order_id}/ Description: Update all details of an order. Request:
+
+JSON
+{
+  "customer": "5cc97d04-270d-4973-a5cf-0c273359e5d5",
+  "status": "DELIVERED",
+  "payment_status": "PAID",
+  "total_price": "45000.00",
+  "delivery_fee": "2000.00",
+  "discount": "0.00",
+  "shipping_address": {
+    "full_name": "Joy Okon",
+    "address": "Updated Address 123",
+    "city": "Lagos",
+    "state": "Lagos",
+    "country": "Nigeria",
+    "postal_code": "100001",
+    "phone_number": "08055551234"
+  }
+}
+Response:
+
+JSON
+{
+  "order_id": "ORD-2026-8899",
+  "status": "DELIVERED",
+  "message": "Order updated successfully"
+}
+Update Order (Partial)
+Endpoint: PATCH /transactions/orders/{order_id}/ Description: Update specific fields (e.g., changing status or adding tracking number). Request:
+
+JSON
+{
+  "status": "SHIPPED",
+  "tracking_number": "UPS-99887766"
+}
+Response:
+
+JSON
+{
+  "order_id": "ORD-2026-8899",
+  "status": "SHIPPED",
+  "tracking_number": "UPS-99887766",
+  "updated_at": "2026-01-26T09:00:00Z"
+}
+Delete Order
+Endpoint: DELETE /transactions/orders/{order_id}/ Description: Permanently remove an order. Request: (No Body) Response: (Returns 204 No Content)
+
+JSON
+{}
+Get Order Receipt
+Endpoint: GET /transactions/orders/{order_id}/receipt/ Description: Get a printable receipt view of the order. Response:
+
+JSON
+{
+  "order_id": "ORD-2026-8899",
+  "customer_email": "customer.joy@example.com",
+  "total_price": "47000.00",
+  "payment": {
+    "reference": "tr_123456789",
+    "status": "paid",
+    "amount": "47000.00",
+    "paid_at": "2026-01-25T14:35:00Z"
   },
   "items": [
     {
-      "product_name": "iPhone 15 Pro",
+      "product_name": "Wireless Headphones",
       "quantity": 1,
-      "price": "1200000.00"
+      "price_at_purchase": "45000.00"
     }
   ]
+}
+3. Order Items (Managing Content of Orders)
+List Order Items
+Endpoint: GET /transactions/orders/{order_id}/items/ Description: List just the products inside a specific order. Response:
+
+JSON
+[
+  {
+    "id": 501,
+    "product_id": 101,
+    "product": {
+      "name": "Wireless Headphones",
+      "price": "45000.00"
+    },
+    "quantity": 1,
+    "item_subtotal": "45000.00"
+  }
+]
+Create Order Item (Add to Order)
+Endpoint: POST /transactions/orders/{order_id}/items/ Description: Add a new product to an existing order. Request:
+
+JSON
+{
+  "product_id": 202,
+  "quantity": 2
+}
+Response:
+
+JSON
+{
+  "id": 502,
+  "order": 105,
+  "product_id": 202,
+  "quantity": 2,
+  "price_at_purchase": "12000.00",
+  "item_subtotal": "24000.00"
 }
 Check Wallet Balance
 Endpoint: GET /transactions/wallet/ Response:
@@ -562,3 +722,139 @@ JSON
     }
   ]
 }
+
+Here is the clarification on Email Verification, Address Management, and Payment Management based strictly on your file.
+
+1. Email Verification Flow
+Status: Available, but the endpoint name is slightly different. You asked for /auth/verify-email/, but in your file, it is named /auth/email-verify/.
+
+Here is the correct flow and endpoints:
+
+Step 1: Send Verification Link
+
+Endpoint: POST /auth/send-verification/
+
+Who: Authenticated User
+
+Action: Triggers an email to the user with a link containing uid and token.
+
+Step 2: Verify Email (The Link Target)
+
+Endpoint: GET /auth/email-verify/
+
+Query Params: ?uid={uid}&token={token}
+
+Action: When the user clicks the link in their email, the frontend hits this endpoint to confirm verification.
+
+Step 2 (Alternative): Verify via POST
+
+Endpoint: POST /auth/email-verify/
+
+Body: { "uid": "...", "token": "..." }
+
+Action: Same result, but used if you prefer a form submission style.
+
+Step 3: Check Status
+
+Endpoint: GET /auth/check-verification/
+
+Action: Returns { "is_verified": true/false } to update the UI.
+
+2. Address Management
+Status: Limited (Profile-based only). There is no dedicated "Address Book" endpoint (e.g., /user/addresses/add/ or /user/addresses/list/) that allows a user to save multiple shipping addresses.
+
+Instead, the address is treated as part of the Customer Profile. A customer has only one saved shipping address at a time.
+
+To Manage Address: You must use the Profile Update endpoint.
+
+Endpoint: PUT /user/customer/profile/ or PATCH /user/customer/profile/
+
+Fields: shipping_address, city, state, country, postal_code.
+
+Implication: If a user wants to ship to a different location, they must overwrite their current profile address or enter it manually during checkout (if the checkout UI supports one-off addresses).
+
+3. Payment Method Management
+Status: Vendor Only (Bank Details). There are no endpoints for Customers to save/manage Credit Cards (e.g., /user/cards/).
+
+For Customers: Card management is likely handled entirely by the Paystack widget/checkout flow. The API does not store customer card tokens.
+
+For Vendors: There is a flow to manage banking details for payouts.
+
+Vendor Bank Management:
+
+Endpoint: PUT /user/vendor/profile/
+
+Fields: bank_name, account_number, recipient_code.
+
+---
+# API Review (Generated by Gemini)
+
+This section contains a review of the API documentation against the client-side implementation.
+
+---
+- Section: Checkout & Payments
+- Findings: There was a major disconnect between the documented Paystack integration flow and the client-side implementation. The documented redirect-based flow was chosen as the source of truth.
+- Actionable Items:
+    1. **Decision:** Adopt the payment flow described in the documentation (redirect-based). (Completed)
+    2. Implemented `POST /transactions/checkout/` and `GET /transactions/verify-payment/` in `lib/api/publicApi.ts`. (Completed)
+    3. Reworked `app/(customer)/checkout/payment/page.tsx` to use the `initializeCheckout` mutation and redirect to Paystack. (Completed)
+    4. Made `app/(customer)/checkout/success/page.tsx` dynamic to handle payment verification using the `verifyPayment` query. (Completed)
+- Priority: High
+- Status: Closed
+
+---
+- Section: Authentication - Password Reset
+- Findings: The application's frontend was missing the UI for the second step of the password reset flow.
+- Actionable Items:
+    1. Created a new page at `app/forgot-password/confirm/page.tsx`. (Completed)
+    2. Implemented the `confirmPasswordReset` mutation in `lib/api/authApi.ts`. (Completed)
+    3. Connected the new page to the mutation to complete the feature. (Completed)
+- Priority: High
+- Status: Closed
+
+---
+- Section: Authentication & Profile - Feature Mismatch
+- Findings: The documentation contradicted the implementation regarding address and payment method management.
+- Actionable Items:
+    1. **Decision:** Aligned the application with the documentation. It now supports a single address per customer profile and no saved payment methods for customers. (Completed)
+    2. Removed the multi-address and payment method endpoints from `lib/api/customerApi.ts`. (Completed)
+    3. Renamed the `addresses` directory to `address` and reworked the page to edit the single profile address using `PATCH`. (Completed)
+    4. Verified the main profile page also correctly uses `PATCH` for address updates. (Completed)
+    5. Deleted the obsolete payment management UI page. (Completed)
+- Priority: High
+- Status: Closed
+
+---
+- Section: Authentication - Email Verification URL Correction
+- Findings: The `lib/api/authApi.ts` implemented the `verifyEmail` mutation using `/auth/verify-email/`, while the documentation addendum specified `/auth/email-verify/`.
+- Actionable Items:
+    1. Corrected the URL for the `verifyEmail` mutation in `lib/api/authApi.ts` to `/auth/email-verify/` to align with the documentation. (Completed)
+- Priority: High
+- Status: Closed
+
+---
+- Section: Engagement & Cart - Incorrect Identifiers
+- Findings: The endpoints for adding/removing items from the cart and wishlist are documented to use a product `id` (integer) or `slug`, but the client-side implementation is inconsistent or ambiguous. For `add`, it sends a `product_slug`, while the docs say `product` (implying id). For `remove`, it uses a `productId` variable which is unclear.
+- Actionable Items:
+    1. Clarify with the backend team if these endpoints expect a product `id` (integer) or `slug` (string).
+    2. Update the client-side implementation in `publicApi.ts` (`addToWishlist`, `removeFromWishlist`, `addToCart`, `removeFromCart`) to send the correct, consistent identifier.
+- Priority: Medium
+- Status: Open
+
+---
+- Section: Product Discovery - Product Filtering
+- Findings: The documentation specifies the endpoint for filtering products as `/store/products/filtered/`, but the implementation uses `/store/products/`.
+- Actionable Items:
+    1. Correct the endpoint in the documentation to `/store/products/`.
+    2. Consider adding the extra filter parameters (`page`, `store`, `max_price`, `ordering`) available in the implementation to the documentation.
+- Priority: Low
+- Status: Open
+
+---
+- Section: Post-Purchase - Missing Endpoints
+- Findings: The documented endpoints for getting an order receipt (`/transactions/orders/{order_id}/receipt/`) and checking wallet balance (`/transactions/wallet/`) are missing from the client-side implementation.
+- Actionable Items:
+    1. If these features are required, implement `getOrderReceipt` and `getWalletBalance` queries in the client-side API.
+    2. Verify if the existing `getOrderDetails` query can be used in place of the order receipt endpoint.
+- Priority: Medium
+- Status: Open

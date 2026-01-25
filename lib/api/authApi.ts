@@ -52,6 +52,12 @@ interface PasswordResetRequest {
   email: string;
 }
 
+interface ConfirmPasswordResetRequest {
+  uid: string;
+  token: string;
+  new_password: string;
+}
+
 interface VerifyEmailRequest {
   uid: string;
   token: string;
@@ -103,6 +109,17 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    confirmPasswordReset: builder.mutation<
+      { success: boolean; message: string },
+      ConfirmPasswordResetRequest
+    >({
+      query: (body) => ({
+        url: "/auth/password-reset/confirm/",
+        method: "POST",
+        body,
+      }),
+    }),
+
     // Check Verification Status
     checkVerification: builder.query<
       { success: boolean; data: { is_verified: boolean } },
@@ -129,7 +146,7 @@ export const authApi = baseApi.injectEndpoints({
       VerifyEmailRequest
     >({
       query: (body) => ({
-        url: "/auth/verify-email/",
+        url: "/auth/email-verify/",
         method: "POST",
         body,
       }),
@@ -143,6 +160,7 @@ export const {
   useLoginMutation,
   useRefreshTokenMutation,
   useRequestPasswordResetMutation,
+  useConfirmPasswordResetMutation,
   useCheckVerificationQuery,
   useSendVerificationEmailMutation,
   useVerifyEmailMutation,

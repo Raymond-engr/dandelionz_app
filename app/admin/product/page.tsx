@@ -15,7 +15,7 @@ import { Category, Product } from '@/lib/api/adminApi';
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
@@ -28,9 +28,9 @@ export default function ProductManagement() {
   // Delete category mutation
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
 
-  const handleDeleteCategory = async (categoryId: number) => {
+  const handleDeleteCategory = async (categorySlug: string) => {
     try {
-      await deleteCategory(categoryId).unwrap();
+      await deleteCategory(categorySlug).unwrap();
       refetchCategories(); // Refresh categories after deletion
       setShowDeleteConfirm(null);
     } catch (err) {
@@ -39,8 +39,8 @@ export default function ProductManagement() {
     }
   };
 
-  const handleEditCategory = (categoryId: number) => {
-    router.push(`/admin/product/category/${categoryId}/edit`);
+  const handleEditCategory = (categorySlug: string) => {
+    router.push(`/admin/product/category/${categorySlug}/edit`);
   };
 
   return (
@@ -86,13 +86,13 @@ export default function ProductManagement() {
                 <div className="space-y-3">
                   {categories.map((category: Category) => (
                     <AdminCategoryListItem
-                      key={category.id}
+                      key={category.slug}
                       id={category.id}
                       name={category.name}
-                      productCount={0} // Backend needs to provide this
-                      totalSales={0} // Backend needs to provide this
-                      onEdit={handleEditCategory}
-                      onDelete={() => setShowDeleteConfirm(category.id)}
+                      productCount={category.product_count || 0}
+                      totalSales={parseFloat(category.total_sales || '0')}
+                      onEdit={() => handleEditCategory(category.slug)}
+                      onDelete={() => setShowDeleteConfirm(category.slug)}
                     />
                   ))}
                 </div>

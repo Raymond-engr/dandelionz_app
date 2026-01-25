@@ -6,6 +6,7 @@ export interface Product {
   price: string;
   rating?: number;
   image?: string | null;
+  images?: string[];
   slug?: string;
   store?: number;
   store_name?: string;
@@ -66,7 +67,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToCart: builder.mutation<
       { success: boolean; data: any },
-      { product_slug: string; quantity: number; variant?: any }
+      { product: number; quantity: number; variant?: any }
     >({
       query: (body) => ({
         url: "/store/cart/add/",
@@ -80,8 +81,8 @@ export const publicApi = baseApi.injectEndpoints({
       { success: boolean; message: string },
       string
     >({
-      query: (productId) => ({
-        url: `/store/cart/remove/${productId}/`,
+      query: (slug) => ({
+        url: `/store/cart/remove/${slug}/`,
         method: "DELETE",
       }),
       invalidatesTags: ["Cart"],
@@ -107,7 +108,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToWishlist: builder.mutation<
       { success: boolean; message: string },
-      { product_slug: string }
+      { product: number }
     >({
       query: (body) => ({
         url: "/store/favourites/add/",
@@ -121,8 +122,8 @@ export const publicApi = baseApi.injectEndpoints({
       { success: boolean; message: string },
       string
     >({
-      query: (productId) => ({
-        url: `/store/favourites/remove/${productId}/`,
+      query: (slug) => ({
+        url: `/store/favourites/remove/${slug}/`,
         method: "DELETE",
       }),
       invalidatesTags: ["Wishlist"],
@@ -185,6 +186,44 @@ export const publicApi = baseApi.injectEndpoints({
         providesTags: ["Product"],
       }
     ),
+
+    // Payments
+    initializeCheckout: builder.mutation<
+      {
+        order_id: string;
+        amount: number;
+        reference: string;
+        authorization_url: string;
+        access_code: string;
+      },
+      void
+    >({
+      query: () => ({
+        url: "/transactions/checkout/",
+        method: "POST",
+      }),
+      invalidatesTags: ["Cart", "Order"],
+    }),
+
+    verifyPayment: builder.query<
+      {
+        status: string;
+        message: string;
+        data: {
+          amount: string;
+          reference: string;
+          status: string;
+          paid_at: string;
+        };
+      },
+      { reference: string }
+    >({
+      query: ({ reference }) => ({
+        url: `/transactions/verify-payment/?reference=${reference}`,
+        method: "GET",
+      }),
+      providesTags: ["Order"],
+    }),
   }),
 });
 
@@ -205,4 +244,6 @@ export const {
   usePayForOrderMutation,
   useAddProductReviewMutation,
   useGetProductReviewsQuery,
+  useInitializeCheckoutMutation,
+  useVerifyPaymentQuery,
 } = publicApi;

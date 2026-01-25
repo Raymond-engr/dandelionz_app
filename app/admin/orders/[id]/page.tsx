@@ -8,10 +8,11 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { OrderItem } from '@/lib/api/adminApi';
 
 interface OrderDetailsProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function OrderDetails({ params }: OrderDetailsProps) {
+export default function OrderDetails({ params: paramsPromise }: OrderDetailsProps) {
+  const params = use(paramsPromise);
   const router = useRouter();
   const [action, setAction] = useState<'cancel' | 'process' | 'complete'>('cancel');
   const [reason, setReason] = useState('');
@@ -35,22 +36,21 @@ export default function OrderDetails({ params }: OrderDetailsProps) {
         }
         await cancelOrder({ order_id: order.order_id, reason }).unwrap();
       } else if (action === 'process') {
-        await updateOrderStatus({ uuid: order.uuid, status: 'PROCESSING' }).unwrap();
+        await updateOrderStatus({ order_id: order.order_id, status: 'PROCESSING' }).unwrap();
       } else if (action === 'complete') {
-        await updateOrderStatus({ uuid: order.uuid, status: 'DELIVERED' }).unwrap();
+        await updateOrderStatus({ order_id: order.order_id, status: 'DELIVERED' }).unwrap();
       }
       refetch();
     } catch (err) {
       console.error('Failed to update order status:', err);
-      // You can add a toast notification here to show the error
     }
   };
   
   const trackingSteps = [
-    { label: 'Order Placed', date: 'Associated Date', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
-    { label: 'Product Shipped', date: 'Associated Date', active: order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
-    { label: 'Ready for pickup', date: 'Associated Date', active: order?.status === 'DELIVERED' },
-    { label: 'Collected', date: 'Associated Date', active: false }, // This would need another status
+    { label: 'Order Placed', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
+    { label: 'Product Shipped', active: order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
+    { label: 'Ready for pickup', active: order?.status === 'DELIVERED' },
+    { label: 'Collected', active: false },
   ];
   
   if (isLoading) {
@@ -72,7 +72,7 @@ export default function OrderDetails({ params }: OrderDetailsProps) {
     );
   }
 
-  const deliveryFee = 0; // Assuming this might come from the API in the future
+  const deliveryFee = 0;
   const totalAmount = parseFloat(order.total_amount) + deliveryFee;
 
   return (
@@ -109,7 +109,6 @@ export default function OrderDetails({ params }: OrderDetailsProps) {
                 <label className="text-xs text-gray-600 block mb-1">Store Name</label>
                 <p className="text-sm font-medium text-gray-900">{order.vendor.store_name}</p>
               </div>
-              {/* The mock had vendor email, but the Order interface doesn't. This can be added if needed. */}
             </div>
 
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Order Summary</h2>
@@ -152,7 +151,6 @@ export default function OrderDetails({ params }: OrderDetailsProps) {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{step.label}</p>
-                      {/* Date can be added here if available */}
                     </div>
                   </div>
                 ))}

@@ -39,7 +39,8 @@ interface Product {
     sizes: string[];
   };
   tags: string[];
-  status: "draft" | "published" | "pending" | "approved" | "rejected";
+  publish_status: string;
+  approval_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -107,6 +108,14 @@ interface Notification {
   created_at: string;
 }
 
+interface OrderSummary {
+  pending: number;
+  paid: number;
+  shipped: number;
+  delivered: number;
+  canceled: number;
+}
+
 export const vendorApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -116,18 +125,6 @@ export const vendorApi = baseApi.injectEndpoints({
     >({
       query: () => "/user/vendor/profile/",
       providesTags: ["Vendor"],
-    }),
-
-    updateVendorProfile: builder.mutation<
-      { success: boolean; data: VendorProfile },
-      Partial<VendorProfile>
-    >({
-      query: (body) => ({
-        url: "/user/vendor/profile/",
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["Vendor"],
     }),
 
     partialUpdateVendorProfile: builder.mutation<
@@ -153,8 +150,8 @@ export const vendorApi = baseApi.injectEndpoints({
       }),
     }),
 
-    // Product Management
-    getVendorProducts: builder.query<
+    // --- Store Product Management ---
+    getStoreProducts: builder.query<
       { success: boolean; data: Product[] },
       { status?: string }
     >({
@@ -165,19 +162,19 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Product"],
     }),
 
-    createProduct: builder.mutation<
+    createStoreProduct: builder.mutation<
       { success: boolean; data: Product },
       FormData
     >({
       query: (body) => ({
-        url: "/user/vendor/products/",
+        url: "/user/vendor/products/add/",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["Product", "Draft"],
     }),
 
-    getProductDetails: builder.query<
+    getStoreProductDetails: builder.query<
       { success: boolean; data: Product },
       string
     >({
@@ -185,7 +182,7 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Product"],
     }),
 
-    updateProduct: builder.mutation<
+    updateStoreProduct: builder.mutation<
       { success: boolean; data: Product },
       { slug: string; data: FormData }
     >({
@@ -197,7 +194,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
-    partialUpdateProduct: builder.mutation<
+    partialUpdateStoreProduct: builder.mutation<
       { success: boolean; data: Product },
       { slug: string; data: Partial<Product> }
     >({
@@ -209,7 +206,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
-    deleteProduct: builder.mutation<
+    deleteStoreProduct: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -220,13 +217,77 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
+    // --- Draft Management ---
+    getDrafts: builder.query<{ success: boolean; data: Product[] }, void>({
+      query: () => "/store/vendor/drafts/",
+      providesTags: ["Draft"],
+    }),
+
+    getDraftDetails: builder.query<{ success: boolean; data: Product }, string>({
+      query: (slug) => `/store/vendor/drafts/${slug}/`,
+      providesTags: ["Draft"],
+    }),
+
+    createDraft: builder.mutation<{ success: boolean; data: Product }, FormData>({
+      query: (body) => ({
+        url: "/store/vendor/drafts/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Draft"],
+    }),
+
+    updateDraft: builder.mutation<
+      { success: boolean; data: Product },
+      { slug: string; data: FormData }
+    >({
+      query: ({ slug, data }) => ({
+        url: `/store/vendor/drafts/${slug}/update/`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Draft", "Product"],
+    }),
+
+    submitDraft: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (slug) => ({
+        url: `/store/vendor/drafts/${slug}/submit/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Draft", "Product"],
+    }),
+
+    deleteDraft: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (slug) => ({
+        url: `/store/vendor/drafts/${slug}/delete/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Draft"],
+    }),
+
     // Order Management
     getVendorOrders: builder.query<
+      { success: boolean; data: OrderSummary },
+      void // No params for summary
+    >({
+      query: () => ({
+        url: "/user/vendor/orders/",
+      }),
+      providesTags: ["Order"],
+    }),
+
+    getVendorOrdersList: builder.query<
       { success: boolean; data: Order[] },
-      { status?: string }
+      { limit?: number; offset?: number; status?: string } // Example params
     >({
       query: (params) => ({
-        url: "/user/vendor/orders/",
+        url: "/user/vendor/orders/list/",
         params,
       }),
       providesTags: ["Order"],
@@ -366,21 +427,37 @@ export const vendorApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Notification"],
     }),
+
+    // Account Management
+    deleteAccount: builder.mutation<void, { password: string }>({
+      query: (body) => ({
+        url: "/user/vendor/account/",
+        method: "DELETE",
+        body,
+      }),
+      invalidatesTags: ["Vendor", "Auth"],
+    }),
   }),
 });
 
 export const {
   useGetVendorProfileQuery,
-  useUpdateVendorProfileMutation,
   usePartialUpdateVendorProfileMutation,
   useChangeVendorPasswordMutation,
-  useGetVendorProductsQuery,
-  useCreateProductMutation,
-  useGetProductDetailsQuery,
-  useUpdateProductMutation,
-  usePartialUpdateProductMutation,
-  useDeleteProductMutation,
+  useGetStoreProductsQuery,
+  useCreateStoreProductMutation,
+  useGetStoreProductDetailsQuery,
+  useUpdateStoreProductMutation,
+  usePartialUpdateStoreProductMutation,
+  useDeleteStoreProductMutation,
+  useGetDraftsQuery,
+  useGetDraftDetailsQuery,
+  useCreateDraftMutation,
+  useUpdateDraftMutation,
+  useSubmitDraftMutation,
+  useDeleteDraftMutation,
   useGetVendorOrdersQuery,
+  useGetVendorOrdersListQuery,
   useGetVendorOrderDetailsQuery,
   useUpdateVendorOrderStatusMutation,
   useGetVendorAnalyticsQuery,
@@ -394,4 +471,5 @@ export const {
   useRequestPINResetMutation,
   useGetVendorNotificationsQuery,
   useMarkNotificationAsReadMutation,
+  useDeleteAccountMutation,
 } = vendorApi;

@@ -80,7 +80,7 @@ export default function AdminDashboard() {
             />
             <StatCard 
               title="Total Vendors" 
-              value={isLoading ? "..." : "0"}
+              value={isLoading ? "..." : String(analytics?.data?.total_vendors || 0)}
               change="+0.00%" 
               icon={<Store className="w-5 h-5 text-blue-600" />}
               isLoading={isLoading}

@@ -26,11 +26,13 @@ export default function AppLayout({
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Skip auth check for public routes
-    const publicRoutes = ['/login', '/register', '/forgot-password', '/verify-email', '/'];
-    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+    const publicRoutes = ['/login', '/register', '/forgot-password', '/verify-email', '/verify-notice', '/'];
+    const protectedRoutePatterns = ['/account', '/checkout', '/wishlist', '/orders', '/cart', '/receipt'];
+    
+    const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
+    const isProtectedRoute = protectedRoutePatterns.some(route => pathname.startsWith(route));
 
-    if (requireAuth && !isAuthenticated && !isPublicRoute) {
+    if ((requireAuth || isProtectedRoute) && !isAuthenticated && !isPublicRoute) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
@@ -45,6 +47,9 @@ export default function AppLayout({
       } else if (pathname.startsWith('/vendor') && currentRole !== 'VENDOR') {
         router.push('/');
       } else if (pathname.startsWith('/account') && currentRole !== 'CUSTOMER') {
+        // Allow customer-like account access or redirect? 
+        // Docs say customer has profile, so we allow if role is CUSTOMER
+        // If they are vendor/admin trying to access /account (customer), send home
         router.push('/');
       }
     }
