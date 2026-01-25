@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import { Package, Filter, Edit2, Trash2, Plus } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { 
-  useGetAllCategoriesQuery, 
+import {
+  useGetAllCategoriesQuery,
   useGetAllProductsQuery,
-  useDeleteCategoryMutation // Will be used in handleDeleteCategory
+  useDeleteCategoryMutation
 } from '@/lib/api/adminApi';
 import AdminCategoryListItem from '@/components/AdminCategoryListItem';
 import Link from 'next/link';
-
+import { Category, Product } from '@/lib/api/adminApi';
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
@@ -84,7 +84,7 @@ export default function ProductManagement() {
                 <div className="text-center text-red-500">Failed to load categories.</div>
               ) : (
                 <div className="space-y-3">
-                  {categories.map((category) => (
+                  {categories.map((category: Category) => (
                     <AdminCategoryListItem
                       key={category.id}
                       id={category.id}
@@ -119,17 +119,17 @@ export default function ProductManagement() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[rgba(77,255,151,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Approved Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Approved').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Approved').length}</p>
                   </div>
                   <div className="bg-[rgba(255,77,77,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Rejected Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Rejected').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Rejected').length}</p>
                   </div>
                 </div>
 
                 <div className="bg-[rgba(255,212,59,0.5)] rounded-lg p-3">
                   <p className="text-xs text-gray-700 mb-1">Pending Products</p>
-                  <p className="text-xl font-bold text-gray-900">{products.filter(p => p.status === 'Pending').length}</p>
+                  <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Pending').length}</p>
                   </div>
                 </div>
 
@@ -144,7 +144,7 @@ export default function ProductManagement() {
                 <div className="text-center text-red-500">Failed to load products.</div>
               ) : (
                 <div className="space-y-3">
-                  {products.map((product) => (
+                  {products.map((product: Product) => (
                     <button
                       key={product.slug}
                       onClick={() => router.push(`/admin/product/${product.slug}`)}

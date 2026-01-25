@@ -5,9 +5,9 @@ import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
   useGetVendorDetailsQuery, 
-  useSuspendUserMutation,
   useApproveVendorMutation,
-  useVerifyVendorKYCMutation
+  useVerifyVendorKYCMutation,
+  useSuspendVendorWithReasonMutation
 } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -21,9 +21,9 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
   const vendorId = params.id;
 
   const { data, isLoading, error } = useGetVendorDetailsQuery(vendorId);
-  const [suspendUser, { isLoading: isSuspending }] = useSuspendUserMutation();
   const [approveVendor, { isLoading: isApproving }] = useApproveVendorMutation();
   const [verifyKYC, { isLoading: isVerifying }] = useVerifyVendorKYCMutation();
+  const [suspendVendor, { isLoading: isSuspending }] = useSuspendVendorWithReasonMutation();
 
   const [action, setAction] = useState('Approve Vendor');
   const [reason, setReason] = useState('');
@@ -43,9 +43,13 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         }).unwrap();
         setSuccessMessage('Vendor approved successfully');
       } else if (action === 'Suspend Vendor') {
-        await suspendUser({ 
-          user_uuid: vendorId, 
-          suspend: true 
+        if (!reason.trim()) {
+          alert('A reason is required to suspend a vendor.');
+          return;
+        }
+        await suspendVendor({ 
+          uuid: vendorId, 
+          reason: reason 
         }).unwrap();
         setSuccessMessage('Vendor suspended successfully');
       } else if (action === 'Reject Vendor') {
@@ -163,6 +167,10 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                 <label className="text-xs text-gray-600 block mb-1">Store Name</label>
                 <p className="text-sm font-medium text-gray-900">{vendor.store_name}</p>
               </div>
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">Address</label>
+                <p className="text-sm font-medium text-gray-900">{vendor.address || 'N/A'}</p>
+              </div>
             </div>
 
             {/* Action Controls */}
@@ -184,7 +192,7 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-20 resize-none"
-                disabled={isSuspending || isApproving || isVerifying}
+                disabled={isSuspending || isApproving || isVerifying || action !== 'Suspend Vendor'}
               />
 
               <button 

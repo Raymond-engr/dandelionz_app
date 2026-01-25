@@ -34,15 +34,16 @@ interface OrderSummary {
   delivered: number;
 }
 
-interface Vendor {
+export interface Vendor {
   user_uuid: string;
   email: string;
   store_name: string;
   is_verified_vendor: boolean;
   is_active: boolean;
+  address?: string;
 }
 
-interface User {
+export interface User {
   uuid: string;
   email: string;
   full_name: string;
@@ -51,15 +52,20 @@ interface User {
   is_verified: boolean;
   is_active: boolean;
   created_at: string;
+  address?: string;
+  total_spend?: string;
+  total_orders?: string;
+  suspension_history?: string;
 }
 
-interface Order {
+export interface Order {
   uuid: string;
   order_id: string;
   customer: {
     uuid: string;
     full_name: string;
     email: string;
+    phone_number?: string;
   };
   vendor: {
     uuid: string;
@@ -69,9 +75,11 @@ interface Order {
   status: string;
   created_at: string;
   updated_at: string;
+  shipping_address?: ShippingAddress;
+  order_items?: OrderItem[];
 }
 
-interface Product {
+export interface Product {
   slug: string;
   name: string;
   price: string;
@@ -102,13 +110,15 @@ interface AdminProduct {
   status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Specific status for admin actions
 }
 
-interface Category {
+export interface Category {
   id: number;
   name: string;
   slug: string;
   description: string;
   image: string | null;
   created_at: string;
+  product_count: number;
+  total_sales: string;
 }
 
 interface Payment {
@@ -150,6 +160,20 @@ interface Notification {
   scheduled_at: string | null;
 }
 
+export interface ShippingAddress {
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+}
+
+export interface OrderItem {
+  product_name: string;
+  quantity: number;
+  item_subtotal: string;
+  vendor_name: string;
+}
+
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -157,7 +181,7 @@ export const adminApi = baseApi.injectEndpoints({
       { success: boolean; data: AdminProfile },
       void
     >({
-      query: () => "/user/admin/profile/",
+      query: () => "/user/admin/account/profile/",
       providesTags: ["Admin"],
     }),
 
@@ -170,6 +194,30 @@ export const adminApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+    }),
+
+    updateAdminProfile: builder.mutation<
+      { success: boolean; data: AdminProfile },
+      { full_name: string; phone_number: string }
+    >({
+      query: (body) => ({
+        url: "/user/admin/account/profile/",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Admin"],
+    }),
+
+    uploadAdminPhoto: builder.mutation<
+      { success: boolean; data: { profile_picture: string } },
+      FormData
+    >({
+      query: (body) => ({
+        url: "/user/admin/account/photo/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Admin"],
     }),
 
     // Analytics
@@ -207,15 +255,17 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["User", "Vendor"],
     }),
 
-    deleteUser: builder.mutation<{ success: boolean; message: string }, string>(
-      {
-        query: (uuid) => ({
-          url: `/user/admin/users/${uuid}/`,
-          method: "DELETE",
-        }),
-        invalidatesTags: ["User"],
-      }
-    ),
+    updateUserStatus: builder.mutation<
+      { success: boolean; message: string },
+      { uuid: string; action: "suspend" | "activate"; reason: string }
+    >({
+      query: ({ uuid, ...body }) => ({
+        url: `/user/admin/users/${uuid}/suspend/`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
 
     // Vendor Management
     getAllVendors: builder.query<{ success: boolean; data: Vendor[] }, void>({
@@ -248,6 +298,18 @@ export const adminApi = baseApi.injectEndpoints({
     >({
       query: (body) => ({
         url: "/user/admin/vendors/verify-kyc/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Vendor"],
+    }),
+
+    suspendVendorWithReason: builder.mutation<
+      { success: boolean; message: string },
+      { uuid: string; reason: string }
+    >({
+      query: ({ uuid, ...body }) => ({
+        url: `/user/admin/vendors/${uuid}/suspend/`,
         method: "POST",
         body,
       }),
@@ -309,6 +371,18 @@ export const adminApi = baseApi.injectEndpoints({
       query: ({ uuid, ...body }) => ({
         url: `/user/admin/orders/${uuid}/`,
         method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    cancelOrderWithReason: builder.mutation<
+      { success: boolean; message: string },
+      { order_id: string; reason: string }
+    >({
+      query: ({ order_id, ...body }) => ({
+        url: `/user/admin/orders/${order_id}/cancel/`,
+        method: "POST",
         body,
       }),
       invalidatesTags: ["Order"],
@@ -390,6 +464,18 @@ export const adminApi = baseApi.injectEndpoints({
       query: (slug) => ({
         url: `/store/admin/products/${slug}/approve/`,
         method: "POST",
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
+    rejectProductAdmin: builder.mutation<
+      { success: boolean; message: string },
+      { slug: string; reason?: string }
+    >({
+      query: ({ slug, ...body }) => ({
+        url: `/store/admin/products/${slug}/reject/`,
+        method: "POST",
+        body,
       }),
       invalidatesTags: ["Product"],
     }),
@@ -597,15 +683,18 @@ export const adminApi = baseApi.injectEndpoints({
 export const {
   useGetAdminProfileQuery,
   useChangeAdminPasswordMutation,
+  useUpdateAdminProfileMutation,
+  useUploadAdminPhotoMutation,
   useGetAnalyticsQuery,
   useGetAllUsersQuery,
   useGetUserDetailsQuery,
   useSuspendUserMutation,
-  useDeleteUserMutation,
+  useUpdateUserStatusMutation,
   useGetAllVendorsQuery,
   useGetVendorDetailsQuery,
   useApproveVendorMutation,
   useVerifyVendorKYCMutation,
+  useSuspendVendorWithReasonMutation,
   useGetVendorProductsQuery,
   useGetVendorOrdersQuery,
   useGetVendorAnalyticsQuery,
@@ -613,6 +702,7 @@ export const {
   useGetAllOrdersQuery,
   useGetOrderDetailsQuery,
   useUpdateOrderStatusMutation,
+  useCancelOrderWithReasonMutation,
   useAssignLogisticsMutation,
   useProcessRefundMutation,
   useGetOrderItemsQuery,
@@ -621,6 +711,7 @@ export const {
   useGetAdminProductDetailsQuery,
   useApproveProductMutation,
   useApproveProductAdminMutation,
+  useRejectProductAdminMutation,
   useDeleteProductMutation,
   useGetAllCategoriesQuery,
   useGetCategoryQuery,
