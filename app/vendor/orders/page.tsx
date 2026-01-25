@@ -2,47 +2,19 @@
 
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useGetVendorOrdersQuery } from '@/lib/api/vendorApi';
+import { useGetVendorOrdersQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Link from 'next/link';
 
 export default function VendorOrdersPage() {
-  // @ts-ignore - The API returns stats, but the type expects Order[]. This is a known discrepancy.
-  const { data, isLoading, error } = useGetVendorOrdersQuery({});
+  const { data: orderSummaryData, isLoading: isLoadingSummary, error: summaryError } = useGetVendorOrdersQuery();
+  const { data: orderListData, isLoading: isLoadingList, error: listError } = useGetVendorOrdersListQuery({});
 
-  const mockOrders = [
-    {
-      uuid: '1',
-      order_id: 'DAND-12345',
-      customer: {
-        full_name: 'John Doe',
-        email: 'john.doe@example.com',
-      },
-      status: 'Delivered',
-      total_amount: '150.00',
-      created_at: new Date().toISOString(),
-    },
-    {
-      uuid: '2',
-      order_id: 'DAND-12346',
-      customer: {
-        full_name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-      },
-      status: 'Pending',
-      total_amount: '250.50',
-      created_at: new Date().toISOString(),
-    },
-  ];
+  const orders = orderListData?.data || [];
+  const stats = orderSummaryData?.data;
 
-  const orders = mockOrders;
-  const stats = {
-    pending: (data?.data as any)?.pending || 1,
-    paid: (data?.data as any)?.paid || 0,
-    delivered: (data?.data as any)?.delivered || 1,
-    canceled: (data?.data as any)?.canceled || 0,
-  };
-  const totalOrders = orders.length;
+  const isLoading = isLoadingSummary || isLoadingList;
+  const error = summaryError || listError;
 
   if (error) {
     return (
@@ -76,22 +48,22 @@ export default function VendorOrdersPage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-purple-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Total Orders</p>
-              {isLoading ? <div className="h-7 w-12 bg-purple-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>}
+              {isLoadingSummary ? <div className="h-7 w-12 bg-purple-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{(stats?.pending || 0) + (stats?.paid || 0) + (stats?.shipped || 0) + (stats?.delivered || 0) + (stats?.canceled || 0)}</p>}
             </div>
 
             <div className="bg-yellow-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Pending</p>
-              {isLoading ? <div className="h-7 w-12 bg-yellow-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>}
+              {isLoadingSummary ? <div className="h-7 w-12 bg-yellow-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats?.pending || 0}</p>}
             </div>
 
             <div className="bg-green-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Delivered</p>
-              {isLoading ? <div className="h-7 w-12 bg-green-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats.delivered}</p>}
+              {isLoadingSummary ? <div className="h-7 w-12 bg-green-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats?.delivered || 0}</p>}
             </div>
             
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Paid</p>
-              {isLoading ? <div className="h-7 w-12 bg-blue-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>}
+              {isLoadingSummary ? <div className="h-7 w-12 bg-blue-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{stats?.paid || 0}</p>}
             </div>
           </div>
         </div>
@@ -100,7 +72,7 @@ export default function VendorOrdersPage() {
         <div className="p-4">
           <h2 className="text-base font-semibold text-gray-900 mb-4">All Orders</h2>
           
-          {isLoading ? <LoadingSpinner /> : orders.length === 0 ? (
+          {isLoadingList ? <LoadingSpinner /> : orders.length === 0 ? (
             <div className="text-center py-12">
                 <p className="text-gray-500">No orders found</p>
             </div>

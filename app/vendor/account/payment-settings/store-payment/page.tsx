@@ -1,21 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import { useGetPaymentSettingsQuery, useUpdatePaymentSettingsMutation } from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function StorePaymentOptionPage() {
+export default function StorePaymentPage() {
   const router = useRouter();
+  const { data: paymentSettingsData, isLoading: isLoadingSettings, error: settingsError } = useGetPaymentSettingsQuery();
+  const [updatePaymentSettings, { isLoading: isUpdatingSettings, error: updateError }] = useUpdatePaymentSettingsMutation();
+
   const [formData, setFormData] = useState({
-    accountNumber: '0011223344',
-    bankName: 'United Bank for Africa PLC',
-    accountName: ''
+    bank_name: '',
+    account_number: '',
+    account_name: '',
   });
 
-  const handleSave = () => {
-    console.log('Saving payment option:', formData);
-    router.back();
+  useEffect(() => {
+    if (paymentSettingsData?.data) {
+      setFormData({
+        bank_name: paymentSettingsData.data.bank_name || '',
+        account_number: paymentSettingsData.data.account_number || '',
+        account_name: paymentSettingsData.data.account_name || '',
+      });
+    }
+  }, [paymentSettingsData]);
+
+  const handleSave = async () => {
+    try {
+      await updatePaymentSettings(formData).unwrap();
+      alert('Payment settings updated successfully!');
+      router.back();
+    } catch (err) {
+      console.error('Failed to update payment settings:', err);
+      alert('Failed to update payment settings.');
+    }
   };
+
+  const isLoading = isLoadingSettings || isUpdatingSettings;
+  const error = settingsError || updateError;
+
+  if (isLoadingSettings) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <LoadingSpinner fullScreen />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="vendor">
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-500">Failed to load payment settings.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">
@@ -29,63 +71,45 @@ export default function StorePaymentOptionPage() {
           <h1 className="text-lg font-semibold text-system-blue-light">Store Payment Option</h1>
         </div>
 
-        <div className="p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Payment Option</h2>
-
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Bank Transfer</h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
-                <input
-                  type="text"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
-                <select
-                  value={formData.bankName}
-                  onChange={(e) => setFormData({...formData, bankName: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
-                >
-                  <option>United Bank for Africa PLC</option>
-                  <option>Access Bank</option>
-                  <option>GTBank</option>
-                  <option>First Bank</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-600 mb-2 block">Account Name</label>
-                <input
-                  type="text"
-                  value={formData.accountName}
-                  onChange={(e) => setFormData({...formData, accountName: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                />
-              </div>
-            </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
+            <input
+              type="text"
+              value={formData.bank_name}
+              onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              placeholder="e.g., Zenith Bank"
+            />
           </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleSave}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+          <div>
+            <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
+            <input
+              type="text"
+              value={formData.account_number}
+              onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              placeholder="e.g., 1234567890"
+            />
           </div>
+          <div>
+            <label className="text-xs text-gray-600 mb-2 block">Account Name</label>
+            <input
+              type="text"
+              value={formData.account_name}
+              onChange={(e) => setFormData({...formData, account_name: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              placeholder="e.g., John Doe"
+            />
+          </div>
+          
+          <button
+            onClick={handleSave}
+            disabled={isLoading}
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+          >
+            {isUpdatingSettings ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </div>
     </AppLayout>

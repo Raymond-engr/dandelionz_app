@@ -7,7 +7,7 @@ import type {
 import { RootState } from "../store";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.dandelionz.com.ng/";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.dandelionz.com.ng";
 
 // Base query with auth token injection
 const baseQuery = fetchBaseQuery({
@@ -138,6 +138,7 @@ export const baseApi = createApi({
     "Settlement",
     "Notification",
     "Analytics",
+    "Draft",
   ],
   endpoints: () => ({}),
 });

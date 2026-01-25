@@ -3,21 +3,48 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
-import { useGetVendorProductsQuery, useDeleteProductMutation } from '@/lib/api/vendorApi';
+import {
+  useGetStoreProductsQuery,
+  useGetDraftsQuery,
+  useDeleteStoreProductMutation,
+  useDeleteDraftMutation,
+} from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
+type ProductType = 'store' | 'draft';
+
+interface DeleteConfirmState {
+  slug: string;
+  type: ProductType;
+}
+
 export default function VendorProductsPage() {
-  const { data, isLoading, error } = useGetVendorProductsQuery({});
-  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const { data: storeProductsData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductsQuery({});
+  const { data: draftProductsData, isLoading: isLoadingDrafts, error: draftError } = useGetDraftsQuery();
+  
+  const [deleteStoreProduct, { isLoading: isDeletingStore }] = useDeleteStoreProductMutation();
+  const [deleteDraft, { isLoading: isDeletingDraft }] = useDeleteDraftMutation();
 
-  const products = data?.data || [];
-  const publishedProducts = products.filter((p: any) => p.status === 'published' || p.status === 'approved');
-  const draftProducts = products.filter((p: any) => p.status === 'draft' || p.status === 'pending');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<DeleteConfirmState | null>(null);
 
-  const handleDelete = async (slug: string) => {
+  const publishedProducts = storeProductsData?.data || [];
+  const draftProducts = draftProductsData?.data || [];
+  
+  const isLoading = isLoadingStore || isLoadingDrafts;
+  const isDeleting = isDeletingStore || isDeletingDraft;
+  const error = storeError || draftError;
+
+  const handleDelete = async () => {
+    if (!showDeleteConfirm) return;
+
+    const { slug, type } = showDeleteConfirm;
+
     try {
-      await deleteProduct(slug).unwrap();
+      if (type === 'store') {
+        await deleteStoreProduct(slug).unwrap();
+      } else {
+        await deleteDraft(slug).unwrap();
+      }
       setShowDeleteConfirm(null);
     } catch (err: any) {
       alert(err?.data?.message || 'Failed to delete product');
@@ -74,7 +101,7 @@ export default function VendorProductsPage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && products.length === 0 && (
+        {!isLoading && publishedProducts.length === 0 && draftProducts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,12 +116,12 @@ export default function VendorProductsPage() {
         )}
 
         {/* Product Lists */}
-        {!isLoading && products.length > 0 && (
+        {!isLoading && (
           <div className="p-4 space-y-4">
             {/* Published Products */}
             {publishedProducts.length > 0 && (
               <div>
-                <h2 className="text-base font-semibold text-gray-900 mb-3">Published Products</h2>
+                <h2 className="text-base font-semibold text-gray-900 mb-3">Store Products</h2>
                 <div className="space-y-3">
                   {publishedProducts.map((product: any) => (
                     <div key={product.slug} className="bg-gray-50 rounded-lg p-4">
@@ -104,6 +131,9 @@ export default function VendorProductsPage() {
                             <h3 className="text-sm font-semibold text-gray-900">
                               {product.name}
                             </h3>
+                            <span className="capitalize px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                              {product.approval_status}
+                            </span>
                             {product.stock === 0 && (
                               <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded">
                                 Out of Stock
@@ -130,7 +160,7 @@ export default function VendorProductsPage() {
                             </svg>
                           </Link>
                           <button
-                            onClick={() => setShowDeleteConfirm(product.slug)}
+                            onClick={() => setShowDeleteConfirm({ slug: product.slug, type: 'store' })}
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                             disabled={isDeleting}
                           >
@@ -155,14 +185,9 @@ export default function VendorProductsPage() {
                     <div key={product.slug} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-sm font-semibold text-gray-900">
-                              {product.name}
-                            </h3>
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
-                              Draft
-                            </span>
-                          </div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                            {product.name}
+                          </h3>
                           <p className="text-xs text-gray-600 mb-1">
                             Stock: {product.stock} units
                           </p>
@@ -175,7 +200,7 @@ export default function VendorProductsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/vendor/product/${product.slug}/edit`}
+                            href={`/vendor/product/${product.slug}/edit?type=draft`}
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                           >
                             <svg className="w-5 h-5 text-system-blue-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +208,7 @@ export default function VendorProductsPage() {
                             </svg>
                           </Link>
                           <button
-                            onClick={() => setShowDeleteConfirm(product.slug)}
+                            onClick={() => setShowDeleteConfirm({ slug: product.slug, type: 'draft' })}
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                             disabled={isDeleting}
                           >
@@ -206,7 +231,7 @@ export default function VendorProductsPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Product?</h2>
-              <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
+              <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this {showDeleteConfirm.type} product? This action cannot be undone.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
@@ -216,7 +241,7 @@ export default function VendorProductsPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDelete(showDeleteConfirm)}
+                  onClick={handleDelete}
                   className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
                   disabled={isDeleting}
                 >

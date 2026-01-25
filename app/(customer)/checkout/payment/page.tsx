@@ -4,26 +4,35 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
+import { useInitializeCheckoutMutation } from '@/lib/api/publicApi';
 
-type PaymentMethod = 'delivery' | 'card' | 'payoneer';
+type PaymentMethod = 'delivery' | 'card';
 
 export default function PaymentPage() {
   const router = useRouter();
-  const [method, setMethod] = useState<PaymentMethod>('delivery');
-  const [cardDetails, setCardDetails] = useState({
-    holderName: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    saveCard: false,
-  });
+  const [method, setMethod] = useState<PaymentMethod>('card');
+  const [initializeCheckout, { isLoading, error }] = useInitializeCheckoutMutation();
 
-  const handleMakePayment = () => {
-    if (method === 'card' && (!cardDetails.holderName || !cardDetails.cardNumber)) {
-      alert('Please fill in all card details');
-      return;
+  const handleMakePayment = async () => {
+    if (method === 'delivery') {
+      // For "On Delivery", we can proceed to a success page directly
+      router.push('/checkout/success?status=cod');
+    } else if (method === 'card') {
+      // For card payments, we initialize Paystack checkout
+      try {
+        const payload = await initializeCheckout().unwrap();
+        // Redirect the user to the Paystack authorization URL
+        if (payload.authorization_url) {
+          window.location.href = payload.authorization_url;
+        } else {
+          // Handle case where URL is not returned
+          alert('Could not initiate payment. Please try again.');
+        }
+      } catch (err) {
+        console.error('Failed to initialize checkout:', err);
+        // Error is handled by the 'error' object from the hook
+      }
     }
-    router.push('/checkout/success');
   };
 
   return (
@@ -50,10 +59,19 @@ export default function PaymentPage() {
             Select Payment Mode
           </h2>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">
+                {(error as any)?.data?.message || 'An error occurred while trying to initiate payment.'}
+              </p>
+            </div>
+          )}
+
           {/* Payment Options */}
           <div className="space-y-4 mb-6">
             {/* On Delivery */}
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer p-4 border rounded-lg">
               <div className="relative">
                 <input
                   type="radio"
@@ -61,6 +79,7 @@ export default function PaymentPage() {
                   checked={method === 'delivery'}
                   onChange={() => setMethod('delivery')}
                   className="sr-only peer"
+                  disabled={isLoading}
                 />
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                   method === 'delivery' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
@@ -70,12 +89,11 @@ export default function PaymentPage() {
                   )}
                 </div>
               </div>
-              <span className="text-sm font-medium text-gray-900">On Delivery</span>
+              <span className="text-sm font-medium text-gray-900">Pay on Delivery</span>
             </label>
 
             {/* Credit/Debit Card */}
-            <div>
-              <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer p-4 border rounded-lg">
                 <div className="relative">
                   <input
                     type="radio"
@@ -83,6 +101,7 @@ export default function PaymentPage() {
                     checked={method === 'card'}
                     onChange={() => setMethod('card')}
                     className="sr-only peer"
+                    disabled={isLoading}
                   />
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                     method === 'card' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
@@ -92,175 +111,17 @@ export default function PaymentPage() {
                     )}
                   </div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">Credit/Debit Card</span>
-              </label>
-
-              {method === 'card' && (
-                <div className="ml-8 mt-4 space-y-4">
-                  {/* Card Holder Name */}
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">
-                      Card Holder Name
-                    </label>
-                    <input
-                      type="text"
-                      value={cardDetails.holderName}
-                      onChange={(e) => setCardDetails({...cardDetails, holderName: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                      placeholder="John Doe"
-                    />
-                  </div>
-
-                  {/* Card Number */}
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      value={cardDetails.cardNumber}
-                      onChange={(e) => setCardDetails({...cardDetails, cardNumber: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                      placeholder="1234 5678 9012 3456"
-                      maxLength={19}
-                    />
-                  </div>
-
-                  {/* Expiry Date and CVV */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">
-                        Expiry Date
-                      </label>
-                      <input
-                        type="text"
-                        value={cardDetails.expiryDate}
-                        onChange={(e) => setCardDetails({...cardDetails, expiryDate: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                        placeholder="01/27"
-                        maxLength={5}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        value={cardDetails.cvv}
-                        onChange={(e) => setCardDetails({...cardDetails, cvv: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                        placeholder="000"
-                        maxLength={4}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Save Card Checkbox */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={cardDetails.saveCard}
-                      onChange={(e) => setCardDetails({...cardDetails, saveCard: e.target.checked})}
-                      className="w-4 h-4 text-system-blue-light border-gray-300 rounded focus:ring-system-blue-light"
-                    />
-                    <span className="text-sm text-gray-700">Save Card</span>
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {/* Payoneer */}
-            <div>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <div className="relative">
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={method === 'payoneer'}
-                    onChange={() => setMethod('payoneer')}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    method === 'payoneer' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
-                  }`}>
-                    {method === 'payoneer' && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                    )}
-                  </div>
-                </div>
-                <span className="text-sm font-medium text-gray-900">Payoneer</span>
-              </label>
-
-              {method === 'payoneer' && (
-                <div className="ml-8 mt-4 space-y-4">
-                  {/* Card Number */}
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                      placeholder="1234 5678 9012 3456"
-                    />
-                  </div>
-
-                  {/* Expiry Date and CVV */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">
-                        Expiry Date
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                        placeholder="01/27"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                        placeholder="000"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Card Holder Name */}
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">
-                      Card Holder Name
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                      placeholder="John Doe"
-                    />
-                  </div>
-
-                  {/* Save Card Checkbox */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-system-blue-light border-gray-300 rounded focus:ring-system-blue-light"
-                    />
-                    <span className="text-sm text-gray-700">Save Card</span>
-                  </label>
-                </div>
-              )}
-            </div>
+                <span className="text-sm font-medium text-gray-900">Pay with Card (via Paystack)</span>
+            </label>
           </div>
 
           {/* Make Payment Button */}
           <button
             onClick={handleMakePayment}
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Make Payment
+            {isLoading ? 'Initializing...' : (method === 'card' ? 'Continue to Paystack' : 'Place Order')}
           </button>
         </div>
       </div>

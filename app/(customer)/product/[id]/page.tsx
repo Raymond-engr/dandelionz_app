@@ -2,33 +2,83 @@
 
 import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import { 
+    useGetProductBySlugQuery, 
+    useAddToCartMutation, 
+    useAddToWishlistMutation 
+} from '@/lib/api/publicApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function ProductDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const slug = params.id as string;
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // Dummy product data
-  const product = {
-    id: '1',
-    name: 'iPhone 15 Pro Max',
-    price: 1199.99,
-    rating: 3.9,
-    description: "The iPhone 15 Pro Max features a stunning 6.7-inch Super Retina XDR display with ProMotion technology. It's powered by the revolutionary A17 Pro chip, delivering unprecedented performance and efficiency.",
-    vendor: "Equipped with a pro camera system featuring a 48MP main camera, this device captures stunning photos and videos in any lighting condition. The titanium design makes it both durable and lightweight.",
-    images: [
-      '/products/iphone-15-pro.png',
-      '/products/camera.png',
-      '/products/samsung.png',
-    ],
+  // Fetch real product data
+  const { data: response, isLoading, isError } = useGetProductBySlugQuery(slug);
+  const product = response?.data;
+
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+  const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    try {
+      await addToCart({ product: product.id, quantity }).unwrap();
+      alert('Product added to cart successfully!');
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+      alert('Failed to add product to cart.');
+    }
   };
 
-  const handleAddToCart = () => {
-    console.log('Add to cart:', { product, quantity });
-    // Add to cart logic here
+  const handleAddToWishlist = async () => {
+    if (!product) return;
+    try {
+      await addToWishlist({ product: product.id }).unwrap();
+      alert('Product added to wishlist!');
+    } catch (err) {
+        console.error('Failed to add to wishlist:', err);
+        alert('Failed to add product to wishlist.');
+    }
   };
+
+  if (isLoading) {
+    return (
+        <AppLayout showBottomNav={true} userRole="customer">
+            <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        </AppLayout>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+        <AppLayout showBottomNav={true} userRole="customer">
+            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+                <h1 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h1>
+                <p className="text-sm text-gray-600 mb-6">We couldn't find the product you're looking for.</p>
+                <button 
+                    onClick={() => router.push('/')}
+                    className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium"
+                >
+                    Back to Home
+                </button>
+            </div>
+        </AppLayout>
+    );
+  }
+
+  // Handle images array (fallback to dummy logic if API array is empty)
+  const images = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.image || '/placeholder-category.png'];
 
   return (
     <AppLayout showBottomNav={true} userRole="customer">
@@ -50,42 +100,38 @@ export default function ProductDetailPage() {
           {/* Main Image */}
           <div className="relative w-full aspect-video bg-gray-100 rounded-2xl mb-4 overflow-hidden">
             <Image
-              src={product.images[selectedImage]}
+              src={images[selectedImage]}
               alt={product.name}
               fill 
               className="object-cover" 
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
               onError={(e) => {
-  const target = e.target as HTMLImageElement;
-  if (target) {
-    target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="#f3f4f6" width="400" height="400"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="16">Product Image</text></svg>';
-  }
-    }}
+                const target = e.target as HTMLImageElement;
+                if (target) {
+                    target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="#f3f4f6" width="400" height="400"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="16">Product Image</text></svg>';
+                }
+              }}
             />
           </div>
 
           {/* Thumbnail Images */}
-          <div className="flex gap-3 mb-6">
-            {[0, 1, 2].map((idx) => (
+          <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+            {images.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setSelectedImage(idx)}
-                /* Added 'w-20 h-20' to make them small fixed squares like Figma */
                 className={`flex-none w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden border-2 transition-all ${
                   selectedImage === idx ? 'border-system-blue-light' : 'border-transparent'
                 }`}
               >
                 <Image
-  src={product.images[idx]}
-  alt={`Thumbnail ${idx + 1}`}
-  className="w-full h-full object-cover"
-  width={100}
-  height={100}
-  onError={(e) => {
-    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#f3f4f6" width="100" height="100"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="12">' + (idx + 1) + '</text></svg>';
-  }}
-/>
+                    src={img}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    width={100}
+                    height={100}
+                />
               </button>
             ))}
           </div>
@@ -102,9 +148,11 @@ export default function ProductDetailPage() {
             <p className="text-sm text-gray-600 leading-relaxed mb-3">
               {product.description}
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {product.vendor}
-            </p>
+            {product.store_name && (
+                <p className="text-sm font-medium text-system-blue-light">
+                    Store: {product.store_name}
+                </p>
+            )}
           </div>
 
           {/* Price and Rating */}
@@ -119,14 +167,18 @@ export default function ProductDetailPage() {
               <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
                 <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
               </svg>
-              <span className="text-sm font-semibold text-gray-900">{product.rating}</span>
+              <span className="text-sm font-semibold text-gray-900">{product.rating || '0.0'}</span>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex gap-3">
             {/* Wishlist Button */}
-            <button className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+                onClick={handleAddToWishlist}
+                disabled={isAddingToWishlist}
+                className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
@@ -135,12 +187,13 @@ export default function ProductDetailPage() {
             {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              className="flex-1 h-12 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2"
+              disabled={isAddingToCart || !product.in_stock}
+              className="flex-1 h-12 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Add to cart
+              {isAddingToCart ? 'Adding...' : (product.in_stock ? 'Add to cart' : 'Out of Stock')}
             </button>
           </div>
         </div>

@@ -26,6 +26,21 @@ interface Analytics {
   total_revenue: string;
   pending_orders: number;
   delivered_orders: number;
+  total_vendors: number;
+}
+
+interface DetailedAnalytics {
+  total_sales: string;
+  total_vendors: number;
+  total_orders: number;
+  total_users: number;
+  sales_chart_data: { period: string; sales: number }[];
+  order_stats: {
+    completed: number;
+    pending: number;
+    cancelled: number;
+    returned: number;
+  };
 }
 
 interface OrderSummary {
@@ -226,6 +241,14 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Analytics"],
     }),
 
+    getDetailedAnalytics: builder.query<
+      { success: boolean; data: DetailedAnalytics },
+      void
+    >({
+      query: () => "/user/admin/analytics/detailed/",
+      providesTags: ["Analytics"],
+    }),
+
     // User Management
     getAllUsers: builder.query<
       { success: boolean; data: User[] },
@@ -360,16 +383,16 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     getOrderDetails: builder.query<{ success: boolean; data: Order }, string>({
-      query: (uuid) => `/user/admin/orders/${uuid}/`,
+      query: (order_id) => `/user/admin/orders/${order_id}/`,
       providesTags: ["Order"],
     }),
 
     updateOrderStatus: builder.mutation<
       { success: boolean; data: Order },
-      { uuid: string; status: string }
+      { order_id: string; status: string }
     >({
-      query: ({ uuid, ...body }) => ({
-        url: `/user/admin/orders/${uuid}/`,
+      query: ({ order_id, ...body }) => ({
+        url: `/user/admin/orders/${order_id}/`,
         method: "PATCH",
         body,
       }),
@@ -496,12 +519,12 @@ export const adminApi = baseApi.injectEndpoints({
       { success: boolean; data: Category[] },
       void
     >({
-      query: () => "/user/admin/products/categories/",
+      query: () => "/store/categories/",
       providesTags: ["Category"],
     }),
 
-    getCategory: builder.query<{ success: boolean; data: Category }, number>({
-      query: (id) => `/user/admin/products/categories/${id}/`,
+    getCategory: builder.query<{ success: boolean; data: Category }, string>({
+      query: (slug) => `/store/categories/${slug}/`,
       providesTags: ["Category"],
     }),
 
@@ -510,7 +533,7 @@ export const adminApi = baseApi.injectEndpoints({
       FormData
     >({
       query: (body) => ({
-        url: "/user/admin/products/categories/",
+        url: "/store/categories/",
         method: "POST",
         body,
       }),
@@ -519,11 +542,11 @@ export const adminApi = baseApi.injectEndpoints({
 
     updateCategory: builder.mutation<
       { success: boolean; data: Category },
-      { id: number; data: FormData }
+      { slug: string; data: FormData }
     >({
-      query: ({ id, data }) => ({
-        url: `/user/admin/products/categories/${id}/`,
-        method: "PUT",
+      query: ({ slug, data }) => ({
+        url: `/store/categories/${slug}/`,
+        method: "PATCH",
         body: data,
       }),
       invalidatesTags: ["Category"],
@@ -531,10 +554,10 @@ export const adminApi = baseApi.injectEndpoints({
 
     deleteCategory: builder.mutation<
       { success: boolean; message: string },
-      number
+      string
     >({
-      query: (id) => ({
-        url: `/user/admin/products/categories/${id}/`,
+      query: (slug) => ({
+        url: `/store/categories/${slug}/`,
         method: "DELETE",
       }),
       invalidatesTags: ["Category"],
@@ -686,6 +709,7 @@ export const {
   useUpdateAdminProfileMutation,
   useUploadAdminPhotoMutation,
   useGetAnalyticsQuery,
+  useGetDetailedAnalyticsQuery,
   useGetAllUsersQuery,
   useGetUserDetailsQuery,
   useSuspendUserMutation,

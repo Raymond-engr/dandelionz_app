@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { ChevronLeft, Camera } from 'lucide-react'; // Added Camera icon for image upload UI
+import { ChevronLeft, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
-import Image from 'next/image'; // Import Image component
+import Image from 'next/image';
 import {
   useGetCategoryQuery,
   useCreateCategoryMutation,
@@ -18,19 +18,19 @@ interface EditCategoryProps {
 export default function EditCategory({ params: paramsPromise }: EditCategoryProps) {
   const params = use(paramsPromise);
   const router = useRouter();
-  const categoryId = params.id;
+  const categorySlug = params.id;
   
-  const isNew = categoryId === 'new';
+  const isNew = categorySlug === 'new';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null); // State for image file
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // API hooks
   const { data: categoryData, isLoading: isLoadingCategory, isError: isErrorCategory } = useGetCategoryQuery(
-    parseInt(categoryId),
-    { skip: isNew || !categoryId }
+    categorySlug,
+    { skip: isNew || !categorySlug }
   );
   const [createCategory, { isLoading: isCreatingCategory }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] = useUpdateCategoryMutation();
@@ -39,8 +39,6 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
     if (categoryData && !isNew) {
       setName(categoryData.data.name);
       setDescription(categoryData.data.description);
-      // If there's an existing image, you might want to show it but not pre-fill categoryImageFile
-      // as it's a File object, not a URL.
     }
   }, [categoryData, isNew]);
 
@@ -58,21 +56,16 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
     formData.append('name', name);
     formData.append('description', description);
     if (categoryImageFile) {
-      formData.append('image', categoryImageFile); // 'image' should match the backend field name
+      formData.append('image', categoryImageFile);
     }
 
     try {
       if (isNew) {
         await createCategory(formData).unwrap();
       } else {
-        // For update, the API might expect PUT/PATCH with FormData, or JSON for non-file fields.
-        // Assuming PATCH with FormData containing only changed fields for simplicity, matching vendor profile
-        // Backend API for updateCategory in adminApi.ts currently takes { id: number; data: Partial<Category> }
-        // If it expects FormData for image, we might need to adjust adminApi.ts or send only image via separate endpoint.
-        // For now, let's adjust the update mutation to also take FormData.
-        await updateCategory({ id: parseInt(categoryId), data: formData }).unwrap();
+        await updateCategory({ slug: categorySlug, data: formData }).unwrap();
       }
-      router.push('/admin/product/category'); // Redirect to category list on success
+      router.push('/admin/product/category');
     } catch (err: any) {
       console.error('Failed to save category:', err);
       setError(err?.data?.message || 'Failed to save category. Please try again.');
@@ -130,7 +123,6 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
                 </div>
               )}
               
-              {/* Category Image Upload */}
               <div className="mb-6 flex flex-col items-center">
                 <div className="relative w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                   {currentImagePreview ? (

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Calendar, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useCreateNotificationMutation } from '@/lib/api/adminApi';
 
 export default function CreateNotification() {
   const router = useRouter();
@@ -14,12 +15,43 @@ export default function CreateNotification() {
   const [customDate, setCustomDate] = useState('');
   const [customTime, setCustomTime] = useState('');
 
+  const [createNotification, { isLoading, isSuccess, isError, error }] =
+    useCreateNotificationMutation();
+
   const scheduleOptions = [
     { id: 'tomorrow-morning', label: 'Tomorrow morning', time: '4th Dec, 8:00 AM', icon: '⚙️' },
     { id: 'tomorrow-afternoon', label: 'Tomorrow afternoon', time: '4th Dec, 12:00 PM', icon: '⚙️' },
     { id: 'monday-morning', label: 'Monday Morning', time: '8th Dec, 8:00 AM', icon: '📅' },
     { id: 'custom', label: 'Pick date & time', time: '', icon: '📅' },
   ];
+
+  useEffect(() => {
+    if (isSuccess) {
+      alert('Notification created successfully!');
+      router.back();
+    }
+    if (isError) {
+      alert('Failed to create notification: ' + JSON.stringify(error));
+    }
+  }, [isSuccess, isError, error, router]);
+
+  const handleSendNotification = async () => {
+    await createNotification({
+      title,
+      message: description,
+      recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS" | "ALL",
+      status: 'Sent',
+    });
+  };
+
+  const handleSaveDraft = async () => {
+    await createNotification({
+      title,
+      message: description,
+      recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS" | "ALL",
+      status: 'Draft',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -43,6 +75,7 @@ export default function CreateNotification() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -53,6 +86,7 @@ export default function CreateNotification() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[120px] resize-none"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -62,6 +96,7 @@ export default function CreateNotification() {
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                    disabled={isLoading}
                   >
                     <option>Users</option>
                     <option>Vendors</option>
@@ -71,13 +106,17 @@ export default function CreateNotification() {
               </div>
 
               <div className="flex gap-3 mb-4">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button 
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  disabled
+                >
                   <Upload className="w-4 h-4" />
                   Attach File
                 </button>
                 <button
                   onClick={() => setShowSchedule(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  disabled
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule Notification
@@ -85,12 +124,20 @@ export default function CreateNotification() {
               </div>
 
               <div className="space-y-3">
-                <button className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors">
-                  Send Notification
+                <button 
+                  onClick={handleSendNotification}
+                  className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Sending...' : 'Send Notification'}
                 </button>
 
-                <button className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors">
-                  Save as Draft
+                <button 
+                  onClick={handleSaveDraft}
+                  className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save as Draft'}
                 </button>
               </div>
             </div>

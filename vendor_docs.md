@@ -351,6 +351,133 @@ JSON
 ]
 
 ---
+
+### Part 4: Wallet, Payment & Account Management
+
+**1. Get Wallet Balance**
+- **Endpoint:** `GET /user/vendor/wallet/`
+- **Functionality:** Fetches the vendor's main balance and earnings summary.
+- **Success Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "withdrawable_balance": "150000.00",
+      "available_balance": "250000.00",
+      "total_earnings": "500000.00",
+      "total_withdrawals": 12,
+      "this_month_earnings": "75000.00"
+    }
+  }
+  ```
+
+**2. Get Transaction History**
+- **Endpoint:** `GET /user/vendor/wallet/transactions/`
+- **Functionality:** Returns a paginated list of all transactions (credits and debits) for the vendor's wallet.
+- **Query Parameters:**
+  - `limit`, `offset`: For pagination.
+  - `type` (optional, string): Filter by `credit` or `debit`.
+- **Success Response (200 OK):**
+  ```json
+  {
+    "count": 42,
+    "next": "...",
+    "previous": null,
+    "results": [
+      {
+        "id": "txn-abc-123",
+        "type": "debit",
+        "amount": "50000.00",
+        "description": "Withdrawal to GTBank",
+        "status": "successful",
+        "created_at": "2026-01-25T14:00:00Z"
+      }
+    ]
+  }
+  ```
+
+**3. Request Withdrawal**
+- **Endpoint:** `POST /user/vendor/wallet/withdraw/`
+- **Functionality:** Initiates a withdrawal request from the vendor's wallet to their bank account. Requires the withdrawal amount and the user's payment PIN for security.
+- **Request Body:**
+  ```json
+  {
+    "amount": "50000.00",
+    "pin": "1234"
+  }
+  ```
+- **Success Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Withdrawal request of ₦50,000.00 is being processed."
+  }
+  ```
+
+**4. Get Payment Settings**
+- **Endpoint:** `GET /user/vendor/payment-settings/`
+- **Functionality:** Retrieves the vendor's currently saved bank account details for withdrawal.
+- **Success Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "bank_name": "GTBank",
+      "account_number": "0123456789",
+      "account_name": "Emeka Kalu",
+      "recipient_code": "RCP_88229911",
+      "has_pin": true
+    }
+  }
+  ```
+
+**5. Update Payment Settings**
+- **Endpoint:** `PUT /user/vendor/payment-settings/`
+- **Functionality:** Updates the vendor's bank account details.
+- **Request Body:**
+  ```json
+  {
+    "bank_name": "Zenith Bank",
+    "account_number": "2005556667"
+  }
+  ```
+- **Success Response (200 OK):** Returns the updated payment settings object.
+
+**6. Set/Change Payment PIN**
+- **Endpoint:** `POST /user/vendor/payment-settings/pin/`
+- **Functionality:** Allows a vendor to set their initial 4-digit payment PIN or change an existing one.
+- **Request Body:**
+  ```json
+  {
+    "pin": "1234",
+    "confirm_pin": "1234"
+  }
+  ```
+- **Success Response (200 OK):**
+  ```json
+  { "success": true, "message": "Payment PIN updated successfully." }
+  ```
+
+**7. Forgot/Request PIN Reset**
+- **Endpoint:** `POST /user/vendor/payment-settings/pin/forgot/`
+- **Functionality:** Initiates the process for a user to reset their forgotten payment PIN.
+- **Success Response (200 OK):**
+  ```json
+  { "success": true, "message": "A PIN reset link has been sent to your email." }
+  ```
+
+**8. Delete Vendor Account**
+- **Endpoint:** `DELETE /user/vendor/account/`
+- **Functionality:** Permanently deletes the vendor's account.
+- **Request Body:**
+  ```json
+  {
+    "password": "current_secure_password"
+  }
+  ```
+- **Success Response (204 No Content):** An empty response indicating successful deletion.
+
+---
 # API Review Findings (as of Jan 24, 2026)
 
 This section summarizes the discrepancies found between the API documentation, the frontend API layer (`lib/api/*.ts`), and the UI components.
@@ -369,11 +496,9 @@ This section summarizes the discrepancies found between the API documentation, t
 - **Findings**: 
   1.  **Response Shape**: The `GET` response documented is flat, but the frontend implementation expects a nested `user` object and uses fields not listed in the docs (e.g., `profile_picture`).
   2.  **Request Format**: The `PATCH` endpoint is documented to accept `JSON`, but the frontend correctly sends `FormData` to handle profile picture uploads.
-  3.  The `PUT` endpoint is defined in the API slice but is not used anywhere.
 - **Actionable Items**: 
   1.  Update the `GET /user/vendor/profile/` documentation to reflect the nested `user` object in the response.
   2.  Update the `PATCH /user/vendor/profile/` documentation to specify the content-type as `multipart/form-data`.
-  3.  Consider removing the unused `PUT` endpoint to avoid confusion.
 - **Priority**: High
 - **Status**: Open
 
@@ -382,26 +507,26 @@ This section summarizes the discrepancies found between the API documentation, t
 ### Part 2: Product Workflow
 
 - **Section**: Overall Product Architecture
-- **Findings**: There is a fundamental architectural conflict. The documentation describes a system with two distinct sets of endpoints (one for "Drafts", one for "Store Products"). The frontend implementation, however, points to a single, unified set of product endpoints where a product's state is managed by a `status` field. The entire "Draft Management" section of the documentation is inconsistent with the implemented design.
-- **Actionable Items**: A strategic decision must be made. It is recommended to update the documentation to reflect the implemented, status-based architecture and remove the obsolete "Draft Management" section, as this aligns with the current frontend code.
+- **Findings**: The frontend has been successfully refactored to use a two-system architecture (Drafts vs. Store Products), aligning with the documentation. The API layer (`vendorApi.ts`) now contains separate endpoints for managing drafts and store products.
+- **Actionable Items**: None.
 - **Priority**: High
-- **Status**: Open
+- **Status**: Closed
 
-- **Section**: `POST /user/vendor/products/add/` (Add New Product)
-- **Findings**: 
-  1.  **URL Mismatch**: Documented endpoint is `/user/vendor/products/add/`, but implementation uses `/user/vendor/products/`.
-  2.  **Request/Response Mismatch**: Similar to the profile endpoint, the docs specify `JSON` but the implementation uses `FormData`. The response expected by the code is also more detailed than documented.
-  3.  **Incomplete Feature**: The UI has a "Save as Draft" button, but the logic is not implemented, further confirming the status-based architecture is intended but unfinished.
-- **Actionable Items**: 
-  1.  Correct the endpoint URL in the documentation.
-  2.  Update the docs to specify `multipart/form-data` for the request and align the response schema.
-  3.  Implement the `handleSaveAsDraft` function to send `status: 'draft'` in the request.
+- **Section**: `POST /user/vendor/products/add/` & `POST /store/vendor/drafts/`
+- **Findings**: The 'Add New Product' page has been refactored. It now correctly uses `useCreateStoreProductMutation` to publish a product directly and `useCreateDraftMutation` to save a product as a draft.
+- **Actionable Items**: None.
 - **Priority**: High
-- **Status**: Open
+- **Status**: Closed
 
 - **Section**: Product Edit Page (`/vendor/product/[id]/edit`)
-- **Findings**: The entire product edit feature is a UI scaffold. It uses mock data and does not make any API calls to fetch or update product details.
-- **Actionable Items**: Implement the feature. Connect the page to the backend by using `useGetProductDetailsQuery` to fetch data and `usePartialUpdateProductMutation` to save changes.
+- **Findings**: The product edit page has been implemented to handle both drafts and store products. It correctly fetches data and displays a 'Submit for Approval' button for drafts.
+- **Actionable Items**: None.
+- **Priority**: Medium
+- **Status**: Closed
+
+- **Section**: Product Edit Page (`PATCH` Discrepancy)
+- **Findings**: There is an inconsistency in the update mutations. `updateDraft` sends data as `FormData` (allowing file uploads), but `partialUpdateStoreProduct` is configured to send `JSON`. This prevents updating the product image for an already published product.
+- **Actionable Items**: For consistency and to support file uploads, align the `partialUpdateStoreProduct` mutation to also use `FormData`.
 - **Priority**: Medium
 - **Status**: Open
 
@@ -410,22 +535,41 @@ This section summarizes the discrepancies found between the API documentation, t
 ### Part 3: Business Insights, Order Tracking & Notifications
 
 - **Section**: `GET /user/vendor/analytics/` (Vendor Analytics)
-- **Findings**: The feature is not implemented; the corresponding page does not exist.
-- **Actionable Items**: Create the analytics page and connect it to the `useGetVendorAnalyticsQuery`.
-- **Priority**: Low
+- **Findings**: The Vendor Analytics page has been implemented and the homepage now correctly displays `total_revenue` and `total_orders`. However, the UI design requires "Product Sold" and "New Customer" stats which are not yet provided by this API endpoint.
+- **Actionable Items**: The backend engineer needs to add `product_sold` and `new_customer` fields to the response of this endpoint.
+- **Priority**: Medium
 - **Status**: Open
 
 - **Section**: `GET /user/vendor/orders/` (Order Summaries)
-- **Findings**: This endpoint is a major source of confusion. The docs and the actual API behavior indicate it returns a summary object with order counts. However, the `getVendorOrders` definition in `lib/api/vendorApi.ts` is incorrectly typed to expect an array of `Order` objects. This forces a workaround (`@ts-ignore`) in the UI, and the actual list of orders is rendered using mock data.
-- **Actionable Items**: 
-  1.  Fix the type definition for `getVendorOrders` in `vendorApi.ts` to match the summary object response.
-  2.  Create a new, separate endpoint and API slice definition for fetching the *list* of orders (e.g., `GET /user/vendor/orders/list`).
-  3.  Update the UI to use the new endpoint for rendering the order list instead of mock data.
+- **Findings**: The API layer and UI have been successfully updated. `getVendorOrders` now correctly fetches the summary, and a new `getVendorOrdersList` fetches the order list. The UI on the orders page and homepage uses this live data, replacing the previous mock data and workarounds.
+- **Actionable Items**: None.
+- **Priority**: High
+- **Status**: Closed
+
+- **Section**: `GET /user/vendor/notifications/` (Vendor Notifications)
+- **Findings**: The notifications page has been implemented and now correctly fetches and displays live notification data from the backend, replacing the mock data.
+- **Actionable Items**: None.
+- **Priority**: Low
+- **Status**: Closed
+
+---
+
+### Part 4: Wallet, Payment & Account Management
+
+- **Section**: Wallet & Withdrawal Features
+- **Findings**: All wallet-related pages (Wallet Home, Withdrawal, PIN Confirmation) have been implemented and connected to the `vendorApi` service. The backend must implement the endpoints as specified in Part 4 of this documentation.
+- **Actionable Items**: Implement the backend endpoints for `getWalletBalance`, `requestWithdrawal`, etc.
 - **Priority**: High
 - **Status**: Open
 
-- **Section**: `GET /user/vendor/notifications/` (Vendor Notifications)
-- **Findings**: The feature is not implemented. The UI page exists but uses mock data and does not call the API.
-- **Actionable Items**: Connect the notifications page to the backend by implementing the `useGetVendorNotificationsQuery`.
-- **Priority**: Low
+- **Section**: Payment Settings & PIN Management
+- **Findings**: The UI for managing bank details and payment PINs (Change/Forgot) is complete and integrated with the API layer.
+- **Actionable Items**: Implement the backend endpoints for `getPaymentSettings`, `updatePaymentSettings`, `setPaymentPIN`, and `requestPINReset`.
+- **Priority**: High
+- **Status**: Open
+
+- **Section**: Account Deletion
+- **Findings**: The account deletion UI now includes a password confirmation step and calls the `deleteAccount` mutation.
+- **Actionable Items**: Implement the `DELETE /user/vendor/account/` endpoint.
+- **Priority**: Medium
 - **Status**: Open

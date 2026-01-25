@@ -965,3 +965,13 @@ Updated Project Status Summary
    2. Implement `Notification List` Page (`app/admin/account/notifications/page.tsx`):
        * Connect to useGetAllNotificationsQuery.
        * Replace mockNotifications with fetched data and display it.
+
+---
+
+## Implementation Status
+
+### Notification Management
+- **GET /user/admin/notifications/**: Implemented.
+- **POST /user/admin/notifications/**: Implemented.
+- **GET /user/admin/notifications/{id}/**: Implemented.
+- **DELETE /user/admin/notifications/{id}/**: Implemented.

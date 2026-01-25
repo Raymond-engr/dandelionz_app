@@ -4,28 +4,50 @@ import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, TrendingUp, Users, Store, ShoppingCart } from 'lucide-react';
+import { useGetDetailedAnalyticsQuery } from '@/lib/api/adminApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
+  const { data: analytics, isLoading, error } = useGetDetailedAnalyticsQuery();
 
-  const salesData = [
-    { year: '2023', value: 0 },
-    { year: '2024', value: 1.5 },
-    { year: '2025', value: 1.2 },
-    { year: '2026', value: 0.8 },
-    { year: '2027', value: 2.5 },
-    { year: '2028', value: 3.5 },
-    { year: '2029', value: 2.8 },
-  ];
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={false} userRole="admin">
+        <div className="min-h-screen bg-white pb-6 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </AppLayout>
+    );
+  }
 
-  const maxValue = Math.max(...salesData.map(d => d.value));
+  if (error) {
+    return (
+      <AppLayout showBottomNav={false} userRole="admin">
+        <div className="min-h-screen bg-white pb-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load analytics</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
-  const orderStats = [
-    { label: 'Completed', value: 410, percentage: 45, color: 'bg-[#030482]' },
-    { label: 'Pending', value: 142, percentage: 11, color: 'bg-purple-500' },
-    { label: 'Cancelled', value: 340, percentage: 24, color: 'bg-purple-400' },
-    { label: 'Returned', value: 580, percentage: 28, color: 'bg-gray-300' },
-  ];
+  const salesData = analytics?.data?.sales_chart_data || [];
+  const maxValue = salesData.length > 0 ? Math.max(...salesData.map(d => d.sales)) : 0;
+
+  const orderStats = analytics?.data?.order_stats ? [
+    { label: 'Completed', value: analytics.data.order_stats.completed, color: 'bg-[#030482]' },
+    { label: 'Pending', value: analytics.data.order_stats.pending, color: 'bg-purple-500' },
+    { label: 'Cancelled', value: analytics.data.order_stats.cancelled, color: 'bg-purple-400' },
+    { label: 'Returned', value: analytics.data.order_stats.returned, color: 'bg-gray-300' },
+  ] : [];
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -47,7 +69,7 @@ export default function AdminAnalyticsPage() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-1">₦0.00</p>
+              <p className="text-xl font-bold text-gray-900 mb-1">₦{analytics?.data?.total_sales || '0.00'}</p>
               <div className="flex items-center text-xs text-green-600">
                 <span>+0.00%</span>
               </div>
@@ -60,7 +82,7 @@ export default function AdminAnalyticsPage() {
                   <Store className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-1">0</p>
+              <p className="text-xl font-bold text-gray-900 mb-1">{analytics?.data?.total_vendors || 0}</p>
               <div className="flex items-center text-xs text-green-600">
                 <span>+0.00%</span>
               </div>
@@ -73,7 +95,7 @@ export default function AdminAnalyticsPage() {
                   <ShoppingCart className="w-5 h-5 text-yellow-600" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-1">0</p>
+              <p className="text-xl font-bold text-gray-900 mb-1">{analytics?.data?.total_orders || 0}</p>
               <div className="flex items-center text-xs text-green-600">
                 <span>+0.00%</span>
               </div>
@@ -86,7 +108,7 @@ export default function AdminAnalyticsPage() {
                   <Users className="w-5 h-5 text-purple-600" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-1">0</p>
+              <p className="text-xl font-bold text-gray-900 mb-1">{analytics?.data?.total_users || 0}</p>
               <div className="flex items-center text-xs text-green-600">
                 <span>+0.00%</span>
               </div>
@@ -98,7 +120,7 @@ export default function AdminAnalyticsPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <p className="text-xs text-gray-600 mb-1">Sales 2025</p>
-                <p className="text-2xl font-bold text-gray-900">₦225.7k</p>
+                <p className="text-2xl font-bold text-gray-900">₦{analytics?.data?.total_sales || '0.00'}</p>
                 <p className="text-xs text-green-600">+0.5% vs LAST YEAR</p>
               </div>
               <div className="flex gap-2">
@@ -121,7 +143,7 @@ export default function AdminAnalyticsPage() {
                 {/* Line chart */}
                 <polyline
                   points={salesData.map((d, i) => 
-                    `${(i * 350) / (salesData.length - 1)},${180 - (d.value / maxValue) * 160}`
+                    `${(i * 350) / (salesData.length > 1 ? salesData.length - 1 : 1)},${180 - (d.sales / maxValue) * 160}`
                   ).join(' ')}
                   fill="none"
                   stroke="#030482"
@@ -132,8 +154,8 @@ export default function AdminAnalyticsPage() {
                 {salesData.map((d, i) => (
                   <circle
                     key={i}
-                    cx={(i * 350) / (salesData.length - 1)}
-                    cy={180 - (d.value / maxValue) * 160}
+                    cx={(i * 350) / (salesData.length > 1 ? salesData.length - 1 : 1)}
+                    cy={180 - (d.sales / maxValue) * 160}
                     r="4"
                     fill="#030482"
                   />
@@ -143,14 +165,10 @@ export default function AdminAnalyticsPage() {
               {/* Year labels */}
               <div className="flex justify-between mt-2 px-1">
                 {salesData.map((d, i) => (
-                  <span key={i} className="text-xs text-gray-600">{d.year}</span>
+                  <span key={i} className="text-xs text-gray-600">{d.period}</span>
                 ))}
               </div>
 
-              {/* Tooltip */}
-              <div className="absolute top-12 left-24 bg-gray-900 text-white px-3 py-1.5 rounded text-xs">
-                ₦100,150
-              </div>
             </div>
           </div>
 

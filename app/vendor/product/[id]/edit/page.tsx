@@ -1,23 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import {
+  useGetStoreProductDetailsQuery,
+  useGetDraftDetailsQuery,
+  useUpdateDraftMutation,
+  usePartialUpdateStoreProductMutation,
+  useSubmitDraftMutation,
+} from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 function getIdFromPath(pathname: string | null) {
-  if (!pathname) return 'unknown';
+  if (!pathname) return '';
   const segments = pathname.split('/').filter(Boolean);
-  // expected: ['vendor','product','<id>','edit']
   if (segments.length >= 3 && segments[segments.length - 1] === 'edit') {
     return segments[segments.length - 2];
   }
-  return segments[segments.length - 1] ?? 'unknown';
+  return segments[segments.length - 1] ?? '';
 }
 
-export default function EditProductPage() {
+function EditProductComponent() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const id = getIdFromPath(pathname);
+  const productType = searchParams.get('type') === 'draft' ? 'draft' : 'store';
+
+  const { data: draftData, isLoading: isLoadingDraft, error: draftError } = useGetDraftDetailsQuery(id, { skip: productType !== 'draft' });
+  const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id, { skip: productType !== 'store' });
+  
+  const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
+  const [updateStoreProduct, { isLoading: isUpdatingStore }] = usePartialUpdateStoreProductMutation();
+  const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,197 +43,166 @@ export default function EditProductPage() {
     tags: '',
     stock: 0,
     price: 0,
-    discountedPrice: 0,
-    variants: {
-      colors: [] as string[],
-      sizes: [] as string[]
-    }
   });
 
+  const isLoading = isLoadingDraft || isLoadingStore;
+  const isUpdating = isUpdatingDraft || isUpdatingStore || isSubmitting;
+  const error = draftError || storeError;
+  const productData = productType === 'draft' ? draftData?.data : storeProductData?.data;
+
   useEffect(() => {
-    // Mock fetch product by id — prefill form with example data
-    const mock = {
-      name: `Product ${id}`,
-      description: 'This is a sample product description',
-      category: 'Electronics',
-      brand: 'Brand Name',
-      tags: 'sample,edit',
-      stock: 10,
-      price: 1200,
-      discountedPrice: 1000,
-      variants: { colors: ['White', 'Black'], sizes: ['36', '37'] }
-    };
-    setFormData(mock);
-  }, [id]);
+    if (productData) {
+      setFormData({
+        name: productData.name || '',
+        description: productData.description || '',
+        category: productData.category || '',
+        brand: productData.brand || '',
+        tags: Array.isArray(productData.tags) ? productData.tags.join(', ') : '',
+        stock: productData.stock || 0,
+        price: parseFloat(productData.price) || 0,
+      });
+    }
+  }, [productData]);
 
-  const handleSave = () => {
-    console.log('Saving product', id, formData);
-    // mocked save — navigate back to product list
-    router.push('/vendor/product');
-  };
-
-  const toggleColor = (color: string) => {
-    setFormData(prev => ({
-      ...prev,
-      variants: {
-        ...prev.variants,
-        colors: prev.variants.colors.includes(color)
-          ? prev.variants.colors.filter(c => c !== color)
-          : [...prev.variants.colors, color]
+  const handleSave = async () => {
+    const changes = new FormData();
+    // Simplified: in a real app, you'd check for changed fields
+    changes.append('name', formData.name);
+    changes.append('description', formData.description);
+    changes.append('price', formData.price.toString());
+    changes.append('stock', formData.stock.toString());
+    
+    try {
+      if (productType === 'draft') {
+        await updateDraft({ slug: id, data: changes }).unwrap();
+        alert('Draft updated successfully!');
+      } else {
+        // Note: partialUpdateStoreProduct expects a JSON object, not FormData in this implementation.
+        // This is another discrepancy to resolve with the backend if file uploads are needed here.
+        // For now, sending as JSON object.
+        await updateStoreProduct({ slug: id, data: {
+            name: formData.name,
+            description: formData.description,
+            price: formData.price.toString(),
+            stock: formData.stock
+        } }).unwrap();
+        alert('Product updated successfully!');
       }
-    }));
+      router.push('/vendor/product');
+    } catch (err) {
+      console.error('Failed to save:', err);
+      alert('Failed to save changes.');
+    }
   };
 
-  const toggleSize = (size: string) => {
-    setFormData(prev => ({
-      ...prev,
-      variants: {
-        ...prev.variants,
-        sizes: prev.variants.sizes.includes(size)
-          ? prev.variants.sizes.filter(s => s !== size)
-          : [...prev.variants.sizes, size]
-      }
-    }));
+  const handleSubmitForApproval = async () => {
+    try {
+      await submitDraft(id).unwrap();
+      alert('Draft submitted for approval!');
+      router.push('/vendor/product');
+    } catch (err) {
+      console.error('Failed to submit:', err);
+      alert('Failed to submit draft.');
+    }
   };
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  if (error) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <p className="text-red-500">Failed to load product details.</p>
+        </div>
+    );
+  }
 
   return (
-    <AppLayout showBottomNav={false} userRole="vendor">
-      <div className="min-h-screen bg-white">
-        <div className="flex items-center justify-center p-4 border-b border-gray-200 relative">
-          <button onClick={() => router.push('/vendor/product')} className="absolute left-4 p-2 -ml-2">
-            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold text-system-blue-light">Edit Product</h1>
+    <div className="p-6 pb-24 space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-900">
+            Editing {productType === 'draft' ? 'Draft' : 'Product'}: {productData?.name}
+        </h2>
+        {productData && <span className="capitalize text-sm font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-800">{productData.approval_status}</span>}
+      </div>
+
+      <div>
+        <label className="text-xs text-gray-600 mb-2 block">Product Name</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs text-gray-600 mb-2 block">Product Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData({...formData, description: e.target.value})}
+          rows={4}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs text-gray-600 mb-2 block">Stock</label>
+          <input
+            type="number"
+            value={formData.stock}
+            onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value || '0')})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+          />
         </div>
-
-        <div className="p-6 pb-24 space-y-6">
-          <div>
-            <label className="text-xs text-gray-600 mb-2 block">Product Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-600 mb-2 block">Product Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Category</label>
-              <input
-                type="text"
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Brand</label>
-              <input
-                type="text"
-                value={formData.brand}
-                onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-600 mb-2 block">Tags</label>
-            <input
-              type="text"
-              value={formData.tags}
-              onChange={(e) => setFormData({...formData, tags: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Stock</label>
-              <input
-                type="number"
-                value={formData.stock}
-                onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value || '0')})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Price</label>
-              <input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value || '0')})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-600 mb-2 block">Discounted Price</label>
-            <input
-              type="number"
-              value={formData.discountedPrice}
-              onChange={(e) => setFormData({...formData, discountedPrice: parseFloat(e.target.value || '0')})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-            />
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Variants</h3>
-            <div className="mb-4">
-              <label className="text-xs text-gray-600 mb-2 block">Color</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['White', 'Black', 'Green', 'Blue', 'Red', 'Yellow'].map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => toggleColor(color)}
-                    className={`py-2 px-4 rounded-full text-sm font-medium transition-colors ${
-                      formData.variants.colors.includes(color) ? 'bg-system-blue-light text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {color}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Size</label>
-              <div className="grid grid-cols-6 gap-2">
-                {['24','25','26','27','28','29','30','36','37','38','39','40','41','42','43'].map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => toggleSize(size)}
-                    className={`aspect-square rounded-lg text-sm font-medium transition-colors ${
-                      formData.variants.sizes.includes(size) ? 'bg-system-blue-light text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => router.push('/vendor/product')} className="flex-1 py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors">Save Changes</button>
-          </div>
+        <div>
+          <label className="text-xs text-gray-600 mb-2 block">Price</label>
+          <input
+            type="number"
+            value={formData.price}
+            onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value || '0')})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+          />
         </div>
       </div>
-    </AppLayout>
+      
+      <div className="space-y-3 pt-4">
+        <button onClick={handleSave} disabled={isUpdating} className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50">
+            {isUpdating ? 'Saving...' : 'Save Changes'}
+        </button>
+
+        {productType === 'draft' && (
+            <button onClick={handleSubmitForApproval} disabled={isUpdating} className="w-full py-3.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50">
+                {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
+            </button>
+        )}
+
+        <button onClick={() => router.push('/vendor/product')} disabled={isUpdating} className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+            Cancel
+        </button>
+      </div>
+    </div>
   );
+}
+
+export default function EditProductPage() {
+    return (
+        <AppLayout showBottomNav={false} userRole="vendor">
+            <div className="min-h-screen bg-white">
+                <div className="flex items-center justify-center p-4 border-b border-gray-200 relative">
+                    <button onClick={() => window.history.back()} className="absolute left-4 p-2 -ml-2">
+                        <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h1 className="text-lg font-semibold text-system-blue-light">Edit Product</h1>
+                </div>
+                <Suspense fallback={<LoadingSpinner fullScreen />}>
+                    <EditProductComponent />
+                </Suspense>
+            </div>
+        </AppLayout>
+    );
 }

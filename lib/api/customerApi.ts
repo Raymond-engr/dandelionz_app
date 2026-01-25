@@ -21,27 +21,6 @@ interface CustomerProfile {
   loyalty_points: number;
 }
 
-interface Address {
-  id: number;
-  label: string;
-  address_line1: string;
-  address_line2: string | null;
-  city: string;
-  state: string;
-  country: string;
-  postal_code: string;
-  is_default: boolean;
-}
-
-interface PaymentMethod {
-  id: string;
-  type: string;
-  card_number: string;
-  expiry_date: string;
-  holder_name: string;
-  is_default: boolean;
-}
-
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -84,79 +63,6 @@ export const customerApi = baseApi.injectEndpoints({
         body,
       }),
     }),
-
-    // Address Management
-    getAddresses: builder.query<{ success: boolean; data: Address[] }, void>({
-      query: () => "/user/customer/addresses/",
-      providesTags: ["Customer"],
-    }),
-
-    addAddress: builder.mutation<
-      { success: boolean; data: Address },
-      Partial<Address>
-    >({
-      query: (body) => ({
-        url: "/user/customer/addresses/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Customer"],
-    }),
-
-    updateAddress: builder.mutation<
-      { success: boolean; data: Address },
-      { id: number; data: Partial<Address> }
-    >({
-      query: ({ id, data }) => ({
-        url: `/user/customer/addresses/${id}/`,
-        method: "PATCH",
-        body: data,
-      }),
-      invalidatesTags: ["Customer"],
-    }),
-
-    deleteAddress: builder.mutation<
-      { success: boolean; message: string },
-      number
-    >({
-      query: (id) => ({
-        url: `/user/customer/addresses/${id}/`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Customer"],
-    }),
-
-    // Payment Methods
-    getPaymentMethods: builder.query<
-      { success: boolean; data: PaymentMethod[] },
-      void
-    >({
-      query: () => "/user/customer/payment-options/",
-      providesTags: ["Payment"],
-    }),
-
-    addPaymentMethod: builder.mutation<
-      { success: boolean; data: PaymentMethod },
-      Partial<PaymentMethod>
-    >({
-      query: (body) => ({
-        url: "/user/customer/payment-options/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Payment"],
-    }),
-
-    deletePaymentMethod: builder.mutation<
-      { success: boolean; message: string },
-      string
-    >({
-      query: (id) => ({
-        url: `/user/customer/payment-options/${id}/`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Payment"],
-    }),
   }),
 });
 
@@ -165,11 +71,5 @@ export const {
   useUpdateCustomerProfileMutation,
   usePartialUpdateCustomerProfileMutation,
   useChangeCustomerPasswordMutation,
-  useGetAddressesQuery,
-  useAddAddressMutation,
-  useUpdateAddressMutation,
-  useDeleteAddressMutation,
-  useGetPaymentMethodsQuery,
-  useAddPaymentMethodMutation,
-  useDeletePaymentMethodMutation,
 } = customerApi;
+
