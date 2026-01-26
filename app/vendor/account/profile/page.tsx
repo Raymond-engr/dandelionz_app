@@ -15,6 +15,7 @@ export default function VendorProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,6 +27,16 @@ export default function VendorProfilePage() {
     bank_name: '',
     account_number: '',
   });
+
+  useEffect(() => {
+    if (profilePictureFile) {
+      const url = URL.createObjectURL(profilePictureFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [profilePictureFile]);
 
   useEffect(() => {
     if (profileData?.data) {
@@ -146,7 +157,7 @@ export default function VendorProfilePage() {
   }
   
   const profile = profileData?.data;
-  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
+  const currentAvatar = previewUrl || profile?.user.profile_picture;
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">
@@ -173,6 +184,7 @@ export default function VendorProfilePage() {
                         width={64}
                         height={64}
                         className="w-full h-full rounded-full object-cover"
+                        unoptimized={!!previewUrl}
                     />
                     ) : (
                     <span className="text-2xl font-semibold text-white">

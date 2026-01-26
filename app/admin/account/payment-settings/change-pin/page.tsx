@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import { useChangePaymentPinMutation } from '@/lib/api/adminApi';
 
 type PinStep = 'enter' | 'confirm' | 'success';
 
@@ -12,6 +13,8 @@ export default function ChangePINPage() {
   const [enterPin, setEnterPin] = useState(['', '', '', '']);
   const [newPin, setNewPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
+  
+  const [changePin, { isLoading }] = useChangePaymentPinMutation();
 
   const handlePinInput = (index: number, value: string, setter: React.Dispatch<React.SetStateAction<string[]>>, pinArray: string[], nextId?: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
@@ -25,11 +28,33 @@ export default function ChangePINPage() {
   };
 
   const handleProceed = () => {
-    setCurrentStep('confirm');
+    if (enterPin.join('').length === 4) {
+       setCurrentStep('confirm');
+    } else {
+       alert("Please enter current PIN");
+    }
   };
 
-  const handleChangePIN = () => {
-    setCurrentStep('success');
+  const handleChangePIN = async () => {
+    const newPinStr = newPin.join('');
+    const confirmPinStr = confirmPin.join('');
+    const currentPinStr = enterPin.join('');
+
+    if (newPinStr.length !== 4 || confirmPinStr.length !== 4) {
+      alert("Please enter valid PINs");
+      return;
+    }
+
+    try {
+      await changePin({
+        current_pin: currentPinStr,
+        new_pin: newPinStr,
+        confirm_pin: confirmPinStr
+      }).unwrap();
+      setCurrentStep('success');
+    } catch (err: any) {
+      alert(err.data?.message || "Failed to change PIN");
+    }
   };
 
   const handleGoHome = () => {
@@ -53,7 +78,7 @@ export default function ChangePINPage() {
         {currentStep === 'enter' && (
           <div className="p-6">
             <div className="mb-12">
-              <label className="text-sm font-medium text-gray-900 mb-4 block">Enter PIN</label>
+              <label className="text-sm font-medium text-gray-900 mb-4 block">Enter Current PIN</label>
               <div className="flex gap-3 justify-center">
                 {enterPin.map((digit, index) => (
                   <input
@@ -118,9 +143,10 @@ export default function ChangePINPage() {
 
             <button
               onClick={handleChangePIN}
-              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              disabled={isLoading}
+              className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
             >
-              Change PIN
+              {isLoading ? 'Changing...' : 'Change PIN'}
             </button>
           </div>
         )}

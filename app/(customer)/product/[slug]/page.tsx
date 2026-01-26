@@ -14,7 +14,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const slug = params.id as string;
+  const slug = params.slug as string;
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -27,9 +27,9 @@ export default function ProductDetailPage() {
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
 
   const handleAddToCart = async () => {
-    if (!product) return;
+    if (!product || !product.slug) return;
     try {
-      await addToCart({ product: product.id, quantity }).unwrap();
+      await addToCart({ product: product.slug, quantity }).unwrap();
       alert('Product added to cart successfully!');
     } catch (err) {
       console.error('Failed to add to cart:', err);
@@ -38,9 +38,9 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToWishlist = async () => {
-    if (!product) return;
+    if (!product || !product.slug) return;
     try {
-      await addToWishlist({ product: product.id }).unwrap();
+      await addToWishlist({ product: product.slug }).unwrap();
       alert('Product added to wishlist!');
     } catch (err) {
         console.error('Failed to add to wishlist:', err);
@@ -77,7 +77,7 @@ export default function ProductDetailPage() {
 
   // Handle images array (fallback to dummy logic if API array is empty)
   const images = product.images && product.images.length > 0 
-    ? product.images 
+    ? product.images.map(img => img.image_url) 
     : [product.image || '/placeholder-category.png'];
 
   return (

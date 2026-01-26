@@ -80,8 +80,8 @@ export default function UserDetails({ params }: UserDetailsProps) {
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900">{user.full_name}</h2>
                 <p className="text-sm text-gray-600">{user.email}</p>
-                <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {user.is_active ? 'Active' : 'Suspended'}
+                <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {user.status === 'ACTIVE' ? 'Active' : 'Suspended'}
                 </span>
               </div>
             </div>

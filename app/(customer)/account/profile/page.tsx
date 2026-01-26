@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false); // Retained for password visibility toggle
   const [isEditing, setIsEditing] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -23,6 +24,16 @@ export default function ProfilePage() {
     phoneNumber: '',
     shipping_address: '',
   });
+
+  useEffect(() => {
+    if (profilePictureFile) {
+      const url = URL.createObjectURL(profilePictureFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [profilePictureFile]);
 
   useEffect(() => {
     if (profileData) {
@@ -114,7 +125,7 @@ export default function ProfilePage() {
   }
 
   const profile = profileData;
-  const currentAvatar = profilePictureFile ? URL.createObjectURL(profilePictureFile) : profile?.user.profile_picture;
+  const currentAvatar = previewUrl || profile?.user.profile_picture;
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">
@@ -140,6 +151,7 @@ export default function ProfilePage() {
                       width={80}
                       height={80}
                       className="w-full h-full rounded-full object-cover"
+                      unoptimized={!!previewUrl}
                     />
                 ) : (
                   <span className="text-2xl font-semibold text-gray-600">

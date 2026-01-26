@@ -26,7 +26,7 @@ export default function AppLayout({
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    const publicRoutes = ['/login', '/register', '/forgot-password', '/verify-email', '/verify-notice', '/'];
+    const publicRoutes = ['/login', '/register', '/forgot-password', '/verify-email', '/'];
     const protectedRoutePatterns = ['/account', '/checkout', '/wishlist', '/orders', '/cart', '/receipt'];
     
     const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
@@ -64,7 +64,7 @@ export default function AppLayout({
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="mx-auto max-w-[600px] min-h-screen bg-white relative flex flex-col">
+      <div className="mx-auto max-w-150 min-h-screen bg-white relative flex flex-col">
         {/* Main content area */}
         <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
           {children}

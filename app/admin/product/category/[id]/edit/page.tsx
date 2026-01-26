@@ -25,6 +25,7 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // API hooks
@@ -41,6 +42,16 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
       setDescription(categoryData.data.description);
     }
   }, [categoryData, isNew]);
+
+  useEffect(() => {
+    if (categoryImageFile) {
+      const url = URL.createObjectURL(categoryImageFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [categoryImageFile]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -80,7 +91,7 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
   const showLoading = isLoadingCategory || isSubmitting;
   const showErrorMessage = error || isErrorCategory;
 
-  const currentImagePreview = categoryImageFile ? URL.createObjectURL(categoryImageFile) : categoryData?.data.image;
+  const currentImagePreview = previewUrl || categoryData?.data.image;
 
   if (isLoadingCategory && !isNew) {
     return (
@@ -129,9 +140,9 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
                     <Image 
                       src={currentImagePreview} 
                       alt="Category Image" 
-                      layout="fill" 
-                      objectFit="cover"
-                      className="rounded-full"
+                      fill
+                      className="rounded-full object-cover"
+                      unoptimized={!!previewUrl}
                     />
                   ) : (
                     <Camera className="w-10 h-10 text-gray-400" />

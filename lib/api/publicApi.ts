@@ -1,19 +1,96 @@
 import { baseApi } from "./baseApi";
 
+export interface ProductImage {
+  id: number;
+  image: string;
+  image_url: string;
+  is_main: boolean;
+  alt_text?: string | null;
+  variant_association?: any;
+  display_order: number;
+  uploaded_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  id: number;
+  product_id: number;
+  product: {
+    name: string;
+    price: string;
+    image?: string;
+  };
+  product_name: string;
+  quantity: number;
+  item_subtotal: string;
+}
+
+export interface OrderTimeline {
+  status: string;
+  label: string;
+  timestamp: string;
+  description?: string;
+  completed: boolean;
+}
+
+export interface Order {
+  id: number;
+  order_id: string;
+  customer: string;
+  customer_email: string;
+  status: string;
+  payment_status: string;
+  total_price: string;
+  delivery_fee: string;
+  discount: string;
+  total_with_delivery: string;
+  is_delivered: boolean;
+  ordered_at: string;
+  created_at?: string;
+  tracking_number?: string;
+  shipping_address?: {
+    full_name: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    phone_number?: string;
+  };
+  order_items?: OrderItem[];
+  timeline?: OrderTimeline[];
+}
+
 export interface Product {
   id: number;
   name: string;
   price: string;
   rating?: number;
   image?: string | null;
-  images?: string[];
+  images?: ProductImage[];
   slug?: string;
   store?: number;
   store_name?: string;
+  vendor?: {
+    id: number;
+    store_name: string;
+    email_address: string;
+    vendor_status: string;
+    store_description: string;
+    address: string;
+  };
+  vendorName?: string;
   description?: string;
   category?: string;
+  category_name?: string;
+  discounted_price?: string;
   stock?: number;
+  brand?: string;
+  tags?: string;
+  variants?: any[];
+  videos?: any[];
   in_stock?: boolean;
+  approval_status?: string;
+  uploaded_date?: string;
   created_at?: string;
   updated_at?: string;
   reviews?: any[];
@@ -67,7 +144,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToCart: builder.mutation<
       { success: boolean; data: any },
-      { product: number; quantity: number; variant?: any }
+      { product: string; quantity: number; variant?: any }
     >({
       query: (body) => ({
         url: "/store/cart/add/",
@@ -79,7 +156,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     removeFromCart: builder.mutation<
       { success: boolean; message: string },
-      string
+      string // slug
     >({
       query: (slug) => ({
         url: `/store/cart/remove/${slug}/`,
@@ -108,7 +185,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToWishlist: builder.mutation<
       { success: boolean; message: string },
-      { product: number }
+      { product: string }
     >({
       query: (body) => ({
         url: "/store/favourites/add/",
@@ -120,7 +197,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     removeFromWishlist: builder.mutation<
       { success: boolean; message: string },
-      string
+      string // slug
     >({
       query: (slug) => ({
         url: `/store/favourites/remove/${slug}/`,
@@ -131,7 +208,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     // Orders
     getCustomerOrders: builder.query<
-      { success: boolean; data: any[] },
+      { success: boolean; data: Order[] },
       { status?: string }
     >({
       query: (params) => ({
@@ -150,8 +227,13 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order", "Cart"],
     }),
 
-    getOrderDetails: builder.query<{ success: boolean; data: any }, string>({
+    getOrderDetails: builder.query<{ success: boolean; data: Order }, string>({
       query: (uuid) => `/transactions/orders/${uuid}/`,
+      providesTags: ["Order"],
+    }),
+
+    getOrderReceipt: builder.query<{ success: boolean; data: any }, string>({
+      query: (uuid) => `/transactions/orders/${uuid}/receipt/`,
       providesTags: ["Order"],
     }),
 
@@ -241,6 +323,7 @@ export const {
   useGetCustomerOrdersQuery,
   useCreateOrderMutation,
   useGetOrderDetailsQuery,
+  useGetOrderReceiptQuery,
   usePayForOrderMutation,
   useAddProductReviewMutation,
   useGetProductReviewsQuery,

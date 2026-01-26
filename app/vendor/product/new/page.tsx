@@ -68,6 +68,18 @@ export default function AddNewProductPage() {
     }
   });
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (formData.image) {
+      const url = URL.createObjectURL(formData.image);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [formData.image]);
+
   const isLoading = isPublishing || isSavingDraft;
   const isError = !!(publishError || draftError);
   const error = publishError || draftError;
@@ -316,8 +328,8 @@ export default function AddNewProductPage() {
                   <input type="file" className="hidden" id="product-image" onChange={handleFileChange} accept="image/*" />
                   <label htmlFor="product-image" className="cursor-pointer">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                      {formData.image ? (
-                        <Image src={URL.createObjectURL(formData.image)} alt="Preview" width={48} height={48} className="object-cover rounded-lg" />
+                      {previewUrl ? (
+                        <Image src={previewUrl} alt="Preview" width={48} height={48} className="object-cover rounded-lg" unoptimized />
                       ) : (
                         <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -460,8 +472,8 @@ export default function AddNewProductPage() {
 
               {/* Product Image */}
               <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center mb-4">
-                {formData.image ? (
-                    <Image src={URL.createObjectURL(formData.image)} alt={formData.name} width={200} height={200} className="object-cover rounded-lg" />
+                {previewUrl ? (
+                    <Image src={previewUrl} alt={formData.name} width={200} height={200} className="object-cover rounded-lg" unoptimized />
                 ) : (
                     <div className="text-center">
                     <svg className="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
