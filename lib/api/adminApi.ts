@@ -65,7 +65,7 @@ export interface User {
   phone_number: string;
   role: string;
   is_verified: boolean;
-  is_active: boolean;
+  status: string;
   created_at: string;
   address?: string;
   total_spend?: string;
@@ -154,9 +154,47 @@ interface Settlement {
   created_at: string;
 }
 
-interface Dispute {
+export interface WalletStats {
+  withdrawable_balance: string;
+  available_balance: string;
+  total_earnings: string;
+  total_withdrawals: number;
+  this_month_earnings: string;
+}
+
+export interface WalletTransaction {
   id: string;
-  order_uuid: string;
+  type: string;
+  amount: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
+export interface AdminPaymentSettings {
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+}
+
+export interface SettlementSummary {
+  total_revenue: string;
+  total_payouts: string;
+  pending_settlements: string;
+  upcoming_payouts: number;
+}
+
+export interface VendorSettlement {
+  id: string;
+  vendor_name: string;
+  amount: string;
+  payout_date: string;
+  status: string;
+}
+
+export interface Dispute {
+  id: string;
+  order_id: string;
   customer_name: string;
   vendor_name: string;
   amount: string;
@@ -169,7 +207,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  recipient_type: "USERS" | "VENDORS" | "ALL";
+  recipient_type: "USERS" | "VENDORS" | "ALL" | "ADMIN";
   status: string;
   created_at: string;
   scheduled_at: string | null;
@@ -235,6 +273,88 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Admin"],
     }),
 
+    // Admin Wallet & Withdrawals
+    getWalletStats: builder.query<{ success: boolean; data: WalletStats }, void>({
+      query: () => "/user/admin/wallet/",
+      providesTags: ["Wallet"],
+    }),
+
+    getWalletTransactions: builder.query<{ success: boolean; data: WalletTransaction[] }, void>({
+      query: () => "/user/admin/wallet/transactions/",
+      providesTags: ["Wallet"],
+    }),
+
+    requestWithdrawal: builder.mutation<{ success: boolean; message: string }, { amount: string; pin: string }>({
+      query: (body) => ({
+        url: "/user/admin/wallet/withdraw/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Wallet"],
+    }),
+
+    // Admin Payment Settings
+    getAdminPaymentSettings: builder.query<{ success: boolean; data: AdminPaymentSettings }, void>({
+      query: () => "/user/admin/payment-settings/",
+      providesTags: ["AdminPaymentSettings"],
+    }),
+
+    updateAdminPaymentSettings: builder.mutation<{ success: boolean; data: AdminPaymentSettings }, Partial<AdminPaymentSettings>>({
+      query: (body) => ({
+        url: "/user/admin/payment-settings/",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["AdminPaymentSettings"],
+    }),
+
+    changePaymentPin: builder.mutation<{ success: boolean; message: string }, { current_pin?: string; new_pin: string; confirm_pin: string }>({
+      query: (body) => ({
+        url: "/user/admin/payment-settings/pin/",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    forgotPaymentPin: builder.mutation<{ success: boolean; message: string }, void>({
+      query: () => ({
+        url: "/user/admin/payment-settings/pin/forgot/",
+        method: "POST",
+      }),
+    }),
+    
+    // Settlements & Payouts (Platform Dashboard)
+    getSettlementSummary: builder.query<{ success: boolean; data: SettlementSummary }, void>({
+      query: () => "/user/admin/settlements/summary/",
+      providesTags: ["Settlement"],
+    }),
+
+    getVendorSettlements: builder.query<{ success: boolean; data: VendorSettlement[] }, { status?: string }>({
+      query: (params) => ({
+        url: "/user/admin/settlements/vendor/",
+        params,
+      }),
+      providesTags: ["Settlement"],
+    }),
+
+    // Disputes
+    getAllDisputes: builder.query<{ success: boolean; data: Dispute[] }, { status?: string }>({
+      query: (params) => ({
+        url: "/user/admin/settlements/disputes/",
+        params,
+      }),
+      providesTags: ["Settlement"],
+    }),
+
+    resolveDispute: builder.mutation<{ success: boolean; message: string }, { id: string; action: string; admin_note?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/user/admin/settlements/disputes/${id}/resolve/`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Settlement"],
+    }),
+
     // Analytics
     getAnalytics: builder.query<{ success: boolean; data: Analytics }, void>({
       query: () => "/user/admin/analytics/",
@@ -252,7 +372,7 @@ export const adminApi = baseApi.injectEndpoints({
     // User Management
     getAllUsers: builder.query<
       { success: boolean; data: User[] },
-      { role?: string; is_active?: boolean }
+      { role?: string; status?: string }
     >({
       query: (params) => ({
         url: "/user/admin/users/",
@@ -586,14 +706,6 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Settlement"],
     }),
 
-    getVendorSettlements: builder.query<
-      { success: boolean; data: Settlement[] },
-      void
-    >({
-      query: () => "/user/admin/settlements/vendor/",
-      providesTags: ["Settlement"],
-    }),
-
     getPayoutHistory: builder.query<{ success: boolean; data: any[] }, void>({
       query: () => "/user/admin/settlements/payout/",
       providesTags: ["Settlement"],
@@ -612,35 +724,12 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Dispute Management
-    getAllDisputes: builder.query<
-      { success: boolean; data: Dispute[] },
-      { status?: string }
-    >({
-      query: (params) => ({
-        url: "/user/admin/settlements/disputes/",
-        params,
-      }),
-      providesTags: ["Settlement"],
-    }),
-
     getDisputeDetails: builder.query<
       { success: boolean; data: Dispute },
       string
     >({
       query: (id) => `/user/admin/settlements/disputes/${id}/`,
       providesTags: ["Settlement"],
-    }),
-
-    resolveDispute: builder.mutation<
-      { success: boolean; message: string },
-      { id: string; action: string; reason: string }
-    >({
-      query: ({ id, ...body }) => ({
-        url: `/user/admin/settlements/disputes/${id}/resolve/`,
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Settlement", "Order"],
     }),
 
     // Notification Management
@@ -757,4 +846,12 @@ export const {
   useDeleteNotificationMutation,
   useGetAllWithdrawalsQuery,
   useProcessWithdrawalMutation,
+  useGetWalletStatsQuery,
+  useGetWalletTransactionsQuery,
+  useRequestWithdrawalMutation,
+  useGetAdminPaymentSettingsQuery,
+  useUpdateAdminPaymentSettingsMutation,
+  useChangePaymentPinMutation,
+  useForgotPaymentPinMutation,
+  useGetSettlementSummaryQuery,
 } = adminApi;

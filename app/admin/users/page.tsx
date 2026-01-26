@@ -14,7 +14,7 @@ export default function UserManagement() {
 
   const users = usersData?.data || [];
   const totalUsers = users.length;
-  const activeUsers = users.filter((user: User) => user.is_active).length;
+  const activeUsers = users.filter((user: User) => user.status === 'ACTIVE').length;
   const suspendedUsers = totalUsers - activeUsers;
 
   const handleUserClick = (userId: string) => {
@@ -80,8 +80,8 @@ export default function UserManagement() {
                     <p className="text-sm font-medium text-gray-900 truncate">{user.full_name}</p>
                     <p className="text-xs text-gray-600 truncate">{user.email}</p>
                   </div>
-                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {user.is_active ? 'Active' : 'Suspended'}
+                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {user.status === 'ACTIVE' ? 'Active' : 'Suspended'}
                   </span>
                 </button>
               ))}

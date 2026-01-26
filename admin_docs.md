@@ -975,3 +975,215 @@ Updated Project Status Summary
 - **POST /user/admin/notifications/**: Implemented.
 - **GET /user/admin/notifications/{id}/**: Implemented.
 - **DELETE /user/admin/notifications/{id}/**: Implemented.
+
+Here is Part 6: Admin Financials & Settings (Implemented Jan 2026).
+
+This section covers the newly implemented endpoints for Admin Wallet, Settlements, and Notifications.
+
+10. Admin Wallet & Withdrawals
+Manage the Admin's personal earnings and withdrawals.
+
+Get Wallet Balance
+Endpoint: GET /user/admin/wallet/
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "withdrawable_balance": "450000.00",
+    "available_balance": "450000.00",
+    "total_earnings": "1200000.00",
+    "total_withdrawals": 5,
+    "this_month_earnings": "150000.00"
+  }
+}
+```
+
+Get Wallet Transactions
+Endpoint: GET /user/admin/wallet/transactions/
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "txn_001",
+      "type": "DEBIT",
+      "amount": "50000.00",
+      "description": "Withdrawal to GTBank - 1234",
+      "status": "SUCCESSFUL",
+      "created_at": "2026-01-26T10:00:00Z"
+    }
+  ]
+}
+```
+
+Request Withdrawal
+Endpoint: POST /user/admin/wallet/withdraw/
+Request:
+```json
+{
+  "amount": "50000.00",
+  "pin": "1234"
+}
+```
+Response:
+```json
+{
+  "success": true,
+  "message": "Withdrawal request initiated successfully."
+}
+```
+
+11. Admin Payment Settings
+Manage where the Admin receives their payouts.
+
+Get Payment Settings
+Endpoint: GET /user/admin/payment-settings/
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "bank_name": "GTBank",
+    "account_number": "0123456789",
+    "account_name": "Admin Business Account"
+  }
+}
+```
+
+Update Payment Settings
+Endpoint: PUT /user/admin/payment-settings/
+Request:
+```json
+{
+  "bank_name": "Zenith Bank",
+  "account_number": "0022334455",
+  "account_name": "Admin Business Account"
+}
+```
+
+Change Payment PIN
+Endpoint: POST /user/admin/payment-settings/pin/
+Request:
+```json
+{
+  "current_pin": "1234",
+  "new_pin": "5678",
+  "confirm_pin": "5678"
+}
+```
+
+Forgot Payment PIN
+Endpoint: POST /user/admin/payment-settings/pin/forgot/
+Description: Triggers a reset link sent to the admin's email.
+Request: (Empty Body)
+
+12. Settlements & Payouts (Platform Dashboard)
+Monitor money flowing out to Vendors.
+
+Get Settlements Summary
+Endpoint: GET /user/admin/settlements/summary/
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "total_revenue": "5000000.00",
+    "total_payouts": "4200000.00",
+    "pending_settlements": "300000.00",
+    "upcoming_payouts": 12
+  }
+}
+```
+
+Get Vendor Settlements
+Endpoint: GET /user/admin/settlements/vendor/
+Query Params: ?status=PROCESSED | PENDING | FAILED
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "set_8821",
+      "vendor_name": "Tech Gadgets Ltd",
+      "amount": "150000.00",
+      "payout_date": "2026-01-28T09:00:00Z",
+      "status": "PENDING"
+    }
+  ]
+}
+```
+
+13. Disputes & Refunds
+Manage order disputes.
+
+List All Disputes
+Endpoint: GET /user/admin/settlements/disputes/
+Query Params: ?status=PENDING | APPROVED | REJECTED
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "dsp_101",
+      "order_id": "ORD-2026-001",
+      "customer_name": "John Doe",
+      "vendor_name": "Tech Gadgets Ltd",
+      "amount": "15000.00",
+      "reason": "Item arrived damaged",
+      "status": "PENDING",
+      "created_at": "2026-01-26T12:00:00Z"
+    }
+  ]
+}
+```
+
+Resolve Dispute
+Endpoint: POST /user/admin/settlements/disputes/{id}/resolve/
+Request:
+```json
+{
+  "action": "APPROVE", 
+  "admin_note": "Refund approved."
+}
+```
+
+14. Notifications
+System alerts and broadcasts.
+
+List Notifications
+Endpoint: GET /user/admin/notifications/
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "Maintenance",
+      "message": "System down tonight.",
+      "status": "SENT",
+      "recipient_type": "ALL",
+      "created_at": "2026-01-26T08:00:00Z"
+    }
+  ]
+}
+```
+
+Create Notification
+Endpoint: POST /user/admin/notifications/
+Request:
+```json
+{
+  "title": "New Policy",
+  "message": "Check terms.",
+  "recipient_type": "VENDORS",
+  "status": "SENT"
+}
+```
+
+Delete Notification
+Endpoint: DELETE /user/admin/notifications/{id}/

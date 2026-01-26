@@ -85,7 +85,7 @@ export default function LoginPage() {
     <AppLayout showBottomNav={false}>
       <div className="min-h-screen flex flex-col p-6">
         {/* Back Button */}
-        <button onClick={() => router.back()} className="self-start mb-8">
+        <button onClick={() => redirect ? router.push('/') : router.back()} className="self-start mb-8">
           <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>

@@ -3,88 +3,72 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import { useRequestWithdrawalMutation } from '@/lib/api/adminApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function WithdrawPage() {
   const router = useRouter();
-  const [withdrawData, setWithdrawData] = useState({
-    amount: '0.00',
-    accountNumber: '',
-    bankName: '',
-    accountName: ''
-  });
+  const [amount, setAmount] = useState('');
+  const [pin, setPin] = useState('');
+  const [requestWithdrawal, { isLoading }] = useRequestWithdrawalMutation();
+
+  const handleWithdraw = async () => {
+    if (!amount || !pin) {
+      alert("Please enter amount and PIN");
+      return;
+    }
+    
+    try {
+      await requestWithdrawal({ amount, pin }).unwrap();
+      alert("Withdrawal initiated successfully!");
+      router.push('/admin/account/withdrawal');
+    } catch (err: any) {
+      alert(err.data?.message || "Failed to request withdrawal");
+    }
+  };
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
       <div className="min-h-screen bg-white">
-        <div className="flex items-center justify-center p-4 border-b border-gray-200 relative">
-          <button onClick={() => router.push('/admin/account/withdrawal')} className="absolute left-4 p-2 -ml-2">
+         <div className="p-4 border-b border-gray-200 flex items-center justify-center relative">
+          <button onClick={() => router.back()} className="absolute left-4 p-2 -ml-2">
             <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-system-blue-light">Withdraw Earnings</h1>
+          <h1 className="text-lg font-semibold text-system-blue-light">Withdraw Funds</h1>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div>
-            <label className="text-sm font-medium text-gray-900 mb-2 block">Withdrawable Amount</label>
+        <div className="p-6">
+          <div className="mb-6">
+            <label className="text-sm font-medium text-gray-700 block mb-2">Amount to Withdraw (₦)</label>
             <input
-              type="text"
-              value={`₦ ${withdrawData.amount}`}
-              onChange={(e) => setWithdrawData({...withdrawData, amount: e.target.value.replace('₦ ', '')})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              placeholder="0.00"
             />
           </div>
 
-          <div>
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Payment Option</h3>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-900 mb-4">Bank Transfer</p>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
-                  <input
-                    type="text"
-                    value={withdrawData.accountNumber}
-                    onChange={(e) => setWithdrawData({...withdrawData, accountNumber: e.target.value})}
-                    placeholder="0011223344"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
-                  <select
-                    value={withdrawData.bankName}
-                    onChange={(e) => setWithdrawData({...withdrawData, bankName: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
-                  >
-                    <option value="">United Bank for Africa PLC</option>
-                    <option>Access Bank</option>
-                    <option>GTBank</option>
-                    <option>First Bank</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-600 mb-2 block">Account Name</label>
-                  <input
-                    type="text"
-                    value={withdrawData.accountName}
-                    onChange={(e) => setWithdrawData({...withdrawData, accountName: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="mb-8">
+            <label className="text-sm font-medium text-gray-700 block mb-2">Payment PIN</label>
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              maxLength={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              placeholder="Enter 4-digit PIN"
+            />
           </div>
 
           <button
-            onClick={() => router.push('/admin/account/withdrawal/pin')}
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+            onClick={handleWithdraw}
+            disabled={isLoading}
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
           >
-            Proceed
+            {isLoading ? <LoadingSpinner size="sm" /> : 'Confirm Withdrawal'}
           </button>
         </div>
       </div>

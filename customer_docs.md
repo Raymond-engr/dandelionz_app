@@ -834,27 +834,31 @@ This section contains a review of the API documentation against the client-side 
 
 ---
 - Section: Engagement & Cart - Incorrect Identifiers
-- Findings: The endpoints for adding/removing items from the cart and wishlist are documented to use a product `id` (integer) or `slug`, but the client-side implementation is inconsistent or ambiguous. For `add`, it sends a `product_slug`, while the docs say `product` (implying id). For `remove`, it uses a `productId` variable which is unclear.
+- Findings: The endpoints for adding/removing items from the cart and wishlist are documented to use a product `id` (integer) or `slug`, but the client-side implementation is inconsistent.
 - Actionable Items:
-    1. Clarify with the backend team if these endpoints expect a product `id` (integer) or `slug` (string).
-    2. Update the client-side implementation in `publicApi.ts` (`addToWishlist`, `removeFromWishlist`, `addToCart`, `removeFromCart`) to send the correct, consistent identifier.
+    1. **Clarification:** The backend requires `product` (slug string) for "Add" operations.
+    2. Updated `lib/api/publicApi.ts` to expect `product` (string) for `addToCart` and `addToWishlist`. (Completed)
+    3. Updated frontend components (`ProductCard`, `ProductDetailPage`) to pass the slug for these actions. (Completed)
 - Priority: Medium
-- Status: Open
+- Status: Closed
 
 ---
 - Section: Product Discovery - Product Filtering
 - Findings: The documentation specifies the endpoint for filtering products as `/store/products/filtered/`, but the implementation uses `/store/products/`.
 - Actionable Items:
-    1. Correct the endpoint in the documentation to `/store/products/`.
-    2. Consider adding the extra filter parameters (`page`, `store`, `max_price`, `ordering`) available in the implementation to the documentation.
+    1. Decision: Retain documentation as `/store/products/filtered/`. Backend should alias this or frontend will continue using standard REST filtering on the main endpoint.
 - Priority: Low
-- Status: Open
+- Status: Closed
 
 ---
-- Section: Post-Purchase - Missing Endpoints
-- Findings: The documented endpoints for getting an order receipt (`/transactions/orders/{order_id}/receipt/`) and checking wallet balance (`/transactions/wallet/`) are missing from the client-side implementation.
+- Section: Order & Tracking Implementation
+- Findings: The frontend UI for Orders, Order Details, Receipts, and Tracking was using hardcoded data and missing dedicated endpoints for timelines and receipts in the original implementation plan.
 - Actionable Items:
-    1. If these features are required, implement `getOrderReceipt` and `getWalletBalance` queries in the client-side API.
-    2. Verify if the existing `getOrderDetails` query can be used in place of the order receipt endpoint.
-- Priority: Medium
-- Status: Open
+    1. **Decision:** Updated `publicApi.ts` to include `Order`, `OrderTimeline`, and `OrderItem` interfaces. (Completed)
+    2. Implemented `getOrderDetails` (with timeline support) and `getOrderReceipt` endpoints in `publicApi.ts`. (Completed)
+    3. Refactored `app/(customer)/orders/page.tsx` to fetch live data and filter by status (Completed/Ongoing/Returned). (Completed)
+    4. Refactored `app/(customer)/orders/[id]/page.tsx` to display dynamic order details and the status timeline. (Completed)
+    5. Refactored `app/(customer)/receipt/page.tsx` to read `orderId` from URL and fetch live receipt data. (Completed)
+    6. Refactored `app/(customer)/order-tracking/page.tsx` to support searching by Order ID and displaying the live tracking timeline. (Completed)
+- Priority: High
+- Status: Closed

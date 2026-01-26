@@ -97,7 +97,7 @@ export default function VerifyEmailPage() {
               The verification link is missing required parameters. Please check the link or request a new one.
             </p>
             <button
-              onClick={() => router.push('/verify-email/resend')}
+              onClick={() => router.push('/verify-notice')}
               className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
             >
               Resend Verification Email

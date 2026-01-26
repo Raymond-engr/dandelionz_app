@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import { useForgotPaymentPinMutation } from '@/lib/api/adminApi';
 
 type ForgotPinStep = 'otp' | 'newPin' | 'success';
 
@@ -13,6 +14,16 @@ export default function ForgotPINPage() {
   const [newPin, setNewPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
   const [countdown, setCountdown] = useState(45);
+  
+  const [forgotPin, { isLoading }] = useForgotPaymentPinMutation();
+  const [emailSent, setEmailSent] = useState(false);
+
+  useEffect(() => {
+    // Trigger the forgot pin email on mount
+    if (!emailSent) {
+      forgotPin().unwrap().then(() => setEmailSent(true)).catch(() => {});
+    }
+  }, [forgotPin, emailSent]);
 
   useEffect(() => {
     if (countdown > 0 && currentStep === 'otp') {
@@ -33,15 +44,30 @@ export default function ForgotPINPage() {
   };
 
   const handleVerifyOTP = () => {
+    // Since the API only supports sending a reset link (per spec), 
+    // we simulate the flow or inform the user.
+    // Ideally, the link in the email would redirect to a reset page.
+    // For this UI, we'll proceed to 'newPin' as a simulation if validated.
+    // Real implementation would require a verify-otp endpoint.
+    alert("Please check your email for the reset link. This UI flow is a simulation.");
     setCurrentStep('newPin');
   };
 
   const handleChangePIN = () => {
-    setCurrentStep('success');
+     // This would call a reset-pin endpoint with the OTP/Token
+     alert("Password reset via link is required.");
+     setCurrentStep('success');
   };
 
   const handleGoHome = () => {
     router.push('/admin/account/payment-settings');
+  };
+  
+  const handleResend = () => {
+     forgotPin().unwrap().then(() => {
+        setCountdown(45);
+        alert("Reset link resent!");
+     });
   };
 
   return (
@@ -61,12 +87,12 @@ export default function ForgotPINPage() {
         {currentStep === 'otp' && (
           <div className="p-6">
             <p className="text-sm text-gray-700 mb-6 text-center">
-              A 5-digit OTP has been sent to your email{' '}
-              <span className="text-system-blue-light font-medium">adamsmith@.....com</span>
+              A reset link has been sent to your email.{' '}
+              {/* <span className="text-system-blue-light font-medium">adamsmith@.....com</span> */}
             </p>
 
             <div className="mb-4">
-              <label className="text-sm font-medium text-gray-900 mb-4 block">OTP</label>
+              <label className="text-sm font-medium text-gray-900 mb-4 block">OTP (Simulation)</label>
               <div className="flex gap-3 justify-center mb-3">
                 {otp.map((digit, index) => (
                   <input
@@ -83,6 +109,9 @@ export default function ForgotPINPage() {
               <p className="text-sm text-gray-600 text-center">
                 Resend in <span className="font-medium">0:{countdown.toString().padStart(2, '0')}s</span>
               </p>
+              {countdown === 0 && (
+                 <button onClick={handleResend} className="block mx-auto mt-2 text-system-blue-light text-sm font-medium">Resend Code</button>
+              )}
             </div>
 
             <button

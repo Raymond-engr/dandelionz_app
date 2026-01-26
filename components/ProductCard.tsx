@@ -2,21 +2,30 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product, useAddToCartMutation, useAddToWishlistMutation } from '@/lib/api/publicApi';
+import { Product, useAddToCartMutation, useAddToWishlistMutation, useGetCartQuery } from '@/lib/api/publicApi';
+import { useAppSelector } from '@/lib/hooks';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const { data: cartResponse } = useGetCartQuery(undefined, {
+    skip: !isAuthenticated
+  });
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
+
+  const cartItems = cartResponse?.data?.items || [];
+  const isInCart = cartItems.some((item: any) => item.product_details?.slug === product.slug);
 
   const handleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!product.slug) return;
     try {
-      await addToWishlist({ product: product.id }).unwrap();
+      await addToWishlist({ product: product.slug }).unwrap();
       alert('Added to wishlist!');
     } catch (err) {
       console.error(err);
@@ -26,8 +35,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!product.slug) return;
     try {
-      await addToCart({ product: product.id, quantity: 1 }).unwrap();
+      await addToCart({ product: product.slug, quantity: 1 }).unwrap();
       alert('Added to cart!');
     } catch (err) {
       console.error(err);
@@ -35,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/product/${product.id}`}>
+    <Link href={`/product/${product.slug || product.id}`}>
     <div className="flex flex-col bg-white rounded-lg overflow-hidden group border border-gray-100 hover:shadow-md transition-shadow">
       {/* Product Image */}
       <div className="relative aspect-square bg-gray-100">
@@ -45,6 +55,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             className="w-full h-full object-cover"
             fill
+            unoptimized={product.image.startsWith('blob:')}
           />
 
         ) : (
@@ -83,13 +94,19 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Add to Cart Button */}
-        <button
-          onClick={handleAddToCart}
-          disabled={isAddingToCart}
-          className="w-full py-2 bg-gray-50 text-system-blue-light text-xs font-semibold rounded-lg hover:bg-system-blue-light hover:text-white transition-colors disabled:opacity-50"
-        >
-          {isAddingToCart ? 'Adding...' : 'Add to Cart'}
-        </button>
+        {isInCart ? (
+          <div className="w-full py-2 bg-green-50 text-green-600 text-xs font-semibold rounded-lg text-center">
+            In Cart
+          </div>
+        ) : (
+          <button
+            onClick={handleAddToCart}
+            disabled={isAddingToCart}
+            className="w-full py-2 bg-gray-50 text-system-blue-light text-xs font-semibold rounded-lg hover:bg-system-blue-light hover:text-white transition-colors disabled:opacity-50"
+          >
+            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+          </button>
+        )}
       </div>
     </div>
     </Link>

@@ -25,7 +25,7 @@ npm install @ducanh2912/next-pwa
 
 #### **Step 2: Create PWA Icons** N.B: I'll implement this step by myself, just use it as context.
 
-A PWA requires a set of icons for different devices and contexts. I was unable to create these for you automatically. Please create the following icon files and place them in the `public/icons/` directory. You can use a tool like [favicon.io](https://favicon.io/) to generate these from a source image.
+A PWA requires a set of icons for different devices and contexts. I was unable to create these for you automatically. Please create the following icon files and place them in the `public/icons/` directory. You can use a tool like [favicon.io](https://favicon.io/) to generate these from a source image. and https://maskable.app/editor for the maskable icons
 
 - `icon-192x192.png` (192x192 pixels)
 - `icon-512x512.png` (512x512 pixels)
