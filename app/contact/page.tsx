@@ -1,17 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 
 export default function ContactUsPage() {
   const router = useRouter();
-  const [message, setMessage] = useState('');
-
-  const handleSend = () => {
-    console.log('Sending message:', message);
-    // Handle message sending logic
-  };
 
   const handleCall = () => {
     window.location.href = 'tel:08083817902';
@@ -65,27 +59,6 @@ export default function ContactUsPage() {
               </p>
             </div>
           </div>
-
-          {/* Message Textarea */}
-          <div className="mb-6">
-            <textarea
-              placeholder="Leave a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="w-full h-40 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent resize-none"
-            />
-          </div>
-
-          {/* Send Button */}
-          <button
-            onClick={handleSend}
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-            Send
-          </button>
         </div>
       </div>
     </AppLayout>

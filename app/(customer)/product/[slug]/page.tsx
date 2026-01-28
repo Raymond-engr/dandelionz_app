@@ -2,19 +2,22 @@
 
 import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
     useGetProductBySlugQuery, 
     useAddToCartMutation, 
     useAddToWishlistMutation 
 } from '@/lib/api/publicApi';
+import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function ProductDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const slug = params.slug as string;
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -27,6 +30,11 @@ export default function ProductDetailPage() {
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+
     if (!product || !product.slug) return;
     try {
       await addToCart({ product: product.slug, quantity }).unwrap();
@@ -38,6 +46,11 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToWishlist = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+
     if (!product || !product.slug) return;
     try {
       await addToWishlist({ product: product.slug }).unwrap();

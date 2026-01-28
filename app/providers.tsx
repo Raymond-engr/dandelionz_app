@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/lib/store';
 import { useEffect } from 'react';
 import { setCredentials } from '@/lib/features/auth/authSlice';
+// import AuthCheck from '@/components/AuthCheck';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -32,5 +33,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      {/* <AuthCheck /> */}
+      {children}
+    </Provider>
+  );
 }
