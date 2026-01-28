@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Calendar, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotificationMutation } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 export default function CreateNotification() {
   const router = useRouter();
@@ -27,11 +28,11 @@ export default function CreateNotification() {
 
   useEffect(() => {
     if (isSuccess) {
-      alert('Notification created successfully!');
+      toast.success('Notification created successfully!');
       router.back();
     }
     if (isError) {
-      alert('Failed to create notification: ' + JSON.stringify(error));
+      toast.error('Failed to create notification: ' + JSON.stringify(error));
     }
   }, [isSuccess, isError, error, router]);
 

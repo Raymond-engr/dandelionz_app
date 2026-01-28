@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useGetOrderReceiptQuery } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 function ReceiptContent() {
   const router = useRouter();
@@ -26,7 +27,7 @@ function ReceiptContent() {
   const handleExport = () => {
     console.log('Exporting as:', exportFormat);
     setShowExportModal(false);
-    alert(`Export feature for ${exportFormat.toUpperCase()} is coming soon!`);
+    toast.success(`Export feature for ${exportFormat.toUpperCase()} is coming soon!`);
   };
 
   if (isLoading) {

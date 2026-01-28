@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useSetPaymentPINMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function ChangePinPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function ChangePinPage() {
 
     try {
       await setPaymentPIN({ pin, confirm_pin: confirmPin }).unwrap();
-      alert('Payment PIN updated successfully!');
+      toast.success('Payment PIN updated successfully!');
       router.back();
     } catch (err: any) {
       console.error('Failed to set PIN:', err);

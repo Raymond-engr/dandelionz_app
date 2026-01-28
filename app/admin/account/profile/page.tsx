@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useGetAdminProfileQuery, useUpdateAdminProfileMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function AdminProfilePage() {
   const router = useRouter();
@@ -42,12 +43,12 @@ export default function AdminProfilePage() {
         full_name: formData.fullName,
         phone_number: formData.phoneNumber,
       }).unwrap();
-      alert('Profile updated successfully');
+      toast.success('Profile updated successfully');
       setIsEditing(false);
       refetch();
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile');
     }
   };
 

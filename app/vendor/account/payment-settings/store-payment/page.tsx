@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetPaymentSettingsQuery, useUpdatePaymentSettingsMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function StorePaymentPage() {
   const router = useRouter();
@@ -30,11 +31,11 @@ export default function StorePaymentPage() {
   const handleSave = async () => {
     try {
       await updatePaymentSettings(formData).unwrap();
-      alert('Payment settings updated successfully!');
+      toast.success('Payment settings updated successfully!');
       router.back();
     } catch (err) {
       console.error('Failed to update payment settings:', err);
-      alert('Failed to update payment settings.');
+      toast.error('Failed to update payment settings.');
     }
   };
 

@@ -11,6 +11,7 @@ import {
   useSubmitDraftMutation,
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 function getIdFromPath(pathname: string | null) {
   if (!pathname) return '';
@@ -75,7 +76,7 @@ function EditProductComponent() {
     try {
       if (productType === 'draft') {
         await updateDraft({ slug: id, data: changes }).unwrap();
-        alert('Draft updated successfully!');
+        toast.success('Draft updated successfully!');
       } else {
         // Note: partialUpdateStoreProduct expects a JSON object, not FormData in this implementation.
         // This is another discrepancy to resolve with the backend if file uploads are needed here.
@@ -86,23 +87,23 @@ function EditProductComponent() {
             price: formData.price.toString(),
             stock: formData.stock
         } }).unwrap();
-        alert('Product updated successfully!');
+        toast.success('Product updated successfully!');
       }
       router.push('/vendor/product');
     } catch (err) {
       console.error('Failed to save:', err);
-      alert('Failed to save changes.');
+      toast.error('Failed to save changes.');
     }
   };
 
   const handleSubmitForApproval = async () => {
     try {
       await submitDraft(id).unwrap();
-      alert('Draft submitted for approval!');
+      toast.success('Draft submitted for approval!');
       router.push('/vendor/product');
     } catch (err) {
       console.error('Failed to submit:', err);
-      alert('Failed to submit draft.');
+      toast.error('Failed to submit draft.');
     }
   };
 

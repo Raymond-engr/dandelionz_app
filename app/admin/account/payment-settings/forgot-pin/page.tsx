@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useForgotPaymentPinMutation } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 type ForgotPinStep = 'otp' | 'newPin' | 'success';
 
@@ -49,13 +50,13 @@ export default function ForgotPINPage() {
     // Ideally, the link in the email would redirect to a reset page.
     // For this UI, we'll proceed to 'newPin' as a simulation if validated.
     // Real implementation would require a verify-otp endpoint.
-    alert("Please check your email for the reset link. This UI flow is a simulation.");
+    toast.success("Please check your email for the reset link. This UI flow is a simulation.");
     setCurrentStep('newPin');
   };
 
   const handleChangePIN = () => {
      // This would call a reset-pin endpoint with the OTP/Token
-     alert("Password reset via link is required.");
+     toast.error("Password reset via link is required.");
      setCurrentStep('success');
   };
 
@@ -66,7 +67,7 @@ export default function ForgotPINPage() {
   const handleResend = () => {
      forgotPin().unwrap().then(() => {
         setCountdown(45);
-        alert("Reset link resent!");
+        toast.success("Reset link resent!");
      });
   };
 

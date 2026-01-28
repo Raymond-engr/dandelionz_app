@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useGetOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { OrderItem } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 interface OrderDetailsProps {
   params: Promise<{ id: string }>;
@@ -31,7 +32,7 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
     try {
       if (action === 'cancel') {
         if (!reason) {
-          alert('Please provide a reason for cancellation.');
+          toast.error('Please provide a reason for cancellation.');
           return;
         }
         await cancelOrder({ order_id: order.order_id, reason }).unwrap();

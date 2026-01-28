@@ -10,6 +10,7 @@ import {
   useSuspendVendorWithReasonMutation
 } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 interface VendorDetailsProps {
   params: Promise<{ id: string }>;
@@ -44,7 +45,7 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         setSuccessMessage('Vendor approved successfully');
       } else if (action === 'Suspend Vendor') {
         if (!reason.trim()) {
-          alert('A reason is required to suspend a vendor.');
+          toast.error('A reason is required to suspend a vendor.');
           return;
         }
         await suspendVendor({ 
@@ -69,7 +70,7 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         router.back();
       }, 2000);
     } catch (err: any) {
-      alert(err?.data?.message || 'Failed to perform action');
+      toast.error(err?.data?.message || 'Failed to perform action');
     }
   };
 

@@ -16,6 +16,12 @@ export default function DeliveryAddressPage() {
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
 
+  const isDirty = profile ? (
+    address !== (profile.shipping_address || '') ||
+    city !== (profile.city || '') ||
+    postalCode !== (profile.postal_code || '')
+  ) : false;
+
   useEffect(() => {
     if (profile) {
       setAddress(profile.shipping_address || '');
@@ -116,18 +122,20 @@ export default function DeliveryAddressPage() {
           <div className="space-y-3 mt-8">
             <button
               type="submit"
-              disabled={isUpdating}
+              disabled={isUpdating || !isDirty}
               className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
             >
               {isUpdating ? 'Saving...' : 'Save Changes'}
             </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Discard
-            </button>
+            {isDirty && (
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Discard Changes
+              </button>
+            )}
           </div>
         </form>
       </div>

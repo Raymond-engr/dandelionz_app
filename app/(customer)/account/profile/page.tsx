@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -76,12 +77,12 @@ export default function ProfilePage() {
 
     try {
       await updateProfile(updateData).unwrap();
-      alert('Profile updated successfully');
+      toast.success('Profile updated successfully');
       setIsEditing(false);
       setProfilePictureFile(null);
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile');
     }
   };
 

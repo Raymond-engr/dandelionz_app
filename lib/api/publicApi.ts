@@ -144,7 +144,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToCart: builder.mutation<
       { success: boolean; data: any },
-      { product: string; quantity: number; variant?: any }
+      { slug: string; quantity: number; variant?: any }
     >({
       query: (body) => ({
         url: "/store/cart/add/",
@@ -167,7 +167,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     updateCartItem: builder.mutation<
       { success: boolean; data: any },
-      { product_id: string; quantity: number }
+      { slug: string; quantity: number }
     >({
       query: (body) => ({
         url: "/store/cart/update/",
@@ -178,14 +178,14 @@ export const publicApi = baseApi.injectEndpoints({
     }),
 
     // Wishlist
-    getWishlist: builder.query<{ success: boolean; data: any[] }, void>({
+    getWishlist: builder.query<any[], void>({
       query: () => "/store/favourites/",
       providesTags: ["Wishlist"],
     }),
 
     addToWishlist: builder.mutation<
       { success: boolean; message: string },
-      { product: string }
+      { slug: string }
     >({
       query: (body) => ({
         url: "/store/favourites/add/",

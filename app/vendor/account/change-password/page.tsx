@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useChangeVendorPasswordMutation } from '@/lib/api/vendorApi';
+import toast from 'react-hot-toast';
 
 export default function VendorChangePasswordPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function VendorChangePasswordPage() {
 
       await changeVendorPassword(payload).unwrap();
 
-      alert('Password changed successfully');
+      toast.success('Password changed successfully');
       router.back();
     } catch (err: any) {
       console.error('Password change failed:', err);

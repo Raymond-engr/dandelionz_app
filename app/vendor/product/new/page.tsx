@@ -8,6 +8,7 @@ import {
   useCreateDraftMutation,
 } from '@/lib/api/vendorApi';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 type ProductStep = 'basic' | 'inventory' | 'preview';
 
@@ -141,7 +142,7 @@ export default function AddNewProductPage() {
     const productData = buildProductData();
     try {
       await createDraft(productData).unwrap();
-      alert('Product saved as draft!');
+      toast.success('Product saved as draft!');
       router.push('/vendor/product');
     } catch (err) {
       console.error('Failed to save draft:', err);
@@ -152,7 +153,7 @@ export default function AddNewProductPage() {
     const productData = buildProductData();
     try {
       await createStoreProduct(productData).unwrap();
-      alert('Product published successfully!');
+      toast.success('Product published successfully!');
       router.push('/vendor/product');
     } catch (err) {
       console.error('Failed to create product:', err);

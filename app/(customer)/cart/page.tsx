@@ -31,8 +31,8 @@ export default function CartPage() {
   const handleUpdateQuantity = async (slug: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     try {
-      // The API expects 'product_id' (which is the slug in our case) and 'quantity'
-      await updateCartItem({ product_id: slug, quantity: newQuantity }).unwrap();
+      // The API expects 'slug' and 'quantity'
+      await updateCartItem({ slug: slug, quantity: newQuantity }).unwrap();
     } catch (err) {
       console.error('Failed to update quantity:', err);
     }
@@ -50,7 +50,7 @@ export default function CartPage() {
 
   return (
     <AppLayout showBottomNav={true} userRole="customer">
-      <div className="min-h-screen bg-white pb-24">
+      <div className="bg-white pb-24">
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-lg font-semibold text-gray-900 text-center">Cart</h1>
@@ -155,8 +155,8 @@ export default function CartPage() {
             </div>
 
             {/* Checkout Footer */}
-            <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-10">
-               <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+            <div className="fixed bottom-16 left-0 right-0 mx-auto max-w-150 p-4 bg-white border-t border-gray-200 shadow-lg z-10">
+               <div className="flex items-center justify-between gap-4">
                   <div>
                       <p className="text-sm text-gray-500">Total</p>
                       <p className="text-xl font-bold text-gray-900">${parseFloat(cartTotal).toLocaleString()}</p>

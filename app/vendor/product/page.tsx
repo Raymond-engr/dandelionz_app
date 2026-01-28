@@ -10,6 +10,7 @@ import {
   useDeleteDraftMutation,
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 type ProductType = 'store' | 'draft';
 
@@ -47,7 +48,7 @@ export default function VendorProductsPage() {
       }
       setShowDeleteConfirm(null);
     } catch (err: any) {
-      alert(err?.data?.message || 'Failed to delete product');
+      toast.error(err?.data?.message || 'Failed to delete product');
     }
   };
 

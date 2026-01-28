@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAdminPaymentSettingsQuery, useUpdateAdminPaymentSettingsMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function StorePaymentOptionPage() {
   const router = useRouter();
@@ -34,10 +35,10 @@ export default function StorePaymentOptionPage() {
         bank_name: formData.bankName,
         account_name: formData.accountName
       }).unwrap();
-      alert('Payment details updated successfully!');
+      toast.success('Payment details updated successfully!');
       router.back();
     } catch (err) {
-      alert('Failed to update payment details.');
+      toast.error('Failed to update payment details.');
     }
   };
 

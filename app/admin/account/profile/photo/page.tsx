@@ -6,6 +6,7 @@ import { useUploadAdminPhotoMutation, useGetAdminProfileQuery } from '@/lib/api/
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function AdminPhotoUploadPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function AdminPhotoUploadPage() {
 
     try {
       await uploadAdminPhoto(formData).unwrap();
-      alert('Photo uploaded successfully!');
+      toast.success('Photo uploaded successfully!');
       refetch();
       router.back();
     } catch (err) {
@@ -42,7 +43,7 @@ export default function AdminPhotoUploadPage() {
   const handleTakePhoto = () => {
     setError('');
     console.log('Take a photo - not implemented');
-    alert('Taking a photo is not implemented yet.');
+    toast.error('Taking a photo is not implemented yet.');
   };
 
   return (
