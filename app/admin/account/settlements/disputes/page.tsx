@@ -7,6 +7,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useGetAllDisputesQuery, useResolveDisputeMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function DisputesRefundsPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function DisputesRefundsPage() {
        try {
          await resolveDispute({ id, action, admin_note: `Admin ${action.toLowerCase()}d this dispute.` }).unwrap();
        } catch (error) {
-         alert('Failed to update dispute status.');
+         toast.error('Failed to update dispute status.');
        }
     }
   };

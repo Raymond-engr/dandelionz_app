@@ -7,10 +7,15 @@ import Image from 'next/image';
 import { 
     useGetProductBySlugQuery, 
     useAddToCartMutation, 
-    useAddToWishlistMutation 
+    useAddToWishlistMutation,
+    useRemoveFromWishlistMutation,
+    useGetWishlistQuery,
+    useGetCartQuery,
+    useRemoveFromCartMutation
 } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -26,10 +31,26 @@ export default function ProductDetailPage() {
   const { data: response, isLoading, isError } = useGetProductBySlugQuery(slug);
   const product = response?.data;
 
-  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
-  const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
+  // Fetch wishlist data to check if item exists
+  const { data: wishlistResponse } = useGetWishlistQuery(undefined, {
+      skip: !isAuthenticated
+  });
+  const wishlistItems = wishlistResponse || [];
+  const isInWishlist = product ? wishlistItems.some((item: any) => item.product_details?.slug === product.slug) : false;
 
-  const handleAddToCart = async () => {
+  // Fetch cart data to check if item exists
+  const { data: cartResponse } = useGetCartQuery(undefined, {
+    skip: !isAuthenticated
+  });
+  const cartItems = cartResponse?.data?.items || [];
+  const isInCart = product ? cartItems.some((item: any) => item.product_details?.slug === product.slug) : false;
+
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+  const [removeFromCart, { isLoading: isRemovingFromCart }] = useRemoveFromCartMutation();
+  const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
+  const [removeFromWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveFromWishlistMutation();
+
+  const handleToggleCart = async () => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=${pathname}`);
       return;
@@ -37,15 +58,20 @@ export default function ProductDetailPage() {
 
     if (!product || !product.slug) return;
     try {
-      await addToCart({ product: product.slug, quantity }).unwrap();
-      alert('Product added to cart successfully!');
+      if (isInCart) {
+        await removeFromCart(product.slug).unwrap();
+        toast.success('Removed from cart');
+      } else {
+        await addToCart({ slug: product.slug, quantity }).unwrap();
+        toast.success('Product added to cart');
+      }
     } catch (err) {
-      console.error('Failed to add to cart:', err);
-      alert('Failed to add product to cart.');
+      console.error('Failed to update cart:', err);
+      toast.error('Failed to update cart');
     }
   };
 
-  const handleAddToWishlist = async () => {
+  const handleToggleWishlist = async () => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=${pathname}`);
       return;
@@ -53,11 +79,16 @@ export default function ProductDetailPage() {
 
     if (!product || !product.slug) return;
     try {
-      await addToWishlist({ product: product.slug }).unwrap();
-      alert('Product added to wishlist!');
+      if (isInWishlist) {
+          await removeFromWishlist(product.slug).unwrap();
+          toast.success('Removed from wishlist');
+      } else {
+          await addToWishlist({ slug: product.slug }).unwrap();
+          toast.success('Product added to wishlist');
+      }
     } catch (err) {
-        console.error('Failed to add to wishlist:', err);
-        alert('Failed to add product to wishlist.');
+        console.error('Failed to update wishlist:', err);
+        toast.error('Failed to update wishlist');
     }
   };
 
@@ -188,25 +219,29 @@ export default function ProductDetailPage() {
           <div className="flex gap-3">
             {/* Wishlist Button */}
             <button 
-                onClick={handleAddToWishlist}
-                disabled={isAddingToWishlist}
-                className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                onClick={handleToggleWishlist}
+                disabled={isAddingToWishlist || isRemovingFromWishlist}
+                className={`w-12 h-12 flex items-center justify-center border rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 ${isInWishlist ? 'border-red-200 bg-red-50' : 'border-gray-300'}`}
             >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-6 h-6 ${isInWishlist ? 'text-red-500 fill-current' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </button>
 
-            {/* Add to Cart Button */}
+            {/* Add/Remove Cart Button */}
             <button
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || !product.in_stock}
-              className="flex-1 h-12 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={handleToggleCart}
+              disabled={isAddingToCart || isRemovingFromCart || !product.in_stock}
+              className={`flex-1 h-12 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                isInCart 
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                    : 'bg-system-blue-light text-white hover:bg-[#020360]'
+              }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              {isAddingToCart ? 'Adding...' : (product.in_stock ? 'Add to cart' : 'Out of Stock')}
+              {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : (product.in_stock ? 'Add to cart' : 'Out of Stock')}
             </button>
           </div>
         </div>

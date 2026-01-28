@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useChangePaymentPinMutation } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 type PinStep = 'enter' | 'confirm' | 'success';
 
@@ -31,7 +32,7 @@ export default function ChangePINPage() {
     if (enterPin.join('').length === 4) {
        setCurrentStep('confirm');
     } else {
-       alert("Please enter current PIN");
+       toast.error("Please enter current PIN");
     }
   };
 
@@ -41,7 +42,7 @@ export default function ChangePINPage() {
     const currentPinStr = enterPin.join('');
 
     if (newPinStr.length !== 4 || confirmPinStr.length !== 4) {
-      alert("Please enter valid PINs");
+      toast.error("Please enter valid PINs");
       return;
     }
 
@@ -53,7 +54,7 @@ export default function ChangePINPage() {
       }).unwrap();
       setCurrentStep('success');
     } catch (err: any) {
-      alert(err.data?.message || "Failed to change PIN");
+      toast.error(err.data?.message || "Failed to change PIN");
     }
   };
 

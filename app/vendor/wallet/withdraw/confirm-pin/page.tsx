@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRequestWithdrawalMutation } from '@/lib/api/vendorApi';
+import toast from 'react-hot-toast';
 
 export default function ConfirmWithdrawalPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function ConfirmWithdrawalPage() {
 
     try {
       await requestWithdrawal({ amount, pin }).unwrap();
-      alert('Withdrawal request submitted successfully!');
+      toast.success('Withdrawal request submitted successfully!');
       router.push('/vendor/wallet');
     } catch (err: any) {
       console.error('Withdrawal failed:', err);

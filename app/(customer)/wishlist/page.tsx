@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function WishlistPage() {
   const { data: wishlistResponse, isLoading } = useGetWishlistQuery();
-  const wishlistItems = wishlistResponse?.data || [];
+  const wishlistItems = wishlistResponse || [];
 
   if (isLoading) {
     return (

@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 import { useInitializeCheckoutMutation } from '@/lib/api/publicApi';
+import toast from 'react-hot-toast';
 
 type PaymentMethod = 'delivery' | 'card';
 
@@ -26,7 +27,7 @@ export default function PaymentPage() {
           window.location.href = payload.authorization_url;
         } else {
           // Handle case where URL is not returned
-          alert('Could not initiate payment. Please try again.');
+          toast.error('Could not initiate payment. Please try again.');
         }
       } catch (err) {
         console.error('Failed to initialize checkout:', err);

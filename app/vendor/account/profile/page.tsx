@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useGetVendorProfileQuery, usePartialUpdateVendorProfileMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 export default function VendorProfilePage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function VendorProfilePage() {
   const handleSave = async () => {
     // Validation
     if (formData.account_number && !/^\d{10}$/.test(formData.account_number)) {
-      alert('Account number must be exactly 10 digits.');
+      toast.error('Account number must be exactly 10 digits.');
       return;
     }
 
@@ -103,12 +104,12 @@ export default function VendorProfilePage() {
 
     try {
       await updateProfile(updateData).unwrap();
-      alert('Profile updated successfully');
+      toast.success('Profile updated successfully');
       setIsEditing(false);
       setProfilePictureFile(null); // Reset file input after successful upload
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile');
     }
   };
   

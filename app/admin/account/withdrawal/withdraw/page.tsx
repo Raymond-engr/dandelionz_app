@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useRequestWithdrawalMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function WithdrawPage() {
   const router = useRouter();
@@ -14,16 +15,16 @@ export default function WithdrawPage() {
 
   const handleWithdraw = async () => {
     if (!amount || !pin) {
-      alert("Please enter amount and PIN");
+      toast.error("Please enter amount and PIN");
       return;
     }
     
     try {
       await requestWithdrawal({ amount, pin }).unwrap();
-      alert("Withdrawal initiated successfully!");
+      toast.success("Withdrawal initiated successfully!");
       router.push('/admin/account/withdrawal');
     } catch (err: any) {
-      alert(err.data?.message || "Failed to request withdrawal");
+      toast.error(err.data?.message || "Failed to request withdrawal");
     }
   };
 

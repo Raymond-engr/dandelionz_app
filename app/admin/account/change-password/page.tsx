@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useChangeAdminPasswordMutation } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 export default function AdminChangePasswordPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function AdminChangePasswordPage() {
 
       await changeAdminPassword(payload).unwrap();
 
-      alert('Password changed successfully');
+      toast.success('Password changed successfully');
       router.back();
     } catch (err: any) {
       console.error('Password change failed:', err);

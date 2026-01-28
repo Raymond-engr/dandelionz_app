@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useDeleteAccountMutation } from '@/lib/api/vendorApi';
+import toast from 'react-hot-toast';
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function DeleteAccountPage() {
 
     try {
       await deleteAccount({ password }).unwrap();
-      alert('Account closed successfully.');
+      toast.success('Account closed successfully.');
       router.push('/login');
     } catch (err: any) {
       console.error('Failed to delete account:', err);
