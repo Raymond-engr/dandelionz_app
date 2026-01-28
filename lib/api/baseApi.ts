@@ -13,13 +13,16 @@ const BASE_URL =
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers, api) => {
+    const args = (api as any).arg;
     const token = (api.getState() as RootState).auth.accessToken;
-    if (token) {
+    
+    // Skip Authorization header for refresh token requests to avoid 401s from the refresh endpoint itself
+    if (token && args?.url !== "/auth/token/refresh/") {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
     // Access the body from the arguments passed to the query
-    const { body } = (api as any).arg;
+    const { body } = args || {};
 
     if (body instanceof FormData) {
       // let browser set Content-Type for FormData
@@ -81,7 +84,7 @@ const baseQueryWithReauth: BaseQueryFn<
           );
 
           if (refreshResult.data) {
-            const { access_token, refresh_token } = (refreshResult.data as any)
+            const { access_token, refresh_token: new_refresh_token } = (refreshResult.data as any)
               .data;
 
             // Update tokens in state
@@ -89,9 +92,13 @@ const baseQueryWithReauth: BaseQueryFn<
               type: "auth/setTokens",
               payload: {
                 accessToken: access_token,
-                refreshToken: refresh_token,
+                refreshToken: new_refresh_token,
               },
             });
+
+            // Update cookies so middleware doesn't reject the next navigation
+            // Set max-age to 1 day (86400 seconds) or match server response if possible
+            document.cookie = `access_token=${access_token}; path=/; max-age=86400; SameSite=Lax`;
 
             // Retry the original query with the new token
             result = await baseQuery(args, api, extraOptions);

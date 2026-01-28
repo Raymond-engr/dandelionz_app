@@ -152,6 +152,28 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Auth"],
     }),
+
+    // Validate Token
+    validateToken: builder.query<
+      { success: boolean; data: { user: any } },
+      void
+    >({
+      query: () => "/auth/token/validate/",
+      providesTags: ["Auth"],
+    }),
+
+    // Logout
+    logout: builder.mutation<
+      { success: boolean; message: string },
+      { refresh_token: string }
+    >({
+      query: (body) => ({
+        url: "/auth/logout/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Auth", "User", "Admin", "Vendor", "Customer", "Cart", "Wishlist"],
+    }),
   }),
 });
 
@@ -164,4 +186,6 @@ export const {
   useCheckVerificationQuery,
   useSendVerificationEmailMutation,
   useVerifyEmailMutation,
+  useValidateTokenQuery,
+  useLogoutMutation,
 } = authApi;

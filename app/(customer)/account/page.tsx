@@ -20,7 +20,7 @@ export default function AccountPage() {
   const accountLinks = [
     { label: 'Profile', href: '/account/profile', icon: UserIcon },
     { label: 'Order', href: '/orders', icon: OrderIcon },
-    { label: 'Delivery Address', href: '/account/addresses', icon: LocationIcon },
+    { label: 'Delivery Address', href: '/account/address', icon: LocationIcon },
   ];
 
   const otherLinks = [

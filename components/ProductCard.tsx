@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
 import { Product, useAddToCartMutation, useAddToWishlistMutation, useGetCartQuery } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
 
@@ -10,6 +11,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const { data: cartResponse } = useGetCartQuery(undefined, {
     skip: !isAuthenticated
@@ -23,6 +26,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+
     if (!product.slug) return;
     try {
       await addToWishlist({ product: product.slug }).unwrap();
@@ -35,6 +44,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+
     if (!product.slug) return;
     try {
       await addToCart({ product: product.slug, quantity: 1 }).unwrap();
