@@ -32,12 +32,12 @@ export default function ProductDetailPage() {
   const [userComment, setUserComment] = useState('');
 
   // Fetch real product data
-  const { data: response, isLoading, isError } = useGetProductBySlugQuery(slug);
+  const { data: response, isLoading, isError, refetch: refetchProduct } = useGetProductBySlugQuery(slug);
   const product = response?.data;
 
   // Fetch reviews
-  const { data: reviewsResponse, isLoading: isLoadingReviews } = useGetProductReviewsQuery(slug);
-  const reviews = reviewsResponse?.data || [];
+  const { data: reviewsResponse, isLoading: isLoadingReviews, refetch: refetchReviews } = useGetProductReviewsQuery(slug);
+  const reviews = reviewsResponse || [];
   
   const [addProductReview, { isLoading: isSubmittingReview }] = useAddProductReviewMutation();
 
@@ -125,6 +125,9 @@ export default function ProductDetailPage() {
       toast.success('Review submitted successfully');
       setUserRating(0);
       setUserComment('');
+      // Manually refetch to ensure UI updates immediately if tags didn't invalidate correctly
+      refetchProduct();
+      refetchReviews();
     } catch (err: any) {
       toast.error(err.data?.message || 'Failed to submit review');
     }
@@ -249,7 +252,7 @@ export default function ProductDetailPage() {
               <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
                 <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
               </svg>
-              <span className="text-sm font-semibold text-gray-900">{product.rating || '0.0'}</span>
+              <span className="text-sm font-semibold text-gray-900">{product.rating ?? '0.0'}</span>
             </div>
           </div>
 

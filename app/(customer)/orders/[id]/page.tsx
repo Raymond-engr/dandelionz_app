@@ -18,7 +18,7 @@ export default function OrderDetailsPage() {
   
   const [initNextInstallment, { isLoading: isPaying }] = useInitializeNextInstallmentMutation();
 
-  const order = response?.data;
+  const order = response;
   const installmentPlans = plansResponse?.data || [];
   
   // Find the plan linked to this order
@@ -88,7 +88,7 @@ export default function OrderDetailsPage() {
           {/* Order Info */}
           <div className="mb-6">
             <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
-            <p className="text-sm text-gray-600 mb-3">Order Date: <span className="font-medium text-gray-900">{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span></p>
+            <p className="text-sm text-gray-600 mb-3">Order Date: <span className="font-medium text-gray-900">{order.ordered_at ? new Date(order.ordered_at).toLocaleDateString() : 'N/A'}</span></p>
 
             {/* Installment Plan Section */}
             {plan && (
@@ -125,25 +125,17 @@ export default function OrderDetailsPage() {
             <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
               {order.order_items?.map((item) => (
                 <div key={item.id} className="border-b border-gray-200 last:border-0 pb-2 last:pb-0">
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">{item.product_name}</h3>
+                    <h3 className="text-sm font-medium text-gray-900 mb-1">{item.product.name}</h3>
                     <div className="flex justify-between">
-                        <p className="text-sm text-system-blue-light font-semibold">{item.item_subtotal}</p>
+                        <p className="text-sm text-system-blue-light font-semibold">
+                          {typeof item.item_subtotal === 'number' 
+                            ? item.item_subtotal.toLocaleString() 
+                            : item.item_subtotal}
+                        </p>
                         <p className="text-xs text-gray-600">Quantity: {item.quantity}</p>
                     </div>
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div>
-                <p className="text-gray-600 mb-1">Address</p>
-                <p className="text-gray-900">{order.shipping_address?.address}, {order.shipping_address?.city}</p>
-              </div>
-
-              <div>
-                <p className="text-gray-600 mb-1">Phone Number</p>
-                <p className="text-gray-900">{order.shipping_address?.phone_number || 'N/A'}</p>
-              </div>
             </div>
           </div>
 

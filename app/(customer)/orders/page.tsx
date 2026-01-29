@@ -9,11 +9,11 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 type TabStatus = 'completed' | 'ongoing' | 'returned';
 
 export default function OrdersPage() {
-  const [activeTab, setActiveTab] = useState<TabStatus>('completed');
+  const [activeTab, setActiveTab] = useState<TabStatus>('ongoing');
   const { data: response, isLoading, error } = useGetCustomerOrdersQuery({});
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
   
-  const allOrders = response?.data || [];
+  const allOrders = response || [];
   const installmentPlans = plansResponse?.data || [];
 
   // Helper to check if an order is an installment order
@@ -124,7 +124,7 @@ export default function OrdersPage() {
                   <div>
                     <h3 className="text-sm font-medium text-gray-900 mb-1">
                       {order.order_items && order.order_items.length > 0 
-                        ? `${order.order_items[0].product_name} ${order.order_items.length > 1 ? `+${order.order_items.length - 1} others` : ''}`
+                        ? `${order.order_items[0].product.name} ${order.order_items.length > 1 ? `+${order.order_items.length - 1} others` : ''}`
                         : 'Order Items'}
                     </h3>
                     <p className="text-xs text-gray-600">{order.order_id}</p>

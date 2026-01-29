@@ -68,6 +68,13 @@ export default function VendorProfilePage() {
     }
   };
 
+  const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+
   const handleSave = async () => {
     // Validation
     if (formData.account_number && !/^\d{10}$/.test(formData.account_number)) {
@@ -100,7 +107,14 @@ export default function VendorProfilePage() {
         updateData.append('account_number', formData.account_number);
     }
     if (profilePictureFile) {
-        updateData.append('profile_picture', profilePictureFile);
+        try {
+            const base64Image = await toBase64(profilePictureFile);
+            updateData.append('profile_picture', base64Image);
+        } catch (error) {
+            console.error("Error converting file to base64", error);
+            toast.error("Failed to process image");
+            return;
+        }
     }
     
     // Check if any data has been changed

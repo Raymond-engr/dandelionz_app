@@ -57,12 +57,14 @@ export default function RegisterPage() {
         ...(role === 'CUSTOMER' && formData.referralCode && { referral_code: formData.referralCode }),
       }).unwrap();
 
-      // Store auth data
-      dispatch(setCredentials({
-        user: result.data.user,
-        accessToken: result.data.tokens.access_token,
-        refreshToken: result.data.tokens.refresh_token,
-      }));
+      // If we have tokens, store them (usually means no verification needed or auto-verified)
+      if (result.data.tokens) {
+        dispatch(setCredentials({
+          user: result.data.user,
+          accessToken: result.data.tokens.access_token,
+          refreshToken: result.data.tokens.refresh_token,
+        }));
+      }
 
       // If email verification is needed, redirect to verification page
       if (!result.data.email_verified) {

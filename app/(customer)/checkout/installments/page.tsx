@@ -17,7 +17,7 @@ export default function InstallmentsPage() {
 
   const handleProceed = async () => {
     try {
-        const payload = await initializeInstallment({ data: { duration } }).unwrap();
+        const payload = await initializeInstallment({ duration }).unwrap();
         
         if (payload.data?.authorization_url) {
             // Redirect to Paystack for the first installment
@@ -64,10 +64,33 @@ export default function InstallmentsPage() {
           </h2>
           
            {/* Error Message */}
-           {error && (
+          {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">
-                {(error as any)?.data?.message || (error as any)?.data?.error || 'An error occurred.'}
+                {(() => {
+                  try {
+                    const errAny = error as any;
+                    const errData = errAny?.data;
+                    
+                    if (typeof errData === 'string') return errData;
+                    if (typeof errData?.message === 'string') return errData.message;
+                    if (typeof errData?.error === 'string') return errData.error;
+                    
+                    const errorObj = errData?.error || errData;
+                    if (errorObj && typeof errorObj === 'object') {
+                      return Object.entries(errorObj)
+                        .map(([key, val]) => {
+                          const message = Array.isArray(val) ? val.join(', ') : JSON.stringify(val);
+                          return `${key}: ${message}`;
+                        })
+                        .join(' | ');
+                    }
+                    
+                    return 'An error occurred during installment initialization.';
+                  } catch (e) {
+                    return 'An error occurred.';
+                  }
+                })()}
               </p>
             </div>
           )}
