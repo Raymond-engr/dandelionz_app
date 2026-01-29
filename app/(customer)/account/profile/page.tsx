@@ -60,6 +60,13 @@ export default function ProfilePage() {
     }
   };
 
+  const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+
   const handleSave = async () => {
     const updateData = new FormData();
     
@@ -72,10 +79,17 @@ export default function ProfilePage() {
     }
     // Address is now handled in /account/address
     if (profilePictureFile) {
-      updateData.append('profile_picture', profilePictureFile);
+      try {
+        const base64Image = await toBase64(profilePictureFile);
+        updateData.append('profile_picture', base64Image);
+      } catch (error) {
+        console.error("Error converting file to base64", error);
+        toast.error("Failed to process image");
+        return;
+      }
     }
 
-    if ([...updateData.entries()].length === 0 && !profilePictureFile) { // Check if no changes or new file
+    if ([...updateData.entries()].length === 0) { // Check if no changes
         setIsEditing(false);
         return;
     }

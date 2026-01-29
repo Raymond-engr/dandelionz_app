@@ -15,7 +15,7 @@ function TrackingContent() {
   const { data: response, isLoading, error } = useGetOrderDetailsQuery(orderIdParam || '', {
     skip: !orderIdParam
   });
-  const order = response?.data;
+  const order = response;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

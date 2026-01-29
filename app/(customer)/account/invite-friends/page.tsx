@@ -2,22 +2,28 @@
 
 import AppLayout from '@/components/AppLayout';
 import React, { useState } from 'react';
+import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function InviteFriendsPage() {
-  const [referralCode] = useState('A1B2XUZ');
+  const { data: profile, isLoading } = useGetCustomerProfileQuery();
   const [copied, setCopied] = useState(false);
+
+  const referralCode = profile?.user.referral_code || '...';
 
   const handleBack = () => {
     window.history.back();
   };
 
   const handleCopyCode = () => {
+    if (referralCode === '...') return;
     navigator.clipboard.writeText(referralCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleInvite = () => {
+    if (referralCode === '...') return;
     const shareText = `Join me on this amazing shopping platform! Use my referral code: ${referralCode} to get exclusive discounts on your first order!`;
     
     if (navigator.share) {
@@ -33,6 +39,16 @@ export default function InviteFriendsPage() {
       handleCopyCode();
     }
   };
+
+  if (isLoading) {
+    return (
+        <AppLayout showBottomNav={false} userRole="customer">
+            <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">

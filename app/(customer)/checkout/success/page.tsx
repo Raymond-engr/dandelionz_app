@@ -58,7 +58,30 @@ function CheckoutStatus() {
           Payment Failed
         </h2>
         <p className="text-gray-600 mb-8">
-          {(error as any)?.data?.message || (error as any)?.data?.error || 'We were unable to verify your payment. Please contact support if the issue persists.'}
+          {(() => {
+            try {
+              const errAny = error as any;
+              const errData = errAny?.data;
+              
+              if (typeof errData === 'string') return errData;
+              if (typeof errData?.message === 'string') return errData.message;
+              if (typeof errData?.error === 'string') return errData.error;
+              
+              const errorObj = errData?.error || errData;
+              if (errorObj && typeof errorObj === 'object') {
+                return Object.entries(errorObj)
+                  .map(([key, val]) => {
+                    const message = Array.isArray(val) ? val.join(', ') : JSON.stringify(val);
+                    return `${key}: ${message}`;
+                  })
+                  .join(' | ');
+              }
+              
+              return 'We were unable to verify your payment. Please contact support if the issue persists.';
+            } catch (e) {
+              return 'An error occurred during verification.';
+            }
+          })()}
         </p>
         <button
           onClick={() => router.push('/')}

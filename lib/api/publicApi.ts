@@ -14,15 +14,21 @@ export interface ProductImage {
 
 export interface OrderItem {
   id: number;
-  product_id: number;
+  product_id?: number; // Optional in case it's not strictly passed as flat id
   product: {
+    id: number;
     name: string;
     price: string;
     image?: string;
+    description?: string;
+    tags?: string;
+    brand?: string;
+    variants?: any[];
+    discount?: number;
   };
-  product_name: string;
   quantity: number;
-  item_subtotal: string;
+  price_at_purchase?: string;
+  item_subtotal: number;
 }
 
 export interface OrderTimeline {
@@ -208,7 +214,7 @@ export const publicApi = baseApi.injectEndpoints({
 
     // Orders
     getCustomerOrders: builder.query<
-      { success: boolean; data: Order[] },
+      Order[],
       { status?: string }
     >({
       query: (params) => ({
@@ -227,7 +233,7 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order", "Cart"],
     }),
 
-    getOrderDetails: builder.query<{ success: boolean; data: Order }, string>({
+    getOrderDetails: builder.query<Order, string>({
       query: (uuid) => `/transactions/orders/${uuid}/`,
       providesTags: ["Order"],
     }),
@@ -262,7 +268,7 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
-    getProductReviews: builder.query<{ success: boolean; data: any[] }, string>(
+    getProductReviews: builder.query<any[], string>(
       {
         query: (slug) => `/store/products/${slug}/reviews/`,
         providesTags: ["Product"],
@@ -298,12 +304,16 @@ export const publicApi = baseApi.injectEndpoints({
           order_id: string;
           installment_plan_id: number;
           duration: string;
-          total_amount: string;
+          total_amount: number;
+          number_of_installments: number;
+          installment_amount: number;
           first_installment_reference: string;
           authorization_url: string;
+          delivery_fee: number;
         };
+        message: string;
       },
-      { data: { duration: string } }
+      { duration: string }
     >({
       query: (body) => ({
         url: "/transactions/checkout/installment/",

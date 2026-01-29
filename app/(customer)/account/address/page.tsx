@@ -7,16 +7,21 @@ import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } f
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { debounce } from 'lodash';
 
-// Define result type from leaflet-geosearch
-interface SearchResult {
-  x: number; // lon
-  y: number; // lat
-  label: string;
-  bounds: [
-    [number, number],
-    [number, number]
-  ];
-  raw: unknown;
+// Define result type for Nominatim API
+interface NominatimResult {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address: {
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+  boundingbox: string[];
 }
 
 export default function DeliveryAddressPage() {
@@ -31,18 +36,11 @@ export default function DeliveryAddressPage() {
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
   
-  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [provider, setProvider] = useState<any>(null);
 
-  useEffect(() => {
-    // Dynamically import OpenStreetMapProvider to avoid SSR issues
-    import('leaflet-geosearch').then(({ OpenStreetMapProvider }) => {
-      setProvider(new OpenStreetMapProvider());
-    });
-  }, []);
+  // Removed dynamic import of leaflet-geosearch as we will use direct fetch
 
   const isDirty = profile ? (
     address !== (profile.shipping_address || '') ||
@@ -62,10 +60,10 @@ export default function DeliveryAddressPage() {
     }
   }, [profile]);
 
-  // Debounced search function
+  // Debounced search function using direct Nominatim API
   const debouncedSearch = useCallback(
-    debounce(async (query: string, searchProvider: any) => {
-      if (!query || query.length < 3 || !searchProvider) {
+    debounce(async (query: string) => {
+      if (!query || query.length < 3) {
         setSuggestions([]);
         setIsSearching(false);
         return;
@@ -73,11 +71,22 @@ export default function DeliveryAddressPage() {
 
       try {
         setIsSearching(true);
-        const results = await searchProvider.search({ query });
+        // Using Nominatim API directly with Nigeria (ng) restriction
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=ng`
+        );
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const results: NominatimResult[] = await response.json();
         setSuggestions(results);
         setShowSuggestions(true);
       } catch (err) {
         console.error('Search failed:', err);
+        // Optionally clear suggestions on error or show a specific UI state
+        setSuggestions([]);
       } finally {
         setIsSearching(false);
       }
@@ -89,35 +98,28 @@ export default function DeliveryAddressPage() {
     const value = e.target.value;
     setAddress(value);
     
-    // Reset coords if user types manually (to ensure they pick a valid address or we just treat it as text)
-    // However, if we strictly require coords, we might want to warn them.
-    // For now, we'll keep the old coords but maybe we should clear them if the text changes significantly?
-    // Let's clear them to encourage re-selection, but only if the user is typing a new query.
-    // Actually, it's better to keep searching.
-    
-    if (provider) {
-        debouncedSearch(value, provider);
-    }
+    // Trigger search
+    debouncedSearch(value);
   };
 
-  const selectAddress = (result: SearchResult) => {
-    setAddress(result.label);
-    setLatitude(result.y);
-    setLongitude(result.x);
+  const selectAddress = (result: NominatimResult) => {
+    // Format the display name or use the raw one
+    // Usually Nominatim display_name is very long, so we might want to keep the user's typed input or use the first part
+    // For now, let's use the display_name but maybe truncate it if needed
+    setAddress(result.display_name);
+    setLatitude(parseFloat(result.lat));
+    setLongitude(parseFloat(result.lon));
+    
+    // Auto-fill City and Postcode
+    const addr = result.address;
+    if (addr) {
+        const cityName = addr.city || addr.town || addr.village || addr.state || '';
+        if (cityName) setCity(cityName);
+        if (addr.postcode) setPostalCode(addr.postcode);
+    }
+
     setSuggestions([]);
     setShowSuggestions(false);
-
-    // Try to extract city/postal code from raw data if available (optional enhancement)
-    // raw data structure depends on the provider (OSM/Nominatim)
-    const raw = result.raw as any;
-    if (raw && raw.address) {
-        if (raw.address.city || raw.address.town || raw.address.village) {
-            setCity(raw.address.city || raw.address.town || raw.address.village);
-        }
-        if (raw.address.postcode) {
-            setPostalCode(raw.address.postcode);
-        }
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -222,7 +224,7 @@ export default function DeliveryAddressPage() {
                                 onClick={() => selectAddress(result)}
                                 className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
                             >
-                                {result.label}
+                                {result.display_name}
                             </button>
                         ))}
                     </div>

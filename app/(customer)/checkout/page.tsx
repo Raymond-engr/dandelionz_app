@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 
-type PaymentFrequency = 'buy-now' | 'weekly' | 'monthly';
+type PaymentFrequency = 'buy-now' | 'installment';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function CheckoutPage() {
     if (frequency === 'buy-now') {
       router.push('/checkout/shipping');
     } else {
-      router.push(`/checkout/installments?frequency=${frequency}`);
+      router.push('/checkout/installments');
     }
   };
 
@@ -66,46 +66,25 @@ export default function CheckoutPage() {
               <span className="text-sm font-medium text-gray-900">Buy Now</span>
             </label>
 
-            {/* Weekly */}
+            {/* Installment Payment */}
             <label className="flex items-center gap-3 cursor-pointer">
               <div className="relative">
                 <input
                   type="radio"
                   name="frequency"
-                  checked={frequency === 'weekly'}
-                  onChange={() => setFrequency('weekly')}
+                  checked={frequency === 'installment'}
+                  onChange={() => setFrequency('installment')}
                   className="sr-only peer"
                 />
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  frequency === 'weekly' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
+                  frequency === 'installment' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
                 }`}>
-                  {frequency === 'weekly' && (
+                  {frequency === 'installment' && (
                     <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
                   )}
                 </div>
               </div>
-              <span className="text-sm font-medium text-gray-900">Weekly</span>
-            </label>
-
-            {/* Monthly */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <div className="relative">
-                <input
-                  type="radio"
-                  name="frequency"
-                  checked={frequency === 'monthly'}
-                  onChange={() => setFrequency('monthly')}
-                  className="sr-only peer"
-                />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  frequency === 'monthly' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
-                }`}>
-                  {frequency === 'monthly' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                  )}
-                </div>
-              </div>
-              <span className="text-sm font-medium text-gray-900">Monthly</span>
+              <span className="text-sm font-medium text-gray-900">Installment Payment</span>
             </label>
           </div>
 
