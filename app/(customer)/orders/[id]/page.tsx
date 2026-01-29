@@ -3,16 +3,26 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams } from 'next/navigation';
-import { useGetOrderDetailsQuery } from '@/lib/api/publicApi';
+import { useGetOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 export default function OrderDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
 
-  const { data: response, isLoading, error } = useGetOrderDetailsQuery(orderId);
+  const { data: response, isLoading: isLoadingOrder, error } = useGetOrderDetailsQuery(orderId);
+  // Fetch plans to check if this order is an installment order
+  const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
+  
+  const [initNextInstallment, { isLoading: isPaying }] = useInitializeNextInstallmentMutation();
+
   const order = response?.data;
+  const installmentPlans = plansResponse?.data || [];
+  
+  // Find the plan linked to this order
+  const plan = order ? installmentPlans.find((p: any) => p.order_id === order.order_id) : null;
 
   // Use API timeline if available, otherwise fallback to empty
   const trackingSteps = order?.timeline?.map(step => ({
@@ -21,7 +31,24 @@ export default function OrderDetailsPage() {
     completed: step.completed
   })) || [];
 
-  if (isLoading) {
+  const handlePayNextInstallment = async (planId: number, nextPaymentNumber: number) => {
+    try {
+      const payload = await initNextInstallment({ 
+        data: { plan_id: planId, payment_number: nextPaymentNumber } 
+      }).unwrap();
+
+      if (payload.authorization_url) {
+        window.location.href = payload.authorization_url;
+      } else {
+        toast.error("Failed to get payment link.");
+      }
+    } catch (err: any) {
+        console.error("Installment payment failed", err);
+        toast.error("Could not initiate payment.");
+    }
+  };
+
+  if (isLoadingOrder || isLoadingPlans) {
     return (
       <AppLayout showBottomNav={false} userRole="customer">
         <div className="min-h-screen flex items-center justify-center">
@@ -62,6 +89,38 @@ export default function OrderDetailsPage() {
           <div className="mb-6">
             <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
             <p className="text-sm text-gray-600 mb-3">Order Date: <span className="font-medium text-gray-900">{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span></p>
+
+            {/* Installment Plan Section */}
+            {plan && (
+              <div className="mb-6 border border-blue-100 bg-blue-50 rounded-lg p-4">
+                <h3 className="text-sm font-bold text-blue-800 mb-2 flex justify-between">
+                  Payment Plan ({plan.duration})
+                  <span className="text-xs font-normal bg-white px-2 py-0.5 rounded border border-blue-200">
+                    {plan.paid_installments_count} / {plan.number_of_installments} Paid
+                  </span>
+                </h3>
+                
+                {/* Next Payment Logic */}
+                {!plan.is_fully_paid && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-700 mb-2">
+                      Next Due: <span className="font-semibold">{plan.installment_amount}</span>
+                    </p>
+                    <button
+                      onClick={() => handlePayNextInstallment(plan.id, plan.paid_installments_count + 1)}
+                      disabled={isPaying}
+                      className="w-full py-2.5 bg-system-blue-light text-white text-sm rounded-md font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                    >
+                      {isPaying ? 'Processing...' : `Pay Installment ${plan.paid_installments_count + 1}`}
+                    </button>
+                  </div>
+                )}
+                
+                {plan.is_fully_paid && (
+                   <p className="text-sm text-green-700 font-medium mt-2">✓ Plan Fully Paid</p>
+                )}
+              </div>
+            )}
 
             <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
               {order.order_items?.map((item) => (

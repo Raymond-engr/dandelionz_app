@@ -57,7 +57,14 @@ export default function VendorProfilePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setProfilePictureFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Check file size (limit to 3MB)
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error('Image size must be less than 3MB');
+        e.target.value = ''; // Reset input
+        return;
+      }
+      setProfilePictureFile(file);
     }
   };
 

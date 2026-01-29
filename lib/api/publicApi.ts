@@ -272,17 +272,43 @@ export const publicApi = baseApi.injectEndpoints({
     // Payments
     initializeCheckout: builder.mutation<
       {
-        order_id: string;
-        amount: number;
-        reference: string;
-        authorization_url: string;
-        access_code: string;
+        success: boolean;
+        data: {
+          order_id: string;
+          amount: number;
+          reference: string;
+          authorization_url: string;
+          access_code: string;
+        };
+        message: string;
       },
       void
     >({
       query: () => ({
         url: "/transactions/checkout/",
         method: "POST",
+      }),
+      invalidatesTags: ["Cart", "Order"],
+    }),
+
+    initializeInstallmentCheckout: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          order_id: string;
+          installment_plan_id: number;
+          duration: string;
+          total_amount: string;
+          first_installment_reference: string;
+          authorization_url: string;
+        };
+      },
+      { data: { duration: string } }
+    >({
+      query: (body) => ({
+        url: "/transactions/checkout/installment/",
+        method: "POST",
+        body,
       }),
       invalidatesTags: ["Cart", "Order"],
     }),
@@ -304,6 +330,54 @@ export const publicApi = baseApi.injectEndpoints({
         url: `/transactions/verify-payment/?reference=${reference}`,
         method: "GET",
       }),
+      providesTags: ["Order"],
+    }),
+
+    verifyInstallmentPayment: builder.query<
+      {
+        status: string;
+        message: string;
+        data: {
+          payment_number: number;
+          amount: string;
+          status: string;
+          plan_id: number;
+          is_plan_completed: boolean;
+        };
+      },
+      { reference: string }
+    >({
+      query: ({ reference }) => ({
+        url: `/transactions/verify-installment-payment/?reference=${reference}`,
+        method: "GET",
+      }),
+      providesTags: ["Order"],
+    }),
+
+    initializeNextInstallment: builder.mutation<
+      {
+        authorization_url: string;
+        reference: string;
+        amount: number;
+        payment_number: number;
+        installment_plan_id: number;
+      },
+      { data: { plan_id: number; payment_number: number } }
+    >({
+      query: (body) => ({
+        url: "/transactions/installment-plans/init-payment/",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    getInstallmentPlans: builder.query<{ success: boolean; data: any[] }, void>({
+      query: () => "/transactions/installment-plans/",
+      providesTags: ["Order"],
+    }),
+
+    getInstallmentPlanDetails: builder.query<{ success: boolean; data: any }, number>({
+      query: (id) => `/transactions/installment-plans/${id}/`,
       providesTags: ["Order"],
     }),
   }),
@@ -328,5 +402,10 @@ export const {
   useAddProductReviewMutation,
   useGetProductReviewsQuery,
   useInitializeCheckoutMutation,
+  useInitializeInstallmentCheckoutMutation,
   useVerifyPaymentQuery,
+  useVerifyInstallmentPaymentQuery,
+  useInitializeNextInstallmentMutation,
+  useGetInstallmentPlansQuery,
+  useGetInstallmentPlanDetailsQuery,
 } = publicApi;

@@ -16,22 +16,28 @@ export default function PaymentPage() {
 
   const handleMakePayment = async () => {
     if (method === 'delivery') {
-      // For "On Delivery", we can proceed to a success page directly
-      router.push('/checkout/success?status=cod');
+      return; // Disabled
     } else if (method === 'card') {
       // For card payments, we initialize Paystack checkout
       try {
         const payload = await initializeCheckout().unwrap();
         // Redirect the user to the Paystack authorization URL
-        if (payload.authorization_url) {
-          window.location.href = payload.authorization_url;
+        // Access payload.data.authorization_url as per the API response structure
+        if (payload.data?.authorization_url) {
+          window.location.href = payload.data.authorization_url;
         } else {
           // Handle case where URL is not returned
           toast.error('Could not initiate payment. Please try again.');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to initialize checkout:', err);
-        // Error is handled by the 'error' object from the hook
+        if (err?.data?.error === "Cart has no items") {
+             toast.error("Your cart is empty. Redirecting to home...");
+             setTimeout(() => router.push('/'), 2000);
+        } else {
+             // Error is handled by the 'error' object from the hook for other cases
+             // toast.error('Payment initiation failed.');
+        }
       }
     }
   };
@@ -64,33 +70,29 @@ export default function PaymentPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">
-                {(error as any)?.data?.message || 'An error occurred while trying to initiate payment.'}
+                {(error as any)?.data?.message || (error as any)?.data?.error || 'An error occurred while trying to initiate payment.'}
               </p>
             </div>
           )}
 
           {/* Payment Options */}
           <div className="space-y-4 mb-6">
-            {/* On Delivery */}
-            <label className="flex items-center gap-3 cursor-pointer p-4 border rounded-lg">
+            {/* On Delivery (Disabled) */}
+            <label className="flex items-center gap-3 p-4 border rounded-lg opacity-60 cursor-not-allowed bg-gray-50">
               <div className="relative">
                 <input
                   type="radio"
                   name="payment"
-                  checked={method === 'delivery'}
-                  onChange={() => setMethod('delivery')}
+                  disabled
                   className="sr-only peer"
-                  disabled={isLoading}
                 />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  method === 'delivery' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
-                }`}>
-                  {method === 'delivery' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                  )}
+                <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center">
                 </div>
               </div>
-              <span className="text-sm font-medium text-gray-900">Pay on Delivery</span>
+              <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-500">Pay on Delivery</span>
+                  <span className="text-xs text-system-blue-light">Coming Soon</span>
+              </div>
             </label>
 
             {/* Credit/Debit Card */}

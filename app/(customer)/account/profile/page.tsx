@@ -49,7 +49,14 @@ export default function ProfilePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setProfilePictureFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Check file size (limit to 3MB)
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error('Image size must be less than 3MB');
+        e.target.value = ''; // Reset input
+        return;
+      }
+      setProfilePictureFile(file);
     }
   };
 
@@ -63,9 +70,7 @@ export default function ProfilePage() {
     if (formData.phoneNumber !== profileData?.user.phone_number) {
         updateData.append('phone_number', formData.phoneNumber);
     }
-    if (formData.shipping_address !== profileData?.shipping_address) {
-      updateData.append('shipping_address', formData.shipping_address);
-    }
+    // Address is now handled in /account/address
     if (profilePictureFile) {
       updateData.append('profile_picture', profilePictureFile);
     }
@@ -212,13 +217,19 @@ export default function ProfilePage() {
 
             {/* Address */}
             <div>
-              <label className="text-xs text-gray-600 mb-2 block">Address</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs text-gray-600 block">Address</label>
+                {isEditing && (
+                   <Link href="/account/address" className="text-xs text-system-blue-light font-medium">
+                     Change Address
+                   </Link>
+                )}
+              </div>
               <input
                 type="text"
                 value={formData.shipping_address}
-                onChange={(e) => setFormData({...formData, shipping_address: e.target.value})}
-                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
-                disabled={!isEditing}
+                className="w-full px-0 py-2 bg-gray-100 text-sm text-gray-500 border-b border-gray-300 focus:outline-none"
+                disabled
               />
             </div>
 

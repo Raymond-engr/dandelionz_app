@@ -5,12 +5,17 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 
+import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
+import Link from 'next/link';
+
 type ShippingMethod = 'home' | 'pickup';
 
 export default function ShippingPage() {
   const router = useRouter();
   const [method, setMethod] = useState<ShippingMethod>('home');
   const [pickupLocation, setPickupLocation] = useState('');
+  
+  const { data: profile } = useGetCustomerProfileQuery();
 
   const handlePayNow = () => {
     router.push('/checkout/payment');
@@ -67,14 +72,26 @@ export default function ShippingPage() {
               {method === 'home' && (
                 <div className="ml-8 mt-3">
                   <p className="text-xs text-gray-500 mb-1">Address</p>
-                  <p className="text-sm text-gray-700">
-                    No. 13 JB Street, Ekosiodin, Edo State
-                  </p>
+                  {profile?.shipping_address ? (
+                    <div className="flex justify-between items-start">
+                        <p className="text-sm text-gray-700">
+                        {profile.shipping_address}, {profile.city}, {profile.postal_code}
+                        </p>
+                        <Link href="/account/address" className="text-xs text-system-blue-light font-medium whitespace-nowrap ml-2">
+                        Change
+                        </Link>
+                    </div>
+                  ) : (
+                    <Link href="/account/address" className="text-sm text-system-blue-light font-medium">
+                        + Add Shipping Address
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Pickup */}
+            {/* Pickup (Disabled/Placeholder for now) */}
+            {/* 
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <div className="relative">
@@ -93,28 +110,10 @@ export default function ShippingPage() {
                     )}
                   </div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">Pickup</span>
+                <span className="text-sm font-medium text-gray-900">Pickup (Coming Soon)</span>
               </label>
-
-              {method === 'pickup' && (
-                <div className="ml-8 mt-3 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900 font-medium mb-1">
-                        Edo State, Ovia North, Ugbowo Uselu Market Road
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        08012345678
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            </div> 
+            */}
           </div>
 
           {/* Pay Now Button */}

@@ -15,6 +15,8 @@ interface CustomerProfile {
     updated_at: string;
   };
   shipping_address: string;
+  shipping_latitude?: number;
+  shipping_longitude?: number;
   city: string;
   country: string;
   postal_code: string;

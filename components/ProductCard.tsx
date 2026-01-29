@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   product: Product;
+  hideAddToCart?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, hideAddToCart = false }: ProductCardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -118,8 +119,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
           {product.name}
         </h3>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-base font-bold text-system-blue-light">
+        <div className="flex flex-wrap items-center justify-between mb-3 gap-y-1">
+          <p className="text-base font-bold text-system-blue-light mr-2">
                          ${product.price}
           </p>
           <div className="flex items-center gap-1">
@@ -131,17 +132,19 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Add/Remove Cart Button */}
-        <button
-          onClick={handleToggleCart}
-          disabled={isAddingToCart || isRemovingFromCart}
-          className={`w-full py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${
-            isInCart 
-              ? 'bg-red-50 text-red-600 hover:bg-red-100' 
-              : 'bg-gray-50 text-system-blue-light hover:bg-system-blue-light hover:text-white'
-          }`}
-        >
-          {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : 'Add to Cart'}
-        </button>
+        {!hideAddToCart && (
+          <button
+            onClick={handleToggleCart}
+            disabled={isAddingToCart || isRemovingFromCart}
+            className={`w-full py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+              isInCart 
+                ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                : 'bg-gray-50 text-system-blue-light hover:bg-system-blue-light hover:text-white'
+            }`}
+          >
+            {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : 'Add to Cart'}
+          </button>
+        )}
       </div>
     </div>
     </Link>

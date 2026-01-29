@@ -1,10 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { debounce } from 'lodash';
+
+// Define result type from leaflet-geosearch
+interface SearchResult {
+  x: number; // lon
+  y: number; // lat
+  label: string;
+  bounds: [
+    [number, number],
+    [number, number]
+  ];
+  raw: unknown;
+}
 
 export default function DeliveryAddressPage() {
   const router = useRouter();
@@ -13,13 +26,30 @@ export default function DeliveryAddressPage() {
   const [partialUpdateProfile, { isLoading: isUpdating, isSuccess, error }] = usePartialUpdateCustomerProfileMutation();
 
   const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [provider, setProvider] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import OpenStreetMapProvider to avoid SSR issues
+    import('leaflet-geosearch').then(({ OpenStreetMapProvider }) => {
+      setProvider(new OpenStreetMapProvider());
+    });
+  }, []);
 
   const isDirty = profile ? (
     address !== (profile.shipping_address || '') ||
     city !== (profile.city || '') ||
-    postalCode !== (profile.postal_code || '')
+    postalCode !== (profile.postal_code || '') ||
+    (latitude !== profile.shipping_latitude && latitude !== null) ||
+    (longitude !== profile.shipping_longitude && longitude !== null)
   ) : false;
 
   useEffect(() => {
@@ -27,8 +57,68 @@ export default function DeliveryAddressPage() {
       setAddress(profile.shipping_address || '');
       setCity(profile.city || '');
       setPostalCode(profile.postal_code || '');
+      setLatitude(profile.shipping_latitude || null);
+      setLongitude(profile.shipping_longitude || null);
     }
   }, [profile]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query: string, searchProvider: any) => {
+      if (!query || query.length < 3 || !searchProvider) {
+        setSuggestions([]);
+        setIsSearching(false);
+        return;
+      }
+
+      try {
+        setIsSearching(true);
+        const results = await searchProvider.search({ query });
+        setSuggestions(results);
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddress(value);
+    
+    // Reset coords if user types manually (to ensure they pick a valid address or we just treat it as text)
+    // However, if we strictly require coords, we might want to warn them.
+    // For now, we'll keep the old coords but maybe we should clear them if the text changes significantly?
+    // Let's clear them to encourage re-selection, but only if the user is typing a new query.
+    // Actually, it's better to keep searching.
+    
+    if (provider) {
+        debouncedSearch(value, provider);
+    }
+  };
+
+  const selectAddress = (result: SearchResult) => {
+    setAddress(result.label);
+    setLatitude(result.y);
+    setLongitude(result.x);
+    setSuggestions([]);
+    setShowSuggestions(false);
+
+    // Try to extract city/postal code from raw data if available (optional enhancement)
+    // raw data structure depends on the provider (OSM/Nominatim)
+    const raw = result.raw as any;
+    if (raw && raw.address) {
+        if (raw.address.city || raw.address.town || raw.address.village) {
+            setCity(raw.address.city || raw.address.town || raw.address.village);
+        }
+        if (raw.address.postcode) {
+            setPostalCode(raw.address.postcode);
+        }
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +126,9 @@ export default function DeliveryAddressPage() {
     formData.append('shipping_address', address);
     formData.append('city', city);
     formData.append('postal_code', postalCode);
+    
+    if (latitude !== null) formData.append('shipping_latitude', latitude.toString());
+    if (longitude !== null) formData.append('shipping_longitude', longitude.toString());
 
     try {
       await partialUpdateProfile(formData).unwrap();
@@ -46,6 +139,21 @@ export default function DeliveryAddressPage() {
     }
   };
   
+  // Close suggestions on click outside
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [wrapperRef]);
+
+
   if (isLoadingProfile) {
     return (
         <AppLayout showBottomNav={false} userRole="customer">
@@ -82,17 +190,55 @@ export default function DeliveryAddressPage() {
           )}
 
           <div className="space-y-6">
-            <div>
+            <div ref={wrapperRef} className="relative">
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input
-                    id="address"
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
-                    placeholder="e.g., 123 Main Street"
-                />
+                <div className="relative">
+                    <input
+                        id="address"
+                        type="text"
+                        value={address}
+                        onChange={handleAddressChange}
+                        onFocus={() => {
+                            if (suggestions.length > 0) setShowSuggestions(true);
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
+                        placeholder="Start typing to search address..."
+                        autoComplete="off"
+                    />
+                    {isSearching && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="animate-spin h-4 w-4 border-2 border-system-blue-light border-t-transparent rounded-full"></div>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Suggestions Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {suggestions.map((result, index) => (
+                            <button
+                                type="button"
+                                key={index}
+                                onClick={() => selectAddress(result)}
+                                className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+                            >
+                                {result.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                
+                {/* Coordinates Feedback */}
+                {latitude && longitude && (
+                    <p className="mt-1 text-xs text-green-600 flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Location coordinates set
+                    </p>
+                )}
             </div>
+
             <div>
                 <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City</label>
                 <input
@@ -122,20 +268,18 @@ export default function DeliveryAddressPage() {
           <div className="space-y-3 mt-8">
             <button
               type="submit"
-              disabled={isUpdating || !isDirty}
+              disabled={isUpdating}
               className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
             >
               {isUpdating ? 'Saving...' : 'Save Changes'}
             </button>
-            {isDirty && (
-              <button
+            <button
                 type="button"
                 onClick={() => router.back()}
                 className="w-full py-3.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Discard Changes
-              </button>
-            )}
+            >
+                Cancel
+            </button>
           </div>
         </form>
       </div>

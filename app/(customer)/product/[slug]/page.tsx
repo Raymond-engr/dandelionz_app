@@ -11,7 +11,9 @@ import {
     useRemoveFromWishlistMutation,
     useGetWishlistQuery,
     useGetCartQuery,
-    useRemoveFromCartMutation
+    useRemoveFromCartMutation,
+    useGetProductReviewsQuery,
+    useAddProductReviewMutation
 } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -26,10 +28,18 @@ export default function ProductDetailPage() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState('');
 
   // Fetch real product data
   const { data: response, isLoading, isError } = useGetProductBySlugQuery(slug);
   const product = response?.data;
+
+  // Fetch reviews
+  const { data: reviewsResponse, isLoading: isLoadingReviews } = useGetProductReviewsQuery(slug);
+  const reviews = reviewsResponse?.data || [];
+  
+  const [addProductReview, { isLoading: isSubmittingReview }] = useAddProductReviewMutation();
 
   // Fetch wishlist data to check if item exists
   const { data: wishlistResponse } = useGetWishlistQuery(undefined, {
@@ -91,6 +101,34 @@ export default function ProductDetailPage() {
         toast.error('Failed to update wishlist');
     }
   };
+  
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+    if (userRating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+    if (!userComment.trim()) {
+      toast.error('Please enter a comment');
+      return;
+    }
+
+    try {
+      await addProductReview({
+        slug,
+        rating: userRating,
+        comment: userComment
+      }).unwrap();
+      toast.success('Review submitted successfully');
+      setUserRating(0);
+      setUserComment('');
+    } catch (err: any) {
+      toast.error(err.data?.message || 'Failed to submit review');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -107,7 +145,7 @@ export default function ProductDetailPage() {
         <AppLayout showBottomNav={true} userRole="customer">
             <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                 <h1 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h1>
-                <p className="text-sm text-gray-600 mb-6">We couldn't find the product you're looking for.</p>
+                <p className="text-sm text-gray-600 mb-6">We couldn&apos;t find the product you&apos;re looking for.</p>
                 <button 
                     onClick={() => router.push('/')}
                     className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium"
@@ -216,7 +254,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-8">
             {/* Wishlist Button */}
             <button 
                 onClick={handleToggleWishlist}
@@ -243,6 +281,89 @@ export default function ProductDetailPage() {
               </svg>
               {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : (product.in_stock ? 'Add to cart' : 'Out of Stock')}
             </button>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reviews ({reviews.length})</h3>
+            
+            {/* Add Review Form */}
+            {isAuthenticated ? (
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <h4 className="text-sm font-medium mb-3">Write a Review</h4>
+                <div className="flex gap-2 mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button 
+                      key={star} 
+                      onClick={() => setUserRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <svg 
+                        className={`w-6 h-6 ${star <= userRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                        viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  className="w-full p-3 text-sm border rounded-lg mb-3 focus:outline-none focus:ring-1 focus:ring-system-blue-light"
+                  rows={3}
+                  placeholder="Share your thoughts about this product..."
+                  value={userComment}
+                  onChange={(e) => setUserComment(e.target.value)}
+                />
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={isSubmittingReview}
+                  className="px-4 py-2 bg-system-blue-light text-white text-sm rounded-lg hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            ) : (
+                <div className="bg-gray-50 p-4 rounded-lg mb-6 text-center">
+                    <p className="text-sm text-gray-600 mb-2">Please sign in to write a review.</p>
+                    <button 
+                        onClick={() => router.push(`/login?redirect=${pathname}`)}
+                        className="text-sm text-system-blue-light font-medium hover:underline"
+                    >
+                        Sign In
+                    </button>
+                </div>
+            )}
+
+            {/* Review List */}
+            {isLoadingReviews ? (
+              <div className="flex justify-center py-4"><LoadingSpinner /></div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.map((review: any) => (
+                  <div key={review.id} className="border-b pb-4 last:border-0">
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-sm font-medium text-gray-900">{review.customer_name || 'Anonymous'}</p>
+                      <span className="text-xs text-gray-500">{review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}</span>
+                    </div>
+                    <div className="flex gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <svg 
+                          key={i} 
+                          className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-600">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to review!</p>
+            )}
           </div>
         </div>
       </div>
