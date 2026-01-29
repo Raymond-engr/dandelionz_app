@@ -123,7 +123,7 @@ export default function ShopPage() {
               </button>
             </div>
           ) : (
-            <ProductGrid products={products} />
+            <ProductGrid products={products} hideAddToCart={true} />
           )}
         </div>
 

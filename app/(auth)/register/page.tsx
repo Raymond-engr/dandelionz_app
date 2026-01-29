@@ -22,7 +22,6 @@ export default function RegisterPage() {
     fullName: '',
     email: '',
     phoneNumber: '',
-    storeName: '', // Only for vendors
     password: '',
     confirmPassword: '',
     referralCode: '', // Optional referral code
@@ -55,7 +54,7 @@ export default function RegisterPage() {
         phone_number: formData.phoneNumber,
         full_name: formData.fullName,
         role: role,
-        ...(formData.referralCode && { referral_code: formData.referralCode }),
+        ...(role === 'CUSTOMER' && formData.referralCode && { referral_code: formData.referralCode }),
       }).unwrap();
 
       // Store auth data
@@ -211,20 +210,22 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Referral Code (Optional) */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="referralCode" className="text-xs text-gray-600">
-              Referral Code <span className="text-gray-400">(Optional)</span>
-            </label>
-            <input
-              id="referralCode"
-              type="text"
-              value={formData.referralCode}
-              onChange={(e) => setFormData({...formData, referralCode: e.target.value.toUpperCase()})}
-              className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
-              placeholder="Enter referral code if you have one"
-            />
-          </div>
+          {/* Referral Code (Optional) - Only for Customers */}
+          {role === 'CUSTOMER' && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="referralCode" className="text-xs text-gray-600">
+                Referral Code <span className="text-gray-400">(Optional)</span>
+              </label>
+              <input
+                id="referralCode"
+                type="text"
+                value={formData.referralCode}
+                onChange={(e) => setFormData({...formData, referralCode: e.target.value.toUpperCase()})}
+                className="w-full px-0 py-3 border-b border-gray-300 focus:border-system-blue-light focus:outline-none transition-colors text-sm"
+                placeholder="Enter referral code if you have one"
+              />
+            </div>
+          )}
 
           {/* Remember Password Checkbox */}
           <label className="flex items-center gap-2 cursor-pointer">

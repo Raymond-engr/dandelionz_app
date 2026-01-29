@@ -3,19 +3,38 @@
 import React, { Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useVerifyPaymentQuery } from '@/lib/api/publicApi';
+import { useVerifyPaymentQuery, useVerifyInstallmentPaymentQuery } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 function CheckoutStatus() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get('reference');
+  const planId = searchParams.get('plan_id');
   
-  // The 'skip' option prevents the query from running if the reference is not present
-  const { data, error, isLoading } = useVerifyPaymentQuery(
+  // Standard verification for normal orders
+  const { 
+    data: standardData, 
+    error: standardError, 
+    isLoading: isStandardLoading 
+  } = useVerifyPaymentQuery(
     { reference: reference as string },
-    { skip: !reference }
+    { skip: !reference || !!planId }
   );
+
+  // Installment verification for plans
+  const {
+    data: installmentData,
+    error: installmentError,
+    isLoading: isInstallmentLoading
+  } = useVerifyInstallmentPaymentQuery(
+    { reference: reference as string },
+    { skip: !reference || !planId }
+  );
+
+  const isLoading = isStandardLoading || isInstallmentLoading;
+  const error = standardError || installmentError;
+  const verifyData = planId ? installmentData : (standardData as any);
 
   if (isLoading) {
     return (
@@ -39,7 +58,7 @@ function CheckoutStatus() {
           Payment Failed
         </h2>
         <p className="text-gray-600 mb-8">
-          {(error as any)?.data?.message || 'We were unable to verify your payment. Please contact support if the issue persists.'}
+          {(error as any)?.data?.message || (error as any)?.data?.error || 'We were unable to verify your payment. Please contact support if the issue persists.'}
         </p>
         <button
           onClick={() => router.push('/')}
@@ -54,7 +73,9 @@ function CheckoutStatus() {
   // This handles both success and direct navigation to this page without a reference
   // (e.g., for Cash on Delivery)
   const isCod = searchParams.get('status') === 'cod';
-  const successMessage = isCod ? 'Your order has been placed successfully!' : 'Checkout Successful';
+  const successMessage = isCod 
+    ? 'Your order has been placed successfully!' 
+    : (planId ? `Installment ${verifyData?.data?.payment_number || ''} Successful!` : 'Checkout Successful');
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6">
@@ -63,7 +84,7 @@ function CheckoutStatus() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-system-blue-light mb-12">
+      <h2 className="text-2xl font-bold text-system-blue-light mb-12 text-center">
         {successMessage}
       </h2>
       <div className="w-full max-w-sm space-y-4">
@@ -71,14 +92,16 @@ function CheckoutStatus() {
           onClick={() => router.push('/orders')}
           className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
         >
-          View Order
+          {planId ? 'View My Plans' : 'View Order'}
         </button>
-        <button
-          onClick={() => router.push('/receipt')}
-          className="w-full py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors"
-        >
-          View E-Reciept
-        </button>
+        {!planId && (
+            <button
+                onClick={() => router.push('/receipt')}
+                className="w-full py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            >
+                View E-Reciept
+            </button>
+        )}
       </div>
     </div>
   );

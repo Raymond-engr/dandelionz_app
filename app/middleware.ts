@@ -18,11 +18,10 @@ export function middleware(request: NextRequest) {
     "/faqs",
     "/terms",
     "/contact",
-    "/",
   ];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
-  ) || pathname === "/account";
+  ) || pathname === "/" || pathname === "/account";
 
   // If no token and trying to access protected route
   if (!token && !isPublicRoute) {

@@ -2,25 +2,42 @@
 
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
+import { useInitializeInstallmentCheckoutMutation } from '@/lib/api/publicApi';
+import toast from 'react-hot-toast';
+
+type InstallmentDuration = '1_month' | '3_months' | '6_months' | '1_year';
 
 export default function InstallmentsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const frequency = searchParams.get('frequency') || 'weekly';
   
-  const [selectedInstallments, setSelectedInstallments] = useState(6);
+  const [duration, setDuration] = useState<InstallmentDuration>('3_months');
+  const [initializeInstallment, { isLoading, error }] = useInitializeInstallmentCheckoutMutation();
 
-  // Different installment options based on frequency
-  const weeklyOptions = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48];
-  const monthlyOptions = [2, 4, 6, 8, 10, 12, 14, 16, 18];
-  
-  const installmentOptions = frequency === 'weekly' ? weeklyOptions : monthlyOptions;
+  const handleProceed = async () => {
+    try {
+        const payload = await initializeInstallment({ data: { duration } }).unwrap();
+        
+        if (payload.data?.authorization_url) {
+            // Redirect to Paystack for the first installment
+            window.location.href = payload.data.authorization_url;
+        } else {
+            toast.error('Could not initiate installment plan. Please try again.');
+        }
 
-  const handleProceed = () => {
-    router.push('/checkout/shipping');
+    } catch (err: any) {
+        console.error('Failed to init installment:', err);
+        // Error handled by hook
+    }
   };
+
+  const durationOptions: { value: InstallmentDuration; label: string; description: string }[] = [
+      { value: '1_month', label: '1 Month Plan', description: 'Split payment over 1 month' },
+      { value: '3_months', label: '3 Months Plan', description: 'Split payment over 3 months' },
+      { value: '6_months', label: '6 Months Plan', description: 'Split payment over 6 months' },
+      { value: '1_year', label: '1 Year Plan', description: 'Split payment over 12 months' },
+  ];
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">
@@ -35,7 +52,7 @@ export default function InstallmentsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-system-blue-light">Checkout</h1>
+          <h1 className="text-lg font-semibold text-system-blue-light">Installment Plan</h1>
         </div>
 
         {/* Progress Indicator */}
@@ -43,93 +60,55 @@ export default function InstallmentsPage() {
 
         <div className="p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">
-            Select Payment Frequency
+            Select Plan Duration
           </h2>
+          
+           {/* Error Message */}
+           {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">
+                {(error as any)?.data?.message || (error as any)?.data?.error || 'An error occurred.'}
+              </p>
+            </div>
+          )}
 
-          {/* Frequency Radio */}
-          <div className="space-y-3 mb-6">
-            <label className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                <div className="w-2.5 h-2.5 rounded-full"></div>
-              </div>
-              <span className="text-sm text-gray-700">Buy Now</span>
-            </label>
-
-            <label className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                frequency === 'weekly' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
-              }`}>
-                {frequency === 'weekly' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                )}
-              </div>
-              <span className={`text-sm ${frequency === 'weekly' ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
-                Weekly
-              </span>
-            </label>
-
-            {frequency === 'weekly' && (
-              <div className="ml-8 mt-3">
-                <p className="text-xs text-gray-600 mb-3">Select number of installments</p>
-                <div className="grid grid-cols-6 gap-2">
-                  {weeklyOptions.map((num) => (
-                    <button
-                      key={num}
-                      onClick={() => setSelectedInstallments(num)}
-                      className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
-                        selectedInstallments === num
-                          ? 'bg-system-blue-light text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <label className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                frequency === 'monthly' ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
-              }`}>
-                {frequency === 'monthly' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                )}
-              </div>
-              <span className={`text-sm ${frequency === 'monthly' ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
-                Monthly
-              </span>
-            </label>
-
-            {frequency === 'monthly' && (
-              <div className="ml-8 mt-3">
-                <p className="text-xs text-gray-600 mb-3">Select number of installments</p>
-                <div className="grid grid-cols-6 gap-2">
-                  {monthlyOptions.map((num) => (
-                    <button
-                      key={num}
-                      onClick={() => setSelectedInstallments(num)}
-                      className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
-                        selectedInstallments === num
-                          ? 'bg-system-blue-light text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="space-y-4 mb-8">
+            {durationOptions.map((option) => (
+                <label key={option.value} className="flex items-start gap-3 cursor-pointer p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="relative mt-1">
+                        <input
+                        type="radio"
+                        name="duration"
+                        checked={duration === option.value}
+                        onChange={() => setDuration(option.value)}
+                        className="sr-only peer"
+                        disabled={isLoading}
+                        />
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        duration === option.value ? 'border-system-blue-light bg-system-blue-light' : 'border-gray-300'
+                        }`}>
+                        {duration === option.value && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
+                        )}
+                        </div>
+                    </div>
+                    <div>
+                        <span className={`text-sm font-medium ${duration === option.value ? 'text-gray-900' : 'text-gray-700'}`}>
+                            {option.label}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                    </div>
+                </label>
+            ))}
           </div>
 
           {/* Proceed Button */}
           <button
             onClick={handleProceed}
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
           >
-            Proceed
+            {isLoading ? 'Processing...' : 'Proceed to Payment'}
           </button>
         </div>
       </div>

@@ -26,11 +26,24 @@ export default function AppLayout({
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    const publicRoutes = ['/login', '/register', '/forgot-password', '/verify-email', '/'];
-    const protectedRoutePatterns = ['/account', '/checkout', '/wishlist', '/orders', '/cart', '/receipt'];
+    const publicRoutes = [
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/verify-email",
+      "/faqs",
+      "/terms",
+      "/contact",
+    ];
+    const protectedRoutePatterns = ['/checkout', '/wishlist', '/orders', '/cart', '/receipt'];
     
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
-    const isProtectedRoute = protectedRoutePatterns.some(route => pathname.startsWith(route));
+    const isPublicRoute = publicRoutes.some((route) =>
+      pathname.startsWith(route)
+    ) || pathname === "/" || pathname === "/account";
+
+    // Protect /account sub-routes (e.g. /account/profile) but allow /account itself
+    const isAccountSubRoute = pathname.startsWith('/account/') && pathname !== '/account';
+    const isProtectedRoute = protectedRoutePatterns.some(route => pathname.startsWith(route)) || isAccountSubRoute;
 
     if ((requireAuth || isProtectedRoute) && !isAuthenticated && !isPublicRoute) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
-import { useGetCustomerOrdersQuery } from '@/lib/api/publicApi';
+import { useGetCustomerOrdersQuery, useGetInstallmentPlansQuery } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 type TabStatus = 'completed' | 'ongoing' | 'returned';
@@ -11,8 +11,15 @@ type TabStatus = 'completed' | 'ongoing' | 'returned';
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<TabStatus>('completed');
   const { data: response, isLoading, error } = useGetCustomerOrdersQuery({});
+  const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
   
   const allOrders = response?.data || [];
+  const installmentPlans = plansResponse?.data || [];
+
+  // Helper to check if an order is an installment order
+  const getInstallmentPlan = (orderId: string) => {
+    return installmentPlans.find((plan: any) => plan.order_id === orderId);
+  };
 
   // Filter orders based on active tab
   const currentOrders = allOrders.filter(order => {
@@ -27,7 +34,7 @@ export default function OrdersPage() {
     return false;
   });
 
-  if (isLoading) {
+  if (isLoading || isLoadingPlans) {
     return (
         <AppLayout showBottomNav={true} userRole="customer">
             <div className="min-h-screen flex items-center justify-center">
@@ -103,7 +110,9 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="p-4 space-y-3">
-            {currentOrders.map((order) => (
+            {currentOrders.map((order) => {
+              const plan = getInstallmentPlan(order.order_id);
+              return (
               <Link
                 key={order.id}
                 // Use the string order_id (ORD-...) for the URL or the numeric id? 
@@ -119,6 +128,11 @@ export default function OrdersPage() {
                         : 'Order Items'}
                     </h3>
                     <p className="text-xs text-gray-600">{order.order_id}</p>
+                    {plan && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-medium rounded-full">
+                        Installment Plan
+                      </span>
+                    )}
                   </div>
                   {activeTab === 'ongoing' && (
                     <span className="px-3 py-1 bg-yellow-400 text-gray-900 rounded-md text-xs font-medium">
@@ -127,7 +141,7 @@ export default function OrdersPage() {
                   )}
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         )}
       </div>
