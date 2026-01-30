@@ -174,13 +174,13 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product", "Draft"],
     }),
 
-    getStoreProductDetails: builder.query<
-      { success: boolean; data: Product },
-      string
-    >({
-      query: (slug) => `/user/vendor/products/${slug}/`,
-      providesTags: ["Product"],
-    }),
+    // getStoreProductDetails: builder.query<
+    //   { success: boolean; data: Product },
+    //   string
+    // >({
+    //   query: (slug) => `/user/vendor/products/${slug}/`,
+    //   providesTags: ["Product"],
+    // }),
 
     updateStoreProduct: builder.mutation<
       { success: boolean; data: Product },
@@ -446,7 +446,7 @@ export const {
   useChangeVendorPasswordMutation,
   useGetStoreProductsQuery,
   useCreateStoreProductMutation,
-  useGetStoreProductDetailsQuery,
+  // useGetStoreProductDetailsQuery,
   useUpdateStoreProductMutation,
   usePartialUpdateStoreProductMutation,
   useDeleteStoreProductMutation,

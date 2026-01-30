@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
-  useGetStoreProductDetailsQuery,
+  useGetStoreProductsQuery,
   useGetDraftDetailsQuery,
   useUpdateDraftMutation,
   usePartialUpdateStoreProductMutation,
@@ -30,7 +30,7 @@ function EditProductComponent() {
   const productType = searchParams.get('type') === 'draft' ? 'draft' : 'store';
 
   const { data: draftData, isLoading: isLoadingDraft, error: draftError } = useGetDraftDetailsQuery(id, { skip: productType !== 'draft' });
-  const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id, { skip: productType !== 'store' });
+  const { data: storeProductsData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductsQuery({}, { skip: productType !== 'store' });
   
   const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
   const [updateStoreProduct, { isLoading: isUpdatingStore }] = usePartialUpdateStoreProductMutation();
@@ -49,7 +49,9 @@ function EditProductComponent() {
   const isLoading = isLoadingDraft || isLoadingStore;
   const isUpdating = isUpdatingDraft || isUpdatingStore || isSubmitting;
   const error = draftError || storeError;
-  const productData = productType === 'draft' ? draftData?.data : storeProductData?.data;
+  
+  const foundStoreProduct = storeProductsData?.data?.find((p: any) => p.slug === id || p.id?.toString() === id);
+  const productData = productType === 'draft' ? draftData?.data : foundStoreProduct;
 
   useEffect(() => {
     if (productData) {
