@@ -109,7 +109,7 @@ export default function CartPage() {
                             </h3>
                           </Link>
                           <p className="text-base font-bold text-system-blue-light">
-                            ${parseFloat(product?.price || '0').toLocaleString()}
+                            ₦{parseFloat(product?.price || '0').toLocaleString()}
                           </p>
                         </div>
                         <button
@@ -145,7 +145,7 @@ export default function CartPage() {
                           </button>
                         </div>
                         <div className="text-sm font-medium text-gray-900">
-                            Subtotal: ${parseFloat(item.subtotal || '0').toLocaleString()}
+                            Subtotal: ₦{parseFloat(item.subtotal || '0').toLocaleString()}
                         </div>
                       </div>
                     </div>
@@ -159,7 +159,7 @@ export default function CartPage() {
                <div className="flex items-center justify-between gap-4">
                   <div>
                       <p className="text-sm text-gray-500">Total</p>
-                      <p className="text-xl font-bold text-gray-900">${parseFloat(cartTotal).toLocaleString()}</p>
+                      <p className="text-xl font-bold text-gray-900">₦{parseFloat(cartTotal).toLocaleString()}</p>
                   </div>
                   <Link
                     href="/checkout"

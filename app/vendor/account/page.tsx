@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,6 +16,12 @@ export default function VendorAccountPage() {
     skip: !isAuthenticated,
   });
   const logout = useLogout();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, router]);
 
   const user = {
     name: profileData?.data.user.full_name || '',
@@ -33,10 +40,6 @@ export default function VendorAccountPage() {
   }
 
   if (!isAuthenticated) {
-    // This is a fallback; middleware should handle primary protection.
-    if (typeof window !== 'undefined') {
-        router.push('/login');
-    }
     return (
         <AppLayout showBottomNav={true} userRole="vendor">
             <div className="min-h-screen flex items-center justify-center">
@@ -114,8 +117,8 @@ export default function VendorAccountPage() {
             href="/vendor/account/delete"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
           >
-            <span className="text-sm font-medium text-gray-900">Close Account</span>
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-sm font-medium text-system-red">Close Account</span>
+            <svg className="w-5 h-5 text-system-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>

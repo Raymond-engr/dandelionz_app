@@ -119,15 +119,15 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
         <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
           {product.name}
         </h3>
-        <div className="flex flex-wrap items-center justify-between mb-3 gap-y-1">
-          <p className="text-base font-bold text-system-blue-light mr-2">
-                         ${product.price}
+        <div className="flex items-start justify-between mb-3 gap-2">
+          <p className="text-base font-bold text-system-blue-light break-all line-clamp-2 flex-1">
+            ₦{parseFloat(product.price || '0').toLocaleString()}
           </p>
-          <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+          <div className="flex items-center gap-1 shrink-0 bg-gray-50 px-1.5 py-0.5 rounded-md mt-0.5">
+            <svg className="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
               <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
             </svg>
-            <span className="text-xs text-gray-600">{product.rating ?? '0.0'}</span>
+            <span className="text-[10px] font-bold text-gray-700">{product.rating ?? '0.0'}</span>
           </div>
         </div>
 

@@ -489,7 +489,7 @@ export default function AddNewProductPage() {
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">{formData.name || 'Product Name'}</h3>
                 <p className="text-sm text-gray-600 mb-4">{formData.description || 'Product description goes here...'}</p>
-                <p className="text-2xl font-bold text-gray-900 mb-4">₦{formData.price.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900 mb-4">₦{formData.price.toLocaleString()}</p>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">

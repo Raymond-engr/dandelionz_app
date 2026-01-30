@@ -33,7 +33,8 @@ interface Product {
   category: string;
   brand: string;
   stock: number;
-  images: string[];
+  image?: string;
+  images: any[];
   variants: {
     colors: string[];
     sizes: string[];

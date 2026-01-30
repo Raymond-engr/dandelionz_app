@@ -59,7 +59,8 @@ export default function AdminChangePasswordPage() {
       router.back();
     } catch (err: any) {
       console.error('Password change failed:', err);
-      setError(err?.data?.message || 'Failed to change password. Please check your current password.');
+      const errorMessage = err?.data?.error || err?.data?.message || 'Failed to change password. Please check your current password.';
+      setError(errorMessage);
       setStep(1);
     }
   };

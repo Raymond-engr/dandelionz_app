@@ -51,7 +51,7 @@ export default function VendorHomePage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Total Balance</p>
-              {analyticsLoading ? <div className="h-7 w-20 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalRevenue || 0)).toFixed(2)}</p>}
+              {analyticsLoading ? <div className="h-7 w-20 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalRevenue || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
               <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -103,7 +103,7 @@ export default function VendorHomePage() {
                                             <p className="text-sm font-medium text-gray-900 truncate">{order.order_id}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-bold text-gray-900">₦{parseFloat(order.total_amount).toFixed(2)}</p>
+                                            <p className="text-sm font-bold text-gray-900">₦{parseFloat(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                             <p className="text-xs text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>

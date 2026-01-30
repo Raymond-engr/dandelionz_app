@@ -148,7 +148,7 @@ export default function VendorProductsPage() {
                             {product.category}
                           </p>
                           <p className="text-lg font-bold text-gray-900">
-                            ₦{parseFloat(product.price).toFixed(2)}
+                            ₦{parseFloat(product.price).toLocaleString()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function VendorProductsPage() {
                             {product.category}
                           </p>
                           <p className="text-lg font-bold text-gray-900">
-                            ₦{parseFloat(product.price).toFixed(2)}
+                            ₦{parseFloat(product.price).toLocaleString()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">

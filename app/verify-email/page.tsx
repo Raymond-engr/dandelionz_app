@@ -56,9 +56,15 @@ export default function VerifyEmailPage() {
             <p className="text-sm text-gray-500">Redirecting to login in {countdown} seconds...</p>
             <button
               onClick={() => router.push('/login')}
-              className="mt-6 px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
+              className="mt-6 px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors w-full sm:w-auto"
             >
               Go to Login
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="mt-3 px-6 py-3 border border-system-blue-light text-system-blue-light rounded-lg font-medium hover:bg-blue-50 transition-colors w-full sm:w-auto"
+            >
+              Continue Shopping
             </button>
           </>
         )}

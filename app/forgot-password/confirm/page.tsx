@@ -16,14 +16,9 @@ export default function ConfirmPasswordResetPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
   
-  // State for URL tokens
-  const [uid, setUid] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    setUid(searchParams.get('uid'));
-    setToken(searchParams.get('token'));
-  }, [searchParams]);
+  // Extract directly to avoid flicker
+  const uid = searchParams.get('uid');
+  const token = searchParams.get('token');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +47,6 @@ export default function ConfirmPasswordResetPage() {
     try {
         await confirmPasswordReset({ uid, token, new_password: newPassword }).unwrap();
     } catch (err) {
-        // Error is handled by the 'apiError' object from the hook
         console.error('Failed to reset password:', err);
     }
   };
@@ -87,7 +81,7 @@ export default function ConfirmPasswordResetPage() {
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Password Reset Successful</h1>
           <p className="text-sm text-gray-600 mb-6">You can now use your new password to log in.</p>
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.replace('/login')}
             className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
           >
             Back to Login
@@ -96,6 +90,8 @@ export default function ConfirmPasswordResetPage() {
       </AppLayout>
     );
   }
+
+  const errorMessage = formError || (apiError as any)?.data?.error || (apiError as any)?.data?.message || null;
 
   return (
     <AppLayout showBottomNav={false}>
@@ -107,10 +103,10 @@ export default function ConfirmPasswordResetPage() {
           Please create a new password for your account.
         </p>
 
-        {(formError || apiError) && (
+        {errorMessage && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">
-                {formError || (apiError as any)?.data?.message || 'An unexpected error occurred.'}
+                {errorMessage}
             </p>
           </div>
         )}

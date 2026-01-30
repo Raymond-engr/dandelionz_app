@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,6 +16,12 @@ export default function AdminAccountPage() {
     skip: !isAuthenticated,
   });
   const logout = useLogout();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, router]);
 
   const user = {
     name: profileData?.data.user.full_name || 'Admin User',
@@ -33,9 +40,6 @@ export default function AdminAccountPage() {
   }
 
   if (!isAuthenticated) {
-    if (typeof window !== 'undefined') {
-        router.push('/login');
-    }
     return (
         <AppLayout showBottomNav={true} userRole="admin">
             <div className="min-h-screen flex items-center justify-center">
