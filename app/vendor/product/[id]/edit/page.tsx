@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
-  useGetStoreProductsQuery,
+  useGetStoreProductDetailsQuery,
   useGetDraftDetailsQuery,
   useUpdateDraftMutation,
   usePartialUpdateStoreProductMutation,
@@ -12,6 +12,26 @@ import {
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
+
+const CATEGORIES = [
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'fashion', label: 'Fashion' },
+    { value: 'home_appliances', label: 'Home Appliances' },
+    { value: 'beauty', label: 'Beauty & Personal Care' },
+    { value: 'sports', label: 'Sports & Outdoors' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'books', label: 'Books' },
+    { value: 'toys', label: 'Toys & Games' },
+    { value: 'groceries', label: 'Groceries' },
+    { value: 'computers', label: 'Computers & Accessories' },
+    { value: 'phones', label: 'Phones & Tablets' },
+    { value: 'jewelry', label: 'Jewelry & Watches' },
+    { value: 'baby', label: 'Baby Products' },
+    { value: 'pets', label: 'Pet Supplies' },
+    { value: 'office', label: 'Office Products' },
+    { value: 'gaming', label: 'Video Games & Consoles' },
+];
 
 function getIdFromPath(pathname: string | null) {
   if (!pathname) return '';
@@ -29,8 +49,9 @@ function EditProductComponent() {
   const id = getIdFromPath(pathname);
   const productType = searchParams.get('type') === 'draft' ? 'draft' : 'store';
 
+  // Use the detailed endpoints for both draft and store products
   const { data: draftData, isLoading: isLoadingDraft, error: draftError } = useGetDraftDetailsQuery(id, { skip: productType !== 'draft' });
-  const { data: storeProductsData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductsQuery({}, { skip: productType !== 'store' });
+  const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id, { skip: productType !== 'store' });
   
   const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
   const [updateStoreProduct, { isLoading: isUpdatingStore }] = usePartialUpdateStoreProductMutation();
@@ -44,57 +65,146 @@ function EditProductComponent() {
     tags: '',
     stock: 0,
     price: 0,
+    discountedPrice: 0,
+    image: null as File | null,
+    variants: {
+      colors: [] as string[],
+      sizes: [] as string[]
+    }
   });
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isLoading = isLoadingDraft || isLoadingStore;
   const isUpdating = isUpdatingDraft || isUpdatingStore || isSubmitting;
   const error = draftError || storeError;
-  
-  const foundStoreProduct = storeProductsData?.data?.find((p: any) => p.slug === id || p.id?.toString() === id);
-  const productData = productType === 'draft' ? draftData?.data : foundStoreProduct;
+  const productData = productType === 'draft' ? draftData?.data : storeProductData?.data;
 
   useEffect(() => {
     if (productData) {
+      // Parse variants if they come as string or use them if object
+      let parsedVariants = { colors: [], sizes: [] };
+      if (productData.variants) {
+          if (typeof productData.variants === 'string') {
+              try {
+                  parsedVariants = JSON.parse(productData.variants);
+              } catch (e) {
+                  console.error("Error parsing variants", e);
+              }
+          } else {
+              parsedVariants = productData.variants as any;
+          }
+      }
+
       setFormData({
         name: productData.name || '',
         description: productData.description || '',
         category: productData.category || '',
         brand: productData.brand || '',
-        tags: Array.isArray(productData.tags) ? productData.tags.join(', ') : '',
+        tags: Array.isArray(productData.tags) ? productData.tags.join(', ') : (productData.tags || ''),
         stock: productData.stock || 0,
         price: parseFloat(productData.price) || 0,
+        discountedPrice: productData.discounted_price ? parseFloat(productData.discounted_price) : 0,
+        image: null,
+        variants: {
+          colors: parsedVariants.colors || [],
+          sizes: parsedVariants.sizes || []
+        }
       });
+
+      // Handle existing image for preview
+      // The API returns the image URL in the 'image' field (or 'images' array)
+      if (productData.image) {
+         setPreviewUrl(productData.image); 
+      } else if (productData.images && productData.images.length > 0) {
+         // Fallback if structure uses images array
+         const mainImg = typeof productData.images[0] === 'string' 
+            ? productData.images[0] 
+            : (productData.images as any[]).find(img => img.is_main)?.image || productData.images[0].image;
+         setPreviewUrl(mainImg);
+      }
     }
   }, [productData]);
 
+  // Handle new image selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setFormData({ ...formData, image: file });
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const toggleColor = (color: string) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: {
+        ...prev.variants,
+        colors: prev.variants.colors.includes(color)
+          ? prev.variants.colors.filter(c => c !== color)
+          : [...prev.variants.colors, color]
+      }
+    }));
+  };
+
+  const toggleSize = (size: string) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: {
+        ...prev.variants,
+        sizes: prev.variants.sizes.includes(size)
+          ? prev.variants.sizes.filter(s => s !== size)
+          : [...prev.variants.sizes, size]
+      }
+    }));
+  };
+
   const handleSave = async () => {
     const changes = new FormData();
-    // Simplified: in a real app, you'd check for changed fields
+    
+    // Append fields
     changes.append('name', formData.name);
     changes.append('description', formData.description);
+    changes.append('category', formData.category);
     changes.append('price', formData.price.toString());
     changes.append('stock', formData.stock.toString());
+    
+    if (formData.brand) changes.append('brand', formData.brand);
+    if (formData.tags) changes.append('tags', formData.tags);
+    if (formData.discountedPrice > 0) changes.append('discounted_price', formData.discountedPrice.toString());
+    
+    // Append variants
+    // Backend expects variants structure. Adjust key names if backend requires specific nesting like 'variants.colors'
+    // Assuming backend accepts a JSON string for variants or separate keys
+    // Based on previous create logic, sending separate keys or JSON string. 
+    // Let's send a JSON string for 'variants' if the backend parses it, or individual keys.
+    // Based on "create" page logic:
+    if (formData.variants.colors.length > 0) {
+        changes.append('variants.colors', JSON.stringify(formData.variants.colors));
+    }
+    if (formData.variants.sizes.length > 0) {
+        changes.append('variants.sizes', JSON.stringify(formData.variants.sizes));
+    }
+
+    // Append image only if a new file is selected
+    if (formData.image) {
+      changes.append('image', formData.image);
+    }
     
     try {
       if (productType === 'draft') {
         await updateDraft({ slug: id, data: changes }).unwrap();
         toast.success('Draft updated successfully!');
       } else {
-        // Note: partialUpdateStoreProduct expects a JSON object, not FormData in this implementation.
-        // This is another discrepancy to resolve with the backend if file uploads are needed here.
-        // For now, sending as JSON object.
-        await updateStoreProduct({ slug: id, data: {
-            name: formData.name,
-            description: formData.description,
-            price: formData.price.toString(),
-            stock: formData.stock
-        } }).unwrap();
+        // cast to any because updateStoreProduct type def might be strict on the data shape 
+        await updateStoreProduct({ slug: id, data: changes as any }).unwrap();
         toast.success('Product updated successfully!');
       }
       router.push('/vendor/product');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save:', err);
-      toast.error('Failed to save changes.');
+      toast.error(err?.data?.message || 'Failed to save changes.');
     }
   };
 
@@ -103,9 +213,9 @@ function EditProductComponent() {
       await submitDraft(id).unwrap();
       toast.success('Draft submitted for approval!');
       router.push('/vendor/product');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit:', err);
-      toast.error('Failed to submit draft.');
+      toast.error(err?.data?.message || 'Failed to submit draft.');
     }
   };
 
@@ -122,56 +232,182 @@ function EditProductComponent() {
   }
 
   return (
-    <div className="p-6 pb-24 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-900">
-            Editing {productType === 'draft' ? 'Draft' : 'Product'}: {productData?.name}
+    <div className="p-6 pb-24 space-y-8">
+      <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+        <h2 className="text-xl font-bold text-gray-900">
+            Editing {productType === 'draft' ? 'Draft' : 'Product'}
         </h2>
         {productData && <span className="capitalize text-sm font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-800">{productData.approval_status}</span>}
       </div>
 
-      <div>
-        <label className="text-xs text-gray-600 mb-2 block">Product Name</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="text-xs text-gray-600 mb-2 block">Product Description</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+      {/* Basic Info Section */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+        
         <div>
-          <label className="text-xs text-gray-600 mb-2 block">Stock</label>
+          <label className="text-xs text-gray-600 mb-2 block">Product Name</label>
           <input
-            type="number"
-            value={formData.stock}
-            onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value || '0')})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
           />
         </div>
+
         <div>
-          <label className="text-xs text-gray-600 mb-2 block">Price</label>
-          <input
-            type="number"
-            value={formData.price}
-            onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value || '0')})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+          <label className="text-xs text-gray-600 mb-2 block">Product Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-system-blue-light"
           />
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+              >
+                <option value="">Select Category</option>
+                {CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Brand</label>
+              <input
+                type="text"
+                value={formData.brand}
+                onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                placeholder="Brand Name"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              />
+            </div>
+        </div>
+
+        <div>
+            <label className="text-xs text-gray-600 mb-2 block">Tags</label>
+            <input
+              type="text"
+              value={formData.tags}
+              onChange={(e) => setFormData({...formData, tags: e.target.value})}
+              placeholder="e.g., Electronics, fans, home appliances..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+            />
+        </div>
+      </div>
+
+      {/* Image Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Product Image</h3>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input type="file" className="hidden" id="product-image-edit" onChange={handleFileChange} accept="image/*" />
+            <label htmlFor="product-image-edit" className="cursor-pointer">
+            <div className="w-32 h-32 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center overflow-hidden">
+                {previewUrl ? (
+                <Image src={previewUrl} alt="Preview" width={128} height={128} className="object-cover w-full h-full" unoptimized />
+                ) : (
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                )}
+            </div>
+            <p className="text-sm text-gray-600">{formData.image ? 'Change Image' : (previewUrl ? 'Change Existing Image' : 'Upload Product Image')}</p>
+            </label>
+        </div>
+      </div>
+
+      {/* Inventory Section */}
+      <div className="space-y-6">
+         <h3 className="text-lg font-semibold text-gray-900">Inventory & Pricing</h3>
+         
+         <div>
+            <label className="text-xs text-gray-600 mb-2 block">Stock (Units)</label>
+            <input
+              type="number"
+              value={formData.stock}
+              onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value || '0')})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+            />
+         </div>
+
+         <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Price</label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value || '0')})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Discounted Price (Optional)</label>
+              <input
+                type="number"
+                value={formData.discountedPrice}
+                onChange={(e) => setFormData({...formData, discountedPrice: parseFloat(e.target.value || '0')})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+              />
+            </div>
+         </div>
+
+         {/* Variants */}
+         <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Variants (Optional)</h3>
+            
+            {/* Colors */}
+            <div className="mb-4">
+                <label className="text-xs text-gray-600 mb-2 block">Available Colors</label>
+                <div className="grid grid-cols-4 gap-2">
+                {['White', 'Black', 'Green', 'Blue', 'Red', 'Yellow'].map((color) => (
+                    <button
+                    key={color}
+                    type="button"
+                    onClick={() => toggleColor(color)}
+                    className={`py-2 px-2 rounded-lg text-xs font-medium transition-colors border ${
+                        formData.variants.colors.includes(color)
+                        ? 'bg-system-blue-light text-white border-system-blue-light'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                    >
+                    {color}
+                    </button>
+                ))}
+                </div>
+            </div>
+
+            {/* Sizes */}
+            <div>
+                <label className="text-xs text-gray-600 mb-2 block">Available Sizes</label>
+                <div className="grid grid-cols-6 gap-2">
+                {['24', '25', '26', '27', '28', '29', '30', '36', '37', '38', '39', '40', '41', '42', '43'].map((size) => (
+                    <button
+                    key={size}
+                    type="button"
+                    onClick={() => toggleSize(size)}
+                    className={`aspect-square rounded-lg text-xs font-medium transition-colors border flex items-center justify-center ${
+                        formData.variants.sizes.includes(size)
+                        ? 'bg-system-blue-light text-white border-system-blue-light'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                    >
+                    {size}
+                    </button>
+                ))}
+                </div>
+            </div>
+         </div>
       </div>
       
-      <div className="space-y-3 pt-4">
+      {/* Actions */}
+      <div className="space-y-3 pt-6 border-t border-gray-100">
         <button onClick={handleSave} disabled={isUpdating} className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50">
             {isUpdating ? 'Saving...' : 'Save Changes'}
         </button>

@@ -65,6 +65,15 @@ export const customerApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    deleteCustomerAccount: builder.mutation<void, { password: string }>({
+      query: (body) => ({
+        url: "/user/customer/account/",
+        method: "DELETE",
+        body,
+      }),
+      invalidatesTags: ["Customer", "Auth"],
+    }),
   }),
 });
 
@@ -73,5 +82,6 @@ export const {
   useUpdateCustomerProfileMutation,
   usePartialUpdateCustomerProfileMutation,
   useChangeCustomerPasswordMutation,
+  useDeleteCustomerAccountMutation,
 } = customerApi;
 

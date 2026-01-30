@@ -73,7 +73,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <StatCard 
               title="Total Revenue" 
-              value={isLoading ? "..." : `₦${parseFloat(analytics?.data?.total_revenue || "0").toFixed(2)}`}
+              value={isLoading ? "..." : `₦${parseFloat(analytics?.data?.total_revenue || "0").toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               change="+0.00%" 
               icon={<Users className="w-5 h-5 text-green-600" />}
               isLoading={isLoading}

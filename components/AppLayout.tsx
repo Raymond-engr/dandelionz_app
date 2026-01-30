@@ -46,7 +46,7 @@ export default function AppLayout({
     const isProtectedRoute = protectedRoutePatterns.some(route => pathname.startsWith(route)) || isAccountSubRoute;
 
     if ((requireAuth || isProtectedRoute) && !isAuthenticated && !isPublicRoute) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
