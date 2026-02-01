@@ -15,7 +15,7 @@ export default function AdminPhotoUploadPage() {
   const { data: profileData, refetch } = useGetAdminProfileQuery();
   const [error, setError] = useState('');
 
-  const profile = profileData?.data?.user;
+  const profile = profileData?.data;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

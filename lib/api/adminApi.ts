@@ -1,24 +1,21 @@
 import { baseApi } from "./baseApi";
 
 interface AdminProfile {
-  user: {
-    uuid: string;
-    email: string;
-    full_name: string;
-    phone_number: string | null;
-    profile_picture: string | null;
-    role: string;
-    referral_code: string;
-    is_verified: boolean;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-  };
-  position: string;
-  can_manage_vendors: boolean;
-  can_manage_orders: boolean;
-  can_manage_payouts: boolean;
-  can_manage_inventory: boolean;
+  uuid: string;
+  email: string;
+  full_name: string;
+  phone_number: string | null;
+  profile_picture: string | null;
+  role?: string;
+  is_verified?: boolean;
+  is_active?: boolean;
+  created_at: string;
+  updated_at: string;
+  position?: string;
+  can_manage_vendors?: boolean;
+  can_manage_orders?: boolean;
+  can_manage_payouts?: boolean;
+  can_manage_inventory?: boolean;
 }
 
 interface Analytics {

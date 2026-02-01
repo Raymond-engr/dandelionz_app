@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,7 +11,13 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AccountPage() {
   const router = useRouter();
+  const isMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
   const { data: profile, isLoading } = useGetCustomerProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
@@ -30,7 +36,7 @@ export default function AccountPage() {
     { label: 'Contact Us', href: '/contact', icon: MailIcon },
   ];
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <AppLayout showBottomNav={true} userRole="customer">
         <div className="min-h-screen flex items-center justify-center">

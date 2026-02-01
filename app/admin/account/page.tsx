@@ -11,7 +11,13 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminAccountPage() {
   const router = useRouter();
+  const isMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
   const { data: profileData, isLoading } = useGetAdminProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
@@ -24,12 +30,12 @@ export default function AdminAccountPage() {
   }, [isAuthenticated, router]);
 
   const user = {
-    name: profileData?.data.user.full_name || 'Admin User',
-    email: profileData?.data.user.email || '',
-    avatar: profileData?.data.user.profile_picture || null
+    name: profileData?.data.full_name || 'Admin User',
+    email: profileData?.data.email || '',
+    avatar: profileData?.data.profile_picture || null
   };
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <AppLayout showBottomNav={true} userRole="admin">
         <div className="min-h-screen flex items-center justify-center">
