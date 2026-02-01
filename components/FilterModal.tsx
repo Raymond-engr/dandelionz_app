@@ -88,7 +88,7 @@ export default function FilterModal({ isOpen, onClose, onApply, categories, init
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 

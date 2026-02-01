@@ -8,15 +8,16 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 
 interface UserDetailsProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function UserDetails({ params }: UserDetailsProps) {
+  const { id } = use(params);
   const router = useRouter();
   const [action, setAction] = useState<'suspend' | 'activate' | 'delete'>('suspend');
   const [reason, setReason] = useState('');
 
-  const userId = params.id;
+  const userId = id;
 
   const { data: userData, isLoading, error, refetch } = useGetUserDetailsQuery(userId);
   const [updateUserStatus, { isLoading: isUpdating }] = useUpdateUserStatusMutation();

@@ -17,12 +17,11 @@ export default function AdminProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const profile = profileData?.data?.user;
+  const profile = profileData?.data;
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    storeName: '',
     phoneNumber: '',
   });
 
@@ -31,7 +30,6 @@ export default function AdminProfilePage() {
       setFormData({
         fullName: profile.full_name || '',
         email: profile.email || '',
-        storeName: 'Store Name Goes Here', // Placeholder as it's not in the admin model
         phoneNumber: profile.phone_number || '',
       });
     }
@@ -148,18 +146,6 @@ export default function AdminProfilePage() {
               />
             </div>
 
-            {/* Store Name */}
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Store Name</label>
-              <input
-                type="text"
-                value={formData.storeName}
-                onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                className="w-full px-0 py-2 bg-gray-50 text-sm text-gray-900"
-                disabled={!isEditing}
-              />
-            </div>
-
             {/* Phone Number */}
             <div>
               <label className="text-xs text-gray-600 mb-2 block">Phone Number</label>
@@ -225,7 +211,6 @@ export default function AdminProfilePage() {
                         fullName: profile.full_name || '',
                         email: profile.email || '',
                         phoneNumber: profile.phone_number || '',
-                        storeName: 'Store Name Goes Here',
                       });
                     }
                   }}

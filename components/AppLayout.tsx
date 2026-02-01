@@ -24,6 +24,11 @@ export default function AppLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const isMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     const publicRoutes = [
@@ -85,7 +90,7 @@ export default function AppLayout({
         
         {/* Bottom Navigation - conditionally rendered */}
         {showBottomNav && (
-          isAuthenticated ? bottomNavComponent : <BottomNav />
+          (isMounted && isAuthenticated) ? bottomNavComponent : <BottomNav />
         )}
       </div>
     </div>

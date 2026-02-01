@@ -74,7 +74,7 @@ export default function VendorReceiptPage() {
 
         {/* Export Modal */}
         {showExportModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-6">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
               <h2 className="text-base font-semibold text-gray-900 mb-6">SAVE AS</h2>
 

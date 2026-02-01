@@ -33,6 +33,26 @@ export default function RegisterPage() {
     e.preventDefault();
     setValidationError('');
 
+    // Validate Full Name
+    if (!formData.fullName.trim()) {
+      setValidationError('Full Name is required');
+      return;
+    }
+
+    // Validate Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setValidationError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate Phone Number
+    const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      setValidationError('Please enter a valid phone number (10-15 digits)');
+      return;
+    }
+
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setValidationError('Passwords do not match');
@@ -40,8 +60,9 @@ export default function RegisterPage() {
     }
 
     // Validate password strength
-    if (formData.password.length < 8) {
-      setValidationError('Password must be at least 8 characters long');
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setValidationError('Password must be at least 8 characters long, contain one uppercase letter, one lowercase letter, and one number or special character.');
       return;
     }
 

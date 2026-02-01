@@ -11,7 +11,13 @@ import { useRouter } from 'next/navigation';
 
 export default function VendorAccountPage() {
   const router = useRouter();
+  const isMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
   const { data: profileData, isLoading } = useGetVendorProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
@@ -29,7 +35,7 @@ export default function VendorAccountPage() {
     avatar: profileData?.data.user.profile_picture || null
   };
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <AppLayout showBottomNav={true} userRole="vendor">
         <div className="min-h-screen flex items-center justify-center">

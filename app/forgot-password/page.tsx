@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
             If an account exists with <span className="font-semibold">{email}</span>, we've sent a password reset link to your email.
           </p>
           <p className="text-xs text-gray-500 text-center mb-6 max-w-md">
-            Didn't receive the email? Check your spam folder or try again.
+            Didn&apos;t receive the email? Check your spam folder or try again.
           </p>
           <div className="flex gap-3">
             <button
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
           Forgot Password?
         </h1>
         <p className="text-sm text-gray-600 mb-8">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we&apos;ll send you a link to reset your password.
         </p>
 
         {/* Error Message */}

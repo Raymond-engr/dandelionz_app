@@ -78,7 +78,7 @@ export default function VendorHomePage() {
             {ordersLoading ? <LoadingSpinner /> : recentOrders.length === 0 ? (
                 <div className="bg-system-blue-light rounded-lg p-6 flex items-center justify-between">
                     <p className="text-white font-semibold text-lg">No Recent Orders</p>
-                    <Link href="/vendor/product/new" className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                    <Link href="/vendor/orders" className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
                         <svg className="w-6 h-6 text-system-blue-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -89,7 +89,7 @@ export default function VendorHomePage() {
                     {recentOrders.map((order: any) => (
                         <Link href={`/vendor/orders/${order.uuid}`} key={order.uuid} className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-system-blue-light rounded-full flex-shrink-0 flex items-center justify-center text-white font-semibold">
+                                <div className="w-10 h-10 bg-system-blue-light rounded-full shrink-0 flex items-center justify-center text-white font-semibold">
                                     {order.customer.full_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
