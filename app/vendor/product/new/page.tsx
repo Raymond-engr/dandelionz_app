@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   useCreateStoreProductMutation,
   useCreateDraftMutation,
+  useGetVendorProfileQuery,
 } from '@/lib/api/vendorApi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -17,11 +18,12 @@ interface ProductFormData {
   description: string;
   category: string;
   brand: string;
-  image: File | null;
+  images: File[];
+  mainImageIndex: number;
   tags: string;
   stock: number;
   price: number;
-  discountedPrice: number;
+  discount: number;
   variants: {
     colors: string[];
     sizes: string[];
@@ -49,6 +51,7 @@ const CATEGORIES = [
 
 export default function AddNewProductPage() {
   const router = useRouter();
+  const { data: profileData, isLoading: isLoadingProfile } = useGetVendorProfileQuery();
   const [createStoreProduct, { isLoading: isPublishing, error: publishError }] = useCreateStoreProductMutation();
   const [createDraft, { isLoading: isSavingDraft, error: draftError }] = useCreateDraftMutation();
 
@@ -58,28 +61,34 @@ export default function AddNewProductPage() {
     description: '',
     category: '',
     brand: '',
-    image: null,
+    images: [],
+    mainImageIndex: 0,
     tags: '',
     stock: 10,
     price: 550,
-    discountedPrice: 0,
+    discount: 0,
     variants: {
       colors: [],
       sizes: []
     }
   });
 
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   React.useEffect(() => {
-    if (formData.image) {
-      const url = URL.createObjectURL(formData.image);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setPreviewUrl(null);
+    if (profileData?.data) {
+        if (!profileData.data.address) {
+            toast.error("Please update your store address before creating products.");
+            // Optionally redirect or disable form
+        }
     }
-  }, [formData.image]);
+  }, [profileData]);
+
+  React.useEffect(() => {
+    const urls = formData.images.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [formData.images]);
 
   const isLoading = isPublishing || isSavingDraft;
   const isError = !!(publishError || draftError);
@@ -87,6 +96,10 @@ export default function AddNewProductPage() {
 
   const handleProceed = () => {
     if (currentStep === 'basic') {
+      if (formData.images.length === 0) {
+        toast.error('Please upload at least one image');
+        return;
+      }
       setCurrentStep('inventory');
     } else if (currentStep === 'inventory') {
       setCurrentStep('preview');
@@ -105,8 +118,28 @@ export default function AddNewProductPage() {
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFormData({ ...formData, image: e.target.files[0] });
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...Array.from(e.target.files || [])]
+      }));
     }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => {
+        const newImages = prev.images.filter((_, i) => i !== index);
+        let newMainIndex = prev.mainImageIndex;
+        if (index === prev.mainImageIndex) {
+            newMainIndex = 0;
+        } else if (index < prev.mainImageIndex) {
+            newMainIndex--;
+        }
+        return {
+            ...prev,
+            images: newImages,
+            mainImageIndex: newMainIndex
+        };
+    });
   };
 
   const buildProductData = () => {
@@ -117,24 +150,28 @@ export default function AddNewProductPage() {
     productData.append('price', formData.price.toString());
     productData.append('stock', formData.stock.toString());
     
-    if (formData.image) {
-      productData.append('image', formData.image);
-    }
+    // Images
+    formData.images.forEach((file, index) => {
+        productData.append(`images_data[${index}].image`, file);
+        productData.append(`images_data[${index}].is_main`, (index === formData.mainImageIndex).toString());
+        productData.append(`images_data[${index}].alt_text`, formData.name);
+    });
+
     if (formData.brand) {
       productData.append('brand', formData.brand);
     }
     if (formData.tags) {
       productData.append('tags', formData.tags);
     }
-    if (formData.discountedPrice > 0) {
-      productData.append('discounted_price', formData.discountedPrice.toString());
+    if (formData.discount > 0) {
+      productData.append('discount', formData.discount.toString());
     }
-    if (formData.variants.colors.length > 0) {
-        productData.append('variants.colors', JSON.stringify(formData.variants.colors));
+    
+    // Variants as JSON string
+    if (formData.variants.colors.length > 0 || formData.variants.sizes.length > 0) {
+        productData.append('variants', JSON.stringify(formData.variants));
     }
-    if (formData.variants.sizes.length > 0) {
-        productData.append('variants.sizes', JSON.stringify(formData.variants.sizes));
-    }
+
     return productData;
   }
 
@@ -324,23 +361,41 @@ export default function AddNewProductPage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600 mb-2 block">Upload Product Image</label>
+                <label className="text-xs text-gray-600 mb-2 block">Upload Product Images (Min 1)</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input type="file" className="hidden" id="product-image" onChange={handleFileChange} accept="image/*" />
-                  <label htmlFor="product-image" className="cursor-pointer">
+                  <input type="file" className="hidden" id="product-image" onChange={handleFileChange} accept="image/*" multiple />
+                  <label htmlFor="product-image" className="cursor-pointer block">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                      {previewUrl ? (
-                        <Image src={previewUrl} alt="Preview" width={48} height={48} className="object-cover rounded-lg" unoptimized />
-                      ) : (
                         <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                      )}
                     </div>
-                    <p className="text-sm text-gray-600">{formData.image ? 'Change Image' : 'Upload Product Image'}</p>
+                    <p className="text-sm text-gray-600">Click to upload images</p>
                     <p className="text-xs text-red-500 mt-1">Not less than 150kb</p>
                   </label>
                 </div>
+
+                {formData.images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-3 gap-4">
+                        {previewUrls.map((url, index) => (
+                            <div key={index} className="relative group border rounded-lg overflow-hidden">
+                                <Image src={url} alt={`Preview ${index}`} width={100} height={100} className="w-full h-24 object-cover" unoptimized />
+                                <button
+                                    onClick={() => handleRemoveImage(index)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                                <button
+                                    onClick={() => setFormData({...formData, mainImageIndex: index})}
+                                    className={`absolute bottom-0 w-full text-xs py-1 ${formData.mainImageIndex === index ? 'bg-system-blue-light text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {formData.mainImageIndex === index ? 'Main Image' : 'Set as Main'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
               </div>
 
               <div>
@@ -394,13 +449,15 @@ export default function AddNewProductPage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600 mb-2 block">Discounted Price (Optional)</label>
+                <label className="text-xs text-gray-600 mb-2 block">Discount (%) (Optional)</label>
                 <input
                   type="number"
-                  value={formData.discountedPrice}
-                  onChange={(e) => setFormData({...formData, discountedPrice: parseFloat(e.target.value) || 0})}
+                  min="0"
+                  max="100"
+                  value={formData.discount}
+                  onChange={(e) => setFormData({...formData, discount: parseFloat(e.target.value) || 0})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                  placeholder="₦ 1000"
+                  placeholder="0"
                 />
               </div>
 
@@ -472,9 +529,16 @@ export default function AddNewProductPage() {
               </h2>
 
               {/* Product Image */}
-              <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center mb-4">
-                {previewUrl ? (
-                    <Image src={previewUrl} alt={formData.name} width={200} height={200} className="object-cover rounded-lg" unoptimized />
+              <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center mb-4 relative overflow-hidden">
+                {previewUrls.length > 0 ? (
+                    <>
+                        <Image src={previewUrls[formData.mainImageIndex]} alt={formData.name} width={200} height={200} className="w-full h-full object-cover" unoptimized />
+                        {previewUrls.length > 1 && (
+                            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                +{previewUrls.length - 1} more
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="text-center">
                     <svg className="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,7 +553,14 @@ export default function AddNewProductPage() {
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">{formData.name || 'Product Name'}</h3>
                 <p className="text-sm text-gray-600 mb-4">{formData.description || 'Product description goes here...'}</p>
-                <p className="text-2xl font-bold text-gray-900 mb-4">₦{formData.price.toLocaleString()}</p>
+                <div className="flex items-center gap-2 mb-4">
+                    <p className="text-2xl font-bold text-gray-900">₦{formData.price.toLocaleString()}</p>
+                    {formData.discount > 0 && (
+                        <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
+                            -{formData.discount}%
+                        </span>
+                    )}
+                </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
