@@ -228,6 +228,26 @@ export default function ProductDetailPage() {
             {product.name}
           </h2>
 
+          {/* Variants (Colors) */}
+          {product.variants && product.variants.length > 0 && (
+             <div className="mb-6">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Select Color</p>
+                <div className="flex gap-2">
+                    {product.variants.map((variant: any, idx: number) => (
+                        <button
+                            key={idx}
+                            className={`px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                                // Logic to select variant - for now just visual as we don't have separate SKUs
+                                'border-gray-200 hover:border-system-blue-light'
+                            }`}
+                        >
+                            {variant.color}
+                        </button>
+                    ))}
+                </div>
+             </div>
+          )}
+
           {/* Description */}
           <div className="mb-4">
             <p className="text-sm text-gray-600 leading-relaxed mb-3">
@@ -244,9 +264,28 @@ export default function ProductDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-xs text-gray-500 mb-1">Amount</p>
-                          <p className="text-2xl font-bold text-system-blue-light">
-                            ₦{parseFloat(product.price || '0').toLocaleString()}
-                          </p>            </div>
+                <div className="flex flex-col">
+                  <p className="text-2xl font-bold text-system-blue-light">
+                    {product.discount && product.discount > 0 ? (
+                        <>
+                        ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </>
+                    ) : (
+                        `₦${parseFloat(product.price || '0').toLocaleString()}`
+                    )}
+                  </p>
+                  {product.discount && product.discount > 0 && (
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-gray-500 line-through">
+                            ₦{parseFloat(product.price).toLocaleString()}
+                        </span>
+                        <span className="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                            -{product.discount}%
+                        </span>
+                    </div>
+                  )}
+                </div>
+            </div>
             <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-full">
               <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
                 <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />

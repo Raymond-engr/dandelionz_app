@@ -71,21 +71,26 @@ export interface User {
 }
 
 export interface Order {
-  uuid: string;
+  uuid?: string;
   order_id: string;
   customer: {
-    uuid: string;
+    uuid?: string;
     full_name: string;
     email: string;
     phone_number?: string;
   };
-  vendor: {
+  vendor?: {
     uuid: string;
     store_name: string;
   };
-  total_amount: string;
+  total_amount?: string;
+  total_price: string;
+  delivery_fee?: string;
+  payment_status?: string;
   status: string;
-  created_at: string;
+  current_status?: string;
+  created_at?: string;
+  ordered_at: string;
   updated_at: string;
   shipping_address?: ShippingAddress;
   order_items?: OrderItem[];
@@ -102,6 +107,7 @@ export interface Product {
   category: string;
   status: string;
   stock: number;
+  discount?: number; // Added discount field
 }
 
 interface AdminProduct {
@@ -113,6 +119,8 @@ interface AdminProduct {
   category: string; // Name of the category
   stock: number;
   image: string | null; // Product image URL
+  images?: any[]; // Added images array
+  discount?: number; // Added discount field
   uploadDate: string; // Date when the product was uploaded
   vendor: {
     uuid: string;

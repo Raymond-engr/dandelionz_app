@@ -89,6 +89,7 @@ export interface Product {
   category?: string;
   category_name?: string;
   discounted_price?: string;
+  discount?: number; // Added discount percentage
   stock?: number;
   brand?: string;
   tags?: string;

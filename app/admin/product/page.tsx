@@ -156,11 +156,33 @@ export default function ProductManagement() {
                           <p className="text-xs text-gray-600">{product.vendor?.store_name || 'N/A'}</p>
                           <p className="text-xs text-gray-600">{product.category}</p>
                         </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                          {product.status}
-                        </span>
+                        <div className="flex flex-col items-end gap-2">
+                            <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                product.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
+                                product.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 
+                                'bg-yellow-100 text-yellow-700'
+                            }`}>
+                                {product.status}
+                            </span>
+                            {product.discount && product.discount > 0 && (
+                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded font-bold">
+                                    -{product.discount}%
+                                </span>
+                            )}
+                        </div>
                       </div>
-                      <p className="text-base font-bold text-gray-900 text-left">₦{product.price}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-bold text-gray-900 text-left">
+                            {product.discount && product.discount > 0 ? (
+                                `₦${(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString()}`
+                            ) : (
+                                `₦${parseFloat(product.price).toLocaleString()}`
+                            )}
+                        </p>
+                        {product.discount && product.discount > 0 && (
+                            <p className="text-xs text-gray-400 line-through">₦{parseFloat(product.price).toLocaleString()}</p>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>

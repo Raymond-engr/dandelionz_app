@@ -76,13 +76,13 @@ export default function OrderManagement() {
                     <div className="text-left flex-1">
                       <p className="text-sm font-semibold text-gray-900">{order.order_id}</p>
                       <p className="text-xs text-gray-600">{order.customer.full_name}</p>
-                      <p className="text-xs text-gray-600">{format(new Date(order.created_at), 'PPP')}</p>
+                      <p className="text-xs text-gray-600">{format(new Date(order.ordered_at), 'PPP')}</p>
                     </div>
                     <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
                   </div>
-                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_amount).toLocaleString()}</p>
+                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price).toLocaleString()}</p>
                 </button>
               ))}
             </div>
