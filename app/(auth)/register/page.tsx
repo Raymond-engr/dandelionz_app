@@ -88,7 +88,7 @@ export default function RegisterPage() {
       }
 
       // If email verification is needed, redirect to verification page
-      if (!result.data.email_verified) {
+      if (!result.data.user.is_verified) {
         router.push('/registration-success');
       } else {
         // Redirect based on role

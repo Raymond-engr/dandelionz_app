@@ -214,6 +214,7 @@ interface Notification {
   message: string;
   recipient_type: "USERS" | "VENDORS" | "ALL" | "ADMIN";
   status: string;
+  is_read: boolean; // Added for inbox
   created_at: string;
   scheduled_at: string | null;
 }
@@ -740,10 +741,35 @@ export const adminApi = baseApi.injectEndpoints({
     // Notification Management
     getAllNotifications: builder.query<
       { success: boolean; data: Notification[] },
+      { is_read?: boolean } | void
+    >({
+      query: (params) => ({
+        url: "/api/notifications/",
+        params: params || undefined,
+      }),
+      providesTags: ["Notification"],
+    }),
+
+    markNotificationAsRead: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/api/notifications/${id}/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    markAllNotificationsAsRead: builder.mutation<
+      { success: boolean; message: string },
       void
     >({
-      query: () => "/user/admin/notifications/",
-      providesTags: ["Notification"],
+      query: () => ({
+        url: "/api/notifications/mark-all-read/",
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
     }),
 
     createNotification: builder.mutation<
@@ -846,6 +872,8 @@ export const {
   useGetDisputeDetailsQuery,
   useResolveDisputeMutation,
   useGetAllNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
   useCreateNotificationMutation,
   useGetNotificationDetailsQuery,
   useDeleteNotificationMutation,

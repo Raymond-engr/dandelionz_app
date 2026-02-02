@@ -39,7 +39,6 @@ interface AuthResponse {
       issued_at: number;
     };
     is_new_user?: boolean;
-    email_verified: boolean;
     verification_needed?: boolean;
   };
 }
@@ -132,11 +131,12 @@ export const authApi = baseApi.injectEndpoints({
     // Send Verification Email
     sendVerificationEmail: builder.mutation<
       { success: boolean; message: string },
-      void
+      { email: string }
     >({
-      query: () => ({
-        url: "/auth/send-verification/",
+      query: (body) => ({
+        url: "/auth/send-verification-email/",
         method: "POST",
+        body,
       }),
     }),
 

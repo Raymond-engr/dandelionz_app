@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +8,24 @@ import { useGetVendorProfileQuery, usePartialUpdateVendorProfileMutation } from 
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import { debounce } from 'lodash';
+
+// Define result type for Nominatim API
+interface NominatimResult {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address: {
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+  boundingbox: string[];
+}
 
 export default function VendorProfilePage() {
   const router = useRouter();
@@ -28,6 +46,12 @@ export default function VendorProfilePage() {
     bank_name: '',
     account_number: '',
   });
+
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (profilePictureFile) {
@@ -52,8 +76,75 @@ export default function VendorProfilePage() {
         bank_name: vendorInfo.bank_name || '',
         account_number: vendorInfo.account_number || '',
       });
+      setLatitude(vendorInfo.latitude || null);
+      setLongitude(vendorInfo.longitude || null);
     }
   }, [profileData]);
+
+  // Debounced search function using direct Nominatim API
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (!query || query.length < 3) {
+        setSuggestions([]);
+        setIsSearching(false);
+        return;
+      }
+
+      try {
+        setIsSearching(true);
+        // Using Nominatim API directly with Nigeria (ng) restriction
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=ng`
+        );
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const results: NominatimResult[] = await response.json();
+        setSuggestions(results);
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, address: value });
+    
+    // Only search if editing
+    if (isEditing) {
+      debouncedSearch(value);
+    }
+  };
+
+  const selectAddress = (result: NominatimResult) => {
+    setFormData({ ...formData, address: result.display_name });
+    setLatitude(parseFloat(result.lat));
+    setLongitude(parseFloat(result.lon));
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // Close suggestions on click outside
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [wrapperRef]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -100,6 +191,12 @@ export default function VendorProfilePage() {
     if (formData.address !== profileData?.data.address) {
         updateData.append('address', formData.address);
     }
+    if (latitude !== null && latitude !== profileData?.data.latitude) {
+        updateData.append('latitude', latitude.toString());
+    }
+    if (longitude !== null && longitude !== profileData?.data.longitude) {
+        updateData.append('longitude', longitude.toString());
+    }
     if (formData.bank_name !== profileData?.data.bank_name) {
         updateData.append('bank_name', formData.bank_name);
     }
@@ -137,6 +234,7 @@ export default function VendorProfilePage() {
   const handleCancel = () => {
     setIsEditing(false);
     setProfilePictureFile(null);
+    setSuggestions([]);
     if (profileData?.data) {
         const { user, ...vendorInfo } = profileData.data;
         setFormData({
@@ -149,6 +247,8 @@ export default function VendorProfilePage() {
             bank_name: vendorInfo.bank_name || '',
             account_number: vendorInfo.account_number || '',
         });
+        setLatitude(vendorInfo.latitude || null);
+        setLongitude(vendorInfo.longitude || null);
     }
   }
 
@@ -292,15 +392,53 @@ export default function VendorProfilePage() {
             </div>
 
             {/* Address */}
-            <div>
+            <div ref={wrapperRef} className="relative">
               <label className="text-xs text-gray-600 mb-2 block">Address</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
-                disabled={!isEditing}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={handleAddressChange}
+                  onFocus={() => {
+                      if (suggestions.length > 0 && isEditing) setShowSuggestions(true);
+                  }}
+                  className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
+                  disabled={!isEditing}
+                  placeholder={isEditing ? "Start typing to search address..." : ""}
+                  autoComplete="off"
+                />
+                {isSearching && isEditing && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin h-4 w-4 border-2 border-system-blue-light border-t-transparent rounded-full"></div>
+                    </div>
+                )}
+              </div>
+              
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && isEditing && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {suggestions.map((result, index) => (
+                        <button
+                            type="button"
+                            key={index}
+                            onClick={() => selectAddress(result)}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+                        >
+                            {result.display_name}
+                        </button>
+                    ))}
+                </div>
+              )}
+              
+              {/* Coordinates Feedback */}
+              {latitude && longitude && isEditing && (
+                <p className="mt-1 text-xs text-green-600 flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Location coordinates set
+                </p>
+              )}
             </div>
 
             {/* Bank Name */}
