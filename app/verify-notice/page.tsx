@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 
 export default function VerifyNoticePage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
   const [sendVerification, { isLoading, isSuccess, isError, error }] = useSendVerificationEmailMutation();
 
   const handleSendVerification = () => {
-    sendVerification();
+    if (!email) return;
+    sendVerification({ email });
   };
 
   return (
@@ -24,10 +26,20 @@ export default function VerifyNoticePage() {
               </svg>
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">Email Verification Required</h1>
-            <p className="text-sm text-gray-600 mb-8 max-w-sm">
-              Your account is not verified. Please click the button below to send a verification link to your email.
+            <p className="text-sm text-gray-600 mb-6 max-w-sm">
+              Enter your email address to receive a new verification link.
             </p>
             
+            <div className="w-full max-w-sm mb-4">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light text-sm"
+              />
+            </div>
+
             {isError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg w-full max-w-sm">
                 <p className="text-sm text-red-600">
@@ -38,8 +50,8 @@ export default function VerifyNoticePage() {
 
             <button
               onClick={handleSendVerification}
-              disabled={isLoading}
-              className="px-8 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+              disabled={isLoading || !email}
+              className="px-8 py-3 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Sending...' : 'Send Verification Email'}
             </button>
