@@ -183,12 +183,12 @@ export default function ProductDetailPage() {
         <div className="px-4 pt-4">
           
           {/* Main Image */}
-          <div className="relative w-full aspect-video bg-gray-100 rounded-2xl mb-4 overflow-hidden">
+          <div className="relative w-full aspect-square bg-gray-100 rounded-2xl mb-4 overflow-hidden">
             <Image
               src={images[selectedImage]}
               alt={product.name}
               fill 
-              className="object-cover" 
+              className="object-contain" 
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
               onError={(e) => {

@@ -532,7 +532,7 @@ export default function AddNewProductPage() {
               <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center mb-4 relative overflow-hidden">
                 {previewUrls.length > 0 ? (
                     <>
-                        <Image src={previewUrls[formData.mainImageIndex]} alt={formData.name} width={200} height={200} className="w-full h-full object-cover" unoptimized />
+                        <Image src={previewUrls[formData.mainImageIndex]} alt={formData.name} width={200} height={200} className="w-full h-full object-contain" unoptimized />
                         {previewUrls.length > 1 && (
                             <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
                                 +{previewUrls.length - 1} more

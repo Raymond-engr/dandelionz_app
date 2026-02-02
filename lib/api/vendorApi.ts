@@ -18,6 +18,8 @@ interface VendorProfile {
   store_description: string;
   business_registration_number: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
   bank_name: string;
   account_number: string;
   recipient_code: string;
@@ -412,9 +414,12 @@ export const vendorApi = baseApi.injectEndpoints({
     // Notifications
     getVendorNotifications: builder.query<
       { success: boolean; data: Notification[] },
-      void
+      { is_read?: boolean } | void
     >({
-      query: () => "/user/vendor/notifications/",
+      query: (params) => ({
+        url: "/api/notifications/",
+        params: params || undefined,
+      }),
       providesTags: ["Notification"],
     }),
 
@@ -423,8 +428,19 @@ export const vendorApi = baseApi.injectEndpoints({
       string
     >({
       query: (id) => ({
-        url: `/user/vendor/notifications/${id}/read/`,
-        method: "PATCH",
+        url: `/api/notifications/${id}/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    markAllNotificationsAsRead: builder.mutation<
+      { success: boolean; message: string },
+      void
+    >({
+      query: () => ({
+        url: "/api/notifications/mark-all-read/",
+        method: "POST",
       }),
       invalidatesTags: ["Notification"],
     }),
@@ -472,5 +488,6 @@ export const {
   useRequestPINResetMutation,
   useGetVendorNotificationsQuery,
   useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
   useDeleteAccountMutation,
 } = vendorApi;
