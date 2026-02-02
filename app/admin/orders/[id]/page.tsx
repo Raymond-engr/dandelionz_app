@@ -74,7 +74,6 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
   }
 
   const deliveryFee = 0;
-  const totalAmount = parseFloat(order.total_amount) + deliveryFee;
 
   return (
     <div className="min-h-screen bg-white">
@@ -108,7 +107,7 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-3 mb-6">
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Store Name</label>
-                <p className="text-sm font-medium text-gray-900">{order.vendor.store_name}</p>
+                <p className="text-sm font-medium text-gray-900">{order.vendor?.store_name || 'N/A'}</p>
               </div>
             </div>
 
@@ -134,7 +133,7 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                 </div>
                 <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-300">
                   <span className="text-base font-semibold text-gray-900">Total Amount:</span>
-                  <span className="text-base font-bold text-gray-900">₦{totalAmount.toLocaleString()}</span>
+                  <span className="text-base font-bold text-gray-900">₦{(parseFloat(order.total_price || order.total_amount || '0') + deliveryFee).toLocaleString()}</span>
                 </div>
               </div>
             </div>

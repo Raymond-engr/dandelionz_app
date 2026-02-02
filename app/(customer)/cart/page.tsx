@@ -108,9 +108,27 @@ export default function CartPage() {
                               {product?.name || 'Unknown Product'}
                             </h3>
                           </Link>
-                          <p className="text-base font-bold text-system-blue-light">
-                            ₦{parseFloat(product?.price || '0').toLocaleString()}
-                          </p>
+                          <div className="flex flex-col">
+                            <p className="text-base font-bold text-system-blue-light">
+                                {product?.discount && product.discount > 0 ? (
+                                    <>
+                                    ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </>
+                                ) : (
+                                    `₦${parseFloat(product?.price || '0').toLocaleString()}`
+                                )}
+                            </p>
+                            {product?.discount && product.discount > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 line-through font-medium">
+                                        ₦{parseFloat(product.price).toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                                        -{product.discount}%
+                                    </span>
+                                </div>
+                            )}
+                          </div>
                         </div>
                         <button
                           onClick={() => handleRemoveItem(slug)}

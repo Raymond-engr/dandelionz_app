@@ -120,9 +120,27 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
           {product.name}
         </h3>
         <div className="flex items-start justify-between mb-3 gap-2">
-          <p className="text-base font-bold text-system-blue-light break-all line-clamp-2 flex-1">
-            ₦{parseFloat(product.price || '0').toLocaleString()}
-          </p>
+          <div className="flex flex-col">
+            <p className="text-base font-bold text-system-blue-light break-all line-clamp-2">
+              {product.discount && product.discount > 0 ? (
+                <>
+                   ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </>
+              ) : (
+                 `₦${parseFloat(product.price || '0').toLocaleString()}`
+              )}
+            </p>
+            {product.discount && product.discount > 0 && (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 line-through">
+                        ₦{parseFloat(product.price).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                        -{product.discount}%
+                    </span>
+                </div>
+            )}
+          </div>
           <div className="flex items-center gap-1 shrink-0 bg-gray-50 px-1.5 py-0.5 rounded-md mt-0.5">
             <svg className="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
               <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
