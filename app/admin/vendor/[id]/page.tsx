@@ -196,13 +196,7 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                 disabled={isSuspending || isApproving || isVerifying || action !== 'Suspend Vendor'}
               />
 
-              <button 
-                className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                disabled={isSuspending || isApproving || isVerifying}
-              >
-                <Send className="w-4 h-4" />
-                Send
-              </button>
+
 
               <button 
                 onClick={handleConfirmAction}

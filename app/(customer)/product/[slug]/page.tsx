@@ -183,14 +183,15 @@ export default function ProductDetailPage() {
         <div className="px-4 pt-4">
           
           {/* Main Image */}
-          <div className="relative w-full aspect-square bg-gray-100 rounded-2xl mb-4 overflow-hidden">
+          <div className="relative w-1/2 aspect-square bg-gray-100 rounded-2xl mb-4 overflow-hidden mx-auto">
             <Image
               src={images[selectedImage]}
               alt={product.name}
               fill 
               className="object-contain" 
-              sizes="(max-width: 768px) 100vw, 50vw"
+              sizes="(max-width: 768px) 50vw, 25vw"
               priority
+              unoptimized={images[selectedImage]?.startsWith('http')}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 if (target) {
@@ -216,6 +217,7 @@ export default function ProductDetailPage() {
                     className="w-full h-full object-cover"
                     width={100}
                     height={100}
+                    unoptimized={img?.startsWith('http')}
                 />
               </button>
             ))}
@@ -266,15 +268,15 @@ export default function ProductDetailPage() {
               <p className="text-xs text-gray-500 mb-1">Amount</p>
                 <div className="flex flex-col">
                   <p className="text-2xl font-bold text-system-blue-light">
-                    {product.discount && product.discount > 0 ? (
+                    {(product.discount ?? 0) > 0 ? (
                         <>
-                        ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        ₦{(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </>
                     ) : (
                         `₦${parseFloat(product.price || '0').toLocaleString()}`
                     )}
                   </p>
-                  {product.discount && product.discount > 0 && (
+                  {(product.discount ?? 0) > 0 && (
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-sm text-gray-500 line-through">
                             ₦{parseFloat(product.price).toLocaleString()}

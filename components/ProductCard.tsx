@@ -93,7 +93,7 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
             alt={product.name}
             className="w-full h-full object-cover"
             fill
-            unoptimized={product.image.startsWith('blob:')}
+            unoptimized={product.image.startsWith('http') || product.image.startsWith('blob:')}
           />
 
         ) : (
@@ -122,21 +122,21 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
         <div className="flex items-start justify-between mb-3 gap-2">
           <div className="flex flex-col">
             <p className="text-base font-bold text-system-blue-light break-all line-clamp-2">
-              {product.discount && product.discount > 0 ? (
+              {(product.discount ?? 0) > 0 ? (
                 <>
-                   ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                   ₦{(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </>
               ) : (
                  `₦${parseFloat(product.price || '0').toLocaleString()}`
               )}
             </p>
-            {product.discount && product.discount > 0 && (
+            {(product.discount ?? 0) > 0 && (
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500 line-through">
                         ₦{parseFloat(product.price).toLocaleString()}
                     </span>
                     <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                        -{product.discount}%
+                        -{(product.discount)}%
                     </span>
                 </div>
             )}

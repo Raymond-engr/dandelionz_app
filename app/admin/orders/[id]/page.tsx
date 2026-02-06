@@ -161,7 +161,11 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               <select
                 value={action}
                 onChange={(e) => setAction(e.target.value as 'cancel' | 'process' | 'complete')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                  action === 'cancel'
+                    ? 'border-system-red focus:ring-system-red text-system-red'
+                    : 'border-gray-300 focus:ring-system-blue-light'
+                }`}
               >
                 <option value="cancel">Cancel Order</option>
                 <option value="process">Process Order</option>

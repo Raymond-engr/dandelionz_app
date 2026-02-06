@@ -125,13 +125,13 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
 
               <h2 className="text-sm font-semibold text-gray-900 mb-3">Product Information</h2>
 
-              <div className="bg-gray-100 h-40 rounded-lg flex items-center justify-center mb-4 overflow-hidden">
+              <div className="bg-gray-100 h-64 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative">
                 {product.image ? (
                   <Image
                     src={product.image}
                     alt={product.name}
-                    layout="fill"
-                    objectFit="contain"
+                    fill
+                    className="object-contain"
                   />
                 ) : (
                   <div className="text-center">
@@ -150,15 +150,15 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="text-xl font-bold text-gray-900">
-                    {product.discount && product.discount > 0 ? (
+                    {(product.discount ?? 0) > 0 ? (
                         <>
-                        ₦{(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        ₦{(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </>
                     ) : (
                         `₦${parseFloat(product.price || '0').toLocaleString()}`
                     )}
                   </p>
-                  {product.discount && product.discount > 0 && (
+                  {(product.discount ?? 0) > 0 && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500 line-through">
                             ₦{parseFloat(product.price).toLocaleString()}
@@ -174,7 +174,7 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
                     <label className="text-sm text-gray-900 block mb-1">Category:</label>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-900">{product.category}</p>
+                    <p className="text-sm text-gray-900">{product.category_name || product.category}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

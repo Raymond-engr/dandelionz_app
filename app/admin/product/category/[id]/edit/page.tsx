@@ -5,6 +5,7 @@ import { ChevronLeft, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import {
   useGetCategoryQuery,
   useCreateCategoryMutation,
@@ -38,8 +39,8 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
 
   useEffect(() => {
     if (categoryData && !isNew) {
-      setName(categoryData.data.name);
-      setDescription(categoryData.data.description);
+      setName(categoryData.name);
+      setDescription(categoryData.description);
     }
   }, [categoryData, isNew]);
 
@@ -63,22 +64,35 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
     e.preventDefault();
     setError(null);
 
+    // Client-side validation for image on new category creation
+    if (isNew && !categoryImageFile) {
+      setError('Category image is required to create a new category.');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('name', name);
     formData.append('description', description);
     if (categoryImageFile) {
       formData.append('image', categoryImageFile);
+    } else if (!isNew && categoryData?.image) {
+      // If editing and no new image is selected, but an old one exists,
+      // we might need to handle retaining the old image explicitly or implicitly.
+      // For now, assume backend handles existing image if no new one is provided.
     }
 
     try {
       if (isNew) {
         await createCategory(formData).unwrap();
+        toast.success('Category created successfully!');
       } else {
         await updateCategory({ slug: categorySlug, data: formData }).unwrap();
+        toast.success('Category updated successfully!');
       }
-      router.push('/admin/product/category');
+      router.push('/admin/product'); // Redirect to products page after success
     } catch (err: any) {
       console.error('Failed to save category:', err);
+      // More specific error handling based on API response structure if available
       setError(err?.data?.message || 'Failed to save category. Please try again.');
     }
   };
@@ -91,7 +105,7 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
   const showLoading = isLoadingCategory || isSubmitting;
   const showErrorMessage = error || isErrorCategory;
 
-  const currentImagePreview = previewUrl || categoryData?.data.image;
+  const currentImagePreview = previewUrl || categoryData?.image;
 
   if (isLoadingCategory && !isNew) {
     return (

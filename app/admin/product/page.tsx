@@ -19,7 +19,7 @@ export default function ProductManagement() {
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
-  const categories = categoriesData?.data || [];
+  const categories = categoriesData || [];
 
   // Fetch products
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useGetAllProductsQuery({});
@@ -164,7 +164,7 @@ export default function ProductManagement() {
                             }`}>
                                 {product.status}
                             </span>
-                            {product.discount && product.discount > 0 && (
+                            {(product.discount ?? 0) > 0 && (
                                 <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded font-bold">
                                     -{product.discount}%
                                 </span>
@@ -173,13 +173,13 @@ export default function ProductManagement() {
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="text-base font-bold text-gray-900 text-left">
-                            {product.discount && product.discount > 0 ? (
-                                `₦${(parseFloat(product.price) * (1 - product.discount / 100)).toLocaleString()}`
+                            {(product.discount ?? 0) > 0 ? (
+                                `₦${(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString()}`
                             ) : (
                                 `₦${parseFloat(product.price).toLocaleString()}`
                             )}
                         </p>
-                        {product.discount && product.discount > 0 && (
+                        {(product.discount ?? 0) > 0 && (
                             <p className="text-xs text-gray-400 line-through">₦{parseFloat(product.price).toLocaleString()}</p>
                         )}
                       </div>
