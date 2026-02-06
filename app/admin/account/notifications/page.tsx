@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
   useGetAllNotificationsQuery, 
   useMarkNotificationAsReadMutation, 
-  useMarkAllNotificationsAsReadMutation 
+  useMarkAllNotificationsAsReadMutation,
+  useDeleteInboxNotificationMutation
 } from '@/lib/api/adminApi';
 import { useAppSelector } from '@/lib/hooks';
 import { format } from 'date-fns';
@@ -20,15 +21,16 @@ export default function NotificationManagement() {
 
   // We fetch all for general tab, filter locally or via API if needed.
   // For now, General = Inbox.
-  const { data, isLoading, isError, refetch } = useGetAllNotificationsQuery(
+  const { data: notificationsResponse, isLoading, isError, refetch } = useGetAllNotificationsQuery(
     activeTab === 'general' ? undefined : undefined, 
     { skip: activeTab === 'created' } // Skip inbox fetch if viewing 'created' (system) notifications
   );
 
-  const notifications = data?.data || [];
+  const notifications = (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+  const [deleteNotification] = useDeleteInboxNotificationMutation();
 
   // WebSocket Connection (Same logic as Vendor)
   const ws = useRef<WebSocket | null>(null);
@@ -44,12 +46,13 @@ export default function NotificationManagement() {
     ws.current.onopen = () => console.log('Admin Connected to notification service');
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'notification') refetch();
+      if (data.type === 'notification' || data.type === 'unread_count') refetch();
     };
     return () => ws.current?.close();
   }, [token, refetch]);
 
-  const handleMarkAsRead = async (id: string, isRead: boolean) => {
+  const handleMarkAsRead = async (e: React.MouseEvent, id: string, isRead: boolean) => {
+    e.stopPropagation();
     if (isRead) return;
     try {
       await markAsRead(id).unwrap();
@@ -64,6 +67,18 @@ export default function NotificationManagement() {
       toast.success('Marked all as read');
     } catch (err) {
       toast.error('Failed to mark all');
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Delete this notification?')) return;
+    try {
+        await deleteNotification(id).unwrap();
+        toast.success('Deleted');
+        refetch();
+    } catch (err) {
+        toast.error('Failed to delete');
     }
   };
 
@@ -134,28 +149,60 @@ export default function NotificationManagement() {
                 ) : notifications.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">No notifications.</div>
                 ) : (
-                  notifications.map((notif) => (
+                  notifications.map((notif: any) => (
                     <div 
                         key={notif.id} 
-                        onClick={() => handleMarkAsRead(notif.id, notif.is_read)}
-                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        onClick={(e) => handleMarkAsRead(e, notif.id, notif.is_read)}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors relative group ${
                             notif.is_read ? 'bg-white border-gray-200' : 'bg-blue-50 border-blue-100'
                         }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className={`text-base flex-1 ${notif.is_read ? 'font-semibold text-gray-900' : 'font-bold text-black'}`}>
-                          {notif.title}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 whitespace-nowrap">
-                            {format(new Date(notif.created_at), 'MMM do, yyyy')}
-                          </span>
-                          {!notif.is_read && <span className="w-2 h-2 rounded-full bg-system-blue-light"></span>}
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ 
+                            backgroundColor: notif.notification_type?.color ? `${notif.notification_type.color}20` : '#F3F4F6',
+                            color: notif.notification_type?.color || '#374151'
+                          }}
+                        >
+                          {notif.notification_type?.icon || '📢'}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-1">
+                                <h3 className={`text-sm flex-1 pr-2 ${notif.is_read ? 'font-semibold text-gray-900' : 'font-bold text-black'}`}>
+                                {notif.title}
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-600 whitespace-nowrap">
+                                        {format(new Date(notif.created_at), 'MMM do, yyyy')}
+                                    </span>
+                                </div>
+                            </div>
+                            <p className={`text-sm text-gray-700 leading-relaxed ${!notif.is_read ? 'font-medium' : ''}`}>
+                                {notif.message}
+                            </p>
+                            {notif.action_url && (
+                                <a 
+                                    href={notif.action_url}
+                                    onClick={(e) => e.stopPropagation()} 
+                                    className="text-xs text-system-blue-light font-medium mt-2 inline-block hover:underline"
+                                >
+                                    {notif.action_text || 'View Details'} &rarr;
+                                </a>
+                            )}
                         </div>
                       </div>
-                      <p className={`text-sm text-gray-700 leading-relaxed ${!notif.is_read ? 'font-medium' : ''}`}>
-                        {notif.message}
-                      </p>
+
+                      {/* Delete Button */}
+                      <button 
+                        onClick={(e) => handleDelete(e, notif.id)}
+                        className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))
                 )}

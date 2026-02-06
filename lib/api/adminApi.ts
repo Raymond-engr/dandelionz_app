@@ -208,15 +208,34 @@ export interface Dispute {
   created_at: string;
 }
 
+interface NotificationType {
+  name: string;
+  display_name: string;
+  icon: string;
+  color: string;
+}
+
 interface Notification {
   id: string;
   title: string;
   message: string;
-  recipient_type: "USERS" | "VENDORS" | "ALL" | "ADMIN";
-  status: string;
-  is_read: boolean; // Added for inbox
+  notification_type: NotificationType; // Full object now
+  recipient_type?: "USERS" | "VENDORS" | "ALL" | "ADMIN"; // For sent notifications
+  status?: string; // For sent notifications
+  priority: string;
+  action_url: string | null;
+  action_text: string | null;
+  is_read: boolean;
+  is_active: boolean;
   created_at: string;
+  read_at: string | null;
   scheduled_at: string | null;
+}
+
+interface NotificationStats {
+  total_notifications: number;
+  unread_count: number;
+  last_notification_time: string | null;
 }
 
 export interface ShippingAddress {
@@ -738,13 +757,13 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Settlement"],
     }),
 
-    // Notification Management
+    // Notification Management (Inbox)
     getAllNotifications: builder.query<
       { success: boolean; data: Notification[] },
-      { is_read?: boolean } | void
+      { page?: number; page_size?: number; is_read?: boolean } | void
     >({
       query: (params) => ({
-        url: "/api/notifications/",
+        url: "/user/notifications/", // Unified Endpoint
         params: params || undefined,
       }),
       providesTags: ["Notification"],
@@ -754,9 +773,10 @@ export const adminApi = baseApi.injectEndpoints({
       { success: boolean; message: string },
       string
     >({
-      query: (id) => ({
-        url: `/api/notifications/${id}/`,
+      query: (notification_id) => ({
+        url: "/user/notifications/mark_as_read/",
         method: "POST",
+        body: { notification_id },
       }),
       invalidatesTags: ["Notification"],
     }),
@@ -766,12 +786,13 @@ export const adminApi = baseApi.injectEndpoints({
       void
     >({
       query: () => ({
-        url: "/api/notifications/mark-all-read/",
+        url: "/user/notifications/mark_all_as_read/",
         method: "POST",
       }),
       invalidatesTags: ["Notification"],
     }),
 
+    // Notification Management (System - Admin Only)
     createNotification: builder.mutation<
       { success: boolean; data: Notification },
       Partial<Notification>
@@ -788,7 +809,7 @@ export const adminApi = baseApi.injectEndpoints({
       { success: boolean; data: Notification },
       string
     >({
-      query: (id) => `/user/admin/notifications/${id}/`,
+      query: (id) => `/user/admin/notifications/${id}/`, // Keeping for admin sent notifications
       providesTags: ["Notification"],
     }),
 
@@ -801,6 +822,26 @@ export const adminApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: ["Notification"],
+    }),
+
+    // New Inbox features
+    deleteInboxNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/user/notifications/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    getNotificationStats: builder.query<
+      { success: boolean; data: NotificationStats },
+      void
+    >({
+      query: () => "/user/notifications/stats/",
+      providesTags: ["Notification"],
     }),
 
     // Withdrawal Management
@@ -877,6 +918,8 @@ export const {
   useCreateNotificationMutation,
   useGetNotificationDetailsQuery,
   useDeleteNotificationMutation,
+  useDeleteInboxNotificationMutation,
+  useGetNotificationStatsQuery,
   useGetAllWithdrawalsQuery,
   useProcessWithdrawalMutation,
   useGetWalletStatsQuery,

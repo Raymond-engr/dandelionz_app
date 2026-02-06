@@ -103,12 +103,30 @@ interface PaymentSettings {
   has_pin: boolean;
 }
 
+interface NotificationType {
+  name: string;
+  display_name: string;
+  icon: string;
+  color: string;
+}
+
 interface Notification {
   id: string;
   title: string;
   message: string;
+  notification_type: NotificationType;
+  priority: string;
+  action_url: string | null;
+  action_text: string | null;
   is_read: boolean;
   created_at: string;
+  read_at: string | null;
+}
+
+interface NotificationStats {
+  total_notifications: number;
+  unread_count: number;
+  last_notification_time: string | null;
 }
 
 interface OrderSummary {
@@ -414,10 +432,10 @@ export const vendorApi = baseApi.injectEndpoints({
     // Notifications
     getVendorNotifications: builder.query<
       { success: boolean; data: Notification[] },
-      { is_read?: boolean } | void
+      { page?: number; page_size?: number; is_read?: boolean } | void
     >({
       query: (params) => ({
-        url: "/api/notifications/",
+        url: "/user/notifications/",
         params: params || undefined,
       }),
       providesTags: ["Notification"],
@@ -427,9 +445,10 @@ export const vendorApi = baseApi.injectEndpoints({
       { success: boolean; message: string },
       string
     >({
-      query: (id) => ({
-        url: `/api/notifications/${id}/`,
+      query: (notification_id) => ({
+        url: "/user/notifications/mark_as_read/",
         method: "POST",
+        body: { notification_id },
       }),
       invalidatesTags: ["Notification"],
     }),
@@ -439,8 +458,50 @@ export const vendorApi = baseApi.injectEndpoints({
       void
     >({
       query: () => ({
-        url: "/api/notifications/mark-all-read/",
+        url: "/user/notifications/mark_all_as_read/",
         method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    deleteNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/user/notifications/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    archiveNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/user/notifications/${id}/archive/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    getNotificationStats: builder.query<
+      { success: boolean; data: NotificationStats },
+      void
+    >({
+      query: () => "/user/notifications/stats/",
+      providesTags: ["Notification"],
+    }),
+
+    bulkDeleteNotifications: builder.mutation<
+      { success: boolean; message: string },
+      string[]
+    >({
+      query: (notification_ids) => ({
+        url: "/user/notifications/bulk_delete/",
+        method: "POST",
+        body: { notification_ids },
       }),
       invalidatesTags: ["Notification"],
     }),
@@ -489,5 +550,9 @@ export const {
   useGetVendorNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
+  useDeleteNotificationMutation,
+  useArchiveNotificationMutation,
+  useGetNotificationStatsQuery,
+  useBulkDeleteNotificationsMutation,
   useDeleteAccountMutation,
 } = vendorApi;

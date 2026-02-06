@@ -23,6 +23,32 @@ interface CustomerProfile {
   loyalty_points: number;
 }
 
+interface NotificationType {
+  name: string;
+  display_name: string;
+  icon: string;
+  color: string;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: NotificationType;
+  priority: string;
+  action_url: string | null;
+  action_text: string | null;
+  is_read: boolean;
+  created_at: string;
+  read_at: string | null;
+}
+
+interface NotificationStats {
+  total_notifications: number;
+  unread_count: number;
+  last_notification_time: string | null;
+}
+
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -74,6 +100,71 @@ export const customerApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Customer", "Auth"],
     }),
+
+    // Notifications
+    getCustomerNotifications: builder.query<
+      { success: boolean; data: Notification[] },
+      { page?: number; page_size?: number; is_read?: boolean } | void
+    >({
+      query: (params) => ({
+        url: "/user/notifications/",
+        params: params || undefined,
+      }),
+      providesTags: ["Notification"],
+    }),
+
+    markNotificationAsRead: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (notification_id) => ({
+        url: "/user/notifications/mark_as_read/",
+        method: "POST",
+        body: { notification_id },
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    markAllNotificationsAsRead: builder.mutation<
+      { success: boolean; message: string },
+      void
+    >({
+      query: () => ({
+        url: "/user/notifications/mark_all_as_read/",
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    deleteNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/user/notifications/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    archiveNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/user/notifications/${id}/archive/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    getNotificationStats: builder.query<
+      { success: boolean; data: NotificationStats },
+      void
+    >({
+      query: () => "/user/notifications/stats/",
+      providesTags: ["Notification"],
+    }),
   }),
 });
 
@@ -83,5 +174,12 @@ export const {
   usePartialUpdateCustomerProfileMutation,
   useChangeCustomerPasswordMutation,
   useDeleteCustomerAccountMutation,
+  useGetCustomerNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
+  useDeleteNotificationMutation,
+  useArchiveNotificationMutation,
+  useGetNotificationStatsQuery,
 } = customerApi;
+
 

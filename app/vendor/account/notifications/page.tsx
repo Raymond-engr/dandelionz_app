@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import { 
   useGetVendorNotificationsQuery, 
   useMarkNotificationAsReadMutation, 
-  useMarkAllNotificationsAsReadMutation 
+  useMarkAllNotificationsAsReadMutation,
+  useDeleteNotificationMutation
 } from '@/lib/api/vendorApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 
 export default function VendorNotificationsPage() {
   const router = useRouter();
@@ -19,11 +21,14 @@ export default function VendorNotificationsPage() {
   
   // Pass filter param if 'unread', else void/undefined for all
   const queryParams = filter === 'unread' ? { is_read: false } : undefined;
-  const { data: notificationsData, isLoading, error, refetch } = useGetVendorNotificationsQuery(queryParams);
-  const notifications = notificationsData?.data || [];
+  const { data: notificationsResponse, isLoading, error, refetch } = useGetVendorNotificationsQuery(queryParams);
+  
+  // Handle pagination structure (results array) or flat array
+  const notifications = (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllNotificationsAsReadMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
 
   // WebSocket Connection
   const ws = useRef<WebSocket | null>(null);
@@ -32,7 +37,6 @@ export default function VendorNotificationsPage() {
     if (!token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Use env var or fallback to current host if proxying, or fixed API host
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL 
         ? `${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications/?token=${token}`
         : `${protocol}//api.dandelionz.com.ng/ws/notifications/?token=${token}`;
@@ -45,7 +49,7 @@ export default function VendorNotificationsPage() {
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'notification' || data.type === 'unread_count') {
+      if (data.type === 'notification' || data.type === 'unread_count' || data.type === 'unread_notifications') {
         refetch(); // Refresh list on new notification
       }
     };
@@ -57,11 +61,11 @@ export default function VendorNotificationsPage() {
     };
   }, [token, refetch]);
 
-  const handleMarkAsRead = async (id: string, isRead: boolean) => {
+  const handleMarkAsRead = async (e: React.MouseEvent, id: string, isRead: boolean) => {
+    e.stopPropagation(); // Prevent triggering parent clicks if any
     if (isRead) return;
     try {
       await markAsRead(id).unwrap();
-      // Optimistic update or auto-refetch happens via tags
     } catch (err) {
       console.error('Failed to mark as read', err);
     }
@@ -73,6 +77,18 @@ export default function VendorNotificationsPage() {
       toast.success('All notifications marked as read');
     } catch (err) {
       toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this notification?')) return;
+    try {
+        await deleteNotification(id).unwrap();
+        toast.success('Notification deleted');
+        refetch();
+    } catch (err) {
+        toast.error('Failed to delete notification');
     }
   };
 
@@ -137,32 +153,61 @@ export default function VendorNotificationsPage() {
                 {filter === 'unread' ? 'No unread notifications.' : 'No notifications yet.'}
             </div>
           ) : (
-            notifications.map((notification) => (
+            notifications.map((notification: any) => (
               <div 
                 key={notification.id} 
-                onClick={() => handleMarkAsRead(notification.id, notification.is_read)}
-                className={`rounded-lg p-4 border mb-3 cursor-pointer transition-colors ${
+                onClick={(e) => handleMarkAsRead(e, notification.id, notification.is_read)}
+                className={`rounded-lg p-4 border mb-3 cursor-pointer transition-colors relative group ${
                     notification.is_read 
                         ? 'bg-white border-gray-200' 
                         : 'bg-blue-50 border-blue-100'
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className={`text-base text-gray-900 ${notification.is_read ? 'font-semibold' : 'font-bold'}`}>
-                    {notification.title}
-                  </h3>
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-gray-600 flex-shrink-0 ml-2">
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ 
+                        backgroundColor: notification.notification_type?.color ? `${notification.notification_type.color}20` : '#F3F4F6',
+                        color: notification.notification_type?.color || '#374151'
+                    }}
+                  >
+                    {notification.notification_type?.icon || '📢'}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className={`text-sm truncate pr-2 ${notification.is_read ? 'font-semibold text-gray-900' : 'font-bold text-black'}`}>
+                        {notification.title}
+                      </h3>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
                         {new Date(notification.created_at).toLocaleDateString()}
-                    </span>
-                    {!notification.is_read && (
-                        <span className="mt-1 w-2 h-2 rounded-full bg-system-blue-light"></span>
+                      </span>
+                    </div>
+                    <p className={`text-sm text-gray-600 line-clamp-2 ${!notification.is_read ? 'font-medium' : ''}`}>
+                        {notification.message}
+                    </p>
+                    
+                    {notification.action_url && (
+                        <a 
+                            href={notification.action_url}
+                            onClick={(e) => e.stopPropagation()} 
+                            className="text-xs text-system-blue-light font-medium mt-2 inline-block hover:underline"
+                        >
+                            {notification.action_text || 'View Details'} &rarr;
+                        </a>
                     )}
                   </div>
                 </div>
-                <p className={`text-sm text-gray-700 leading-relaxed ${!notification.is_read ? 'font-medium' : ''}`}>
-                    {notification.message}
-                </p>
+
+                {/* Delete Button (Visible on hover or always for touch) */}
+                <button 
+                    onClick={(e) => handleDelete(e, notification.id)}
+                    className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete Notification"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))
           )}
