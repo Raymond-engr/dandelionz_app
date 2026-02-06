@@ -116,7 +116,8 @@ interface AdminProduct {
   name: string;
   description: string;
   price: string;
-  category: string; // Name of the category
+  category: number; 
+  category_name: string;
   stock: number;
   image: string | null; // Product image URL
   images?: any[]; // Added images array
@@ -136,7 +137,9 @@ export interface Category {
   slug: string;
   description: string;
   image: string | null;
+  is_active: boolean; // Added based on backend guide
   created_at: string;
+  updated_at: string; // Added based on backend guide
   product_count: number;
   total_sales: string;
 }
@@ -661,20 +664,20 @@ export const adminApi = baseApi.injectEndpoints({
 
     // Category Management
     getAllCategories: builder.query<
-      { success: boolean; data: Category[] },
+      Category[], // Corrected return type
       void
     >({
       query: () => "/store/categories/",
       providesTags: ["Category"],
     }),
 
-    getCategory: builder.query<{ success: boolean; data: Category }, string>({
+    getCategory: builder.query<Category, string>({
       query: (slug) => `/store/categories/${slug}/`,
       providesTags: ["Category"],
     }),
 
     createCategory: builder.mutation<
-      { success: boolean; data: Category },
+      Category, // Corrected return type
       FormData
     >({
       query: (body) => ({
@@ -686,7 +689,7 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     updateCategory: builder.mutation<
-      { success: boolean; data: Category },
+      Category, // Corrected return type
       { slug: string; data: FormData }
     >({
       query: ({ slug, data }) => ({

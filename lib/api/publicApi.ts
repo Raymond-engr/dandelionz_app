@@ -138,7 +138,7 @@ export const publicApi = baseApi.injectEndpoints({
     }),
 
     // Categories
-    getCategories: builder.query<{ success: boolean; data: any[] }, void>({
+    getCategories: builder.query<any[], void>({
       query: () => "/store/categories/",
       providesTags: ["Category"],
     }),

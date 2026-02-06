@@ -1,20 +1,15 @@
 "use client";
 
 import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-
-// Image assets for icons (replace with local imports or actual SVG components)
-const imgEdit1 = "https://www.figma.com/api/mcp/asset/b72fea1b-85b3-4b9b-8389-b475560cd061"; // Edit icon
-const imgTrash1 = "https://www.figma.com/api/mcp/asset/fa7ecb60-b92c-4823-9396-864fba78babf"; // Trash icon
+import { Edit2, Trash2 } from 'lucide-react';
 
 interface AdminCategoryListItemProps {
   id: number;
   name: string;
   productCount: number;
   totalSales: number;
-  onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
+  onEdit: (id: number | string) => void;
+  onDelete: (id: number | string) => void;
 }
 
 export default function AdminCategoryListItem({
@@ -26,29 +21,31 @@ export default function AdminCategoryListItem({
   onDelete,
 }: AdminCategoryListItemProps) {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200">
+    <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors">
       {/* Category Info */}
       <div className="flex flex-col gap-1">
-        <p className="text-base font-normal text-gray-900">{name}</p>
-        <p className="text-sm font-normal text-gray-600">No of Products: {productCount}</p>
-        <p className="text-sm font-semibold text-gray-900">No. of Sales: {totalSales}</p>
+        <p className="text-base font-medium text-gray-900">{name}</p>
+        <div className="flex gap-3">
+          <p className="text-xs text-gray-500">Products: <span className="text-gray-900 font-medium">{productCount}</span></p>
+          <p className="text-xs text-gray-500">Sales: <span className="text-gray-900 font-medium">{totalSales}</span></p>
+        </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-3 items-center">
         <button
           onClick={() => onEdit(id)}
-          className="relative size-5 cursor-pointer"
+          className="p-2 text-gray-400 hover:text-system-blue-light hover:bg-blue-50 rounded-full transition-all"
           aria-label={`Edit category ${name}`}
         >
-          <Image src={imgEdit1} alt="Edit Icon" layout="fill" objectFit="contain" />
+          <Edit2 className="w-5 h-5" />
         </button>
         <button
           onClick={() => onDelete(id)}
-          className="relative size-6 cursor-pointer"
+          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
           aria-label={`Delete category ${name}`}
         >
-          <Image src={imgTrash1} alt="Delete Icon" layout="fill" objectFit="contain" />
+          <Trash2 className="w-5 h-5" />
         </button>
       </div>
     </div>

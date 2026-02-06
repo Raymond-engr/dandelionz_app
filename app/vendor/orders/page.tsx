@@ -4,7 +4,6 @@ import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useGetVendorOrdersQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import Link from 'next/link';
 
 export default function VendorOrdersPage() {
   const { data: orderSummaryData, isLoading: isLoadingSummary, error: summaryError } = useGetVendorOrdersQuery();
@@ -79,7 +78,7 @@ export default function VendorOrdersPage() {
           ) : (
             <div className="space-y-3">
               {orders.map((order: any) => (
-                <Link href={`/vendor/orders/${order.uuid}`} key={order.uuid} className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                <div key={order.uuid} className="block bg-gray-50 rounded-lg p-4 transition-colors">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-system-blue-light rounded-full shrink-0 flex items-center justify-center text-white font-semibold">
                       {order.customer.full_name.charAt(0).toUpperCase()}
@@ -112,7 +111,7 @@ export default function VendorOrdersPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
