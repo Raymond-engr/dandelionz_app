@@ -194,7 +194,7 @@ export const vendorApi = baseApi.injectEndpoints({
       FormData
     >({
       query: (body) => ({
-        url: "/store/products/create/",
+        url: "/user/vendor/products/add/",
         method: "POST",
         body,
       }),

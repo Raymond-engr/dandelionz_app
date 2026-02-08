@@ -16,7 +16,7 @@ export default function VendorHomePage() {
 
   const isLoading = analyticsLoading || profileLoading || ordersLoading;
   const vendorName = profile?.data?.user?.full_name || profile?.data?.store_name || 'Vendor';
-  const { total_revenue: totalRevenue, total_orders: totalOrders } = analytics?.data || {};
+  const { total_balance: totalBalance, total_orders: totalOrders } = analytics?.data || {};
   const recentOrders = ordersData?.data || [];
 
   return (
@@ -51,7 +51,7 @@ export default function VendorHomePage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Total Balance</p>
-              {analyticsLoading ? <div className="h-7 w-20 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalRevenue || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
+              {analyticsLoading ? <div className="h-7 w-20 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalBalance || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
               <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
