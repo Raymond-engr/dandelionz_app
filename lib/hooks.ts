@@ -1,4 +1,6 @@
-import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
+'use client';
+
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "./store";
 import { logout as logoutAction } from "./features/auth/authSlice";
 import { useRouter } from "next/navigation";

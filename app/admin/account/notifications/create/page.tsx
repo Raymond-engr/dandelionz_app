@@ -5,6 +5,7 @@ import { ChevronLeft, Calendar, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotificationMutation } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
+import { addDays, nextMonday, setHours, setMinutes, format, isFuture } from 'date-fns';
 
 export default function CreateNotification() {
   const router = useRouter();
@@ -12,18 +13,46 @@ export default function CreateNotification() {
   const [description, setDescription] = useState('');
   const [recipient, setRecipient] = useState('Users');
   const [showSchedule, setShowSchedule] = useState(false);
-  const [scheduleOption, setScheduleOption] = useState('');
-  const [customDate, setCustomDate] = useState('');
-  const [customTime, setCustomTime] = useState('');
+  
+  // Scheduling State
+  const [scheduledDate, setScheduledDate] = useState(''); // YYYY-MM-DD
+  const [scheduledTime, setScheduledTime] = useState(''); // HH:mm
 
   const [createNotification, { isLoading, isSuccess, isError, error }] =
     useCreateNotificationMutation();
 
   const scheduleOptions = [
-    { id: 'tomorrow-morning', label: 'Tomorrow morning', time: '4th Dec, 8:00 AM', icon: '⚙️' },
-    { id: 'tomorrow-afternoon', label: 'Tomorrow afternoon', time: '4th Dec, 12:00 PM', icon: '⚙️' },
-    { id: 'monday-morning', label: 'Monday Morning', time: '8th Dec, 8:00 AM', icon: '📅' },
-    { id: 'custom', label: 'Pick date & time', time: '', icon: '📅' },
+    { 
+      id: 'tomorrow-morning', 
+      label: 'Tomorrow morning', 
+      timeLabel: '8:00 AM', 
+      icon: '☀️',
+      getAction: () => {
+        const d = addDays(new Date(), 1);
+        return setMinutes(setHours(d, 8), 0);
+      }
+    },
+    { 
+      id: 'tomorrow-afternoon', 
+      label: 'Tomorrow afternoon', 
+      timeLabel: '12:00 PM', 
+      icon: '🌤️',
+      getAction: () => {
+        const d = addDays(new Date(), 1);
+        return setMinutes(setHours(d, 12), 0);
+      }
+    },
+    { 
+      id: 'monday-morning', 
+      label: 'Monday Morning', 
+      timeLabel: '8:00 AM', 
+      icon: '📅',
+      getAction: () => {
+        const d = nextMonday(new Date());
+        return setMinutes(setHours(d, 8), 0);
+      }
+    },
+    { id: 'custom', label: 'Pick date & time', timeLabel: '', icon: '⚙️', getAction: () => null },
   ];
 
   useEffect(() => {
@@ -36,22 +65,98 @@ export default function CreateNotification() {
     }
   }, [isSuccess, isError, error, router]);
 
+  const handlePresetSelect = (option: typeof scheduleOptions[0]) => {
+    if (option.id === 'custom') {
+      // Just show the custom picker
+      setScheduledDate('');
+      setScheduledTime('');
+    } else {
+      const date = option.getAction();
+      if (date) {
+        setScheduledDate(format(date, 'yyyy-MM-dd'));
+        setScheduledTime(format(date, 'HH:mm'));
+        toast.success(`Scheduled for ${format(date, 'MMM do, h:mm a')}`);
+        setShowSchedule(true); // Keep schedule view open to show selected
+      }
+    }
+  };
+
+  const getISOString = () => {
+    if (!scheduledDate || !scheduledTime) return null;
+    const dateTimeString = `${scheduledDate}T${scheduledTime}`;
+    const dateObj = new Date(dateTimeString);
+    
+    if (isNaN(dateObj.getTime())) {
+      toast.error('Invalid date or time.');
+      return null;
+    }
+    
+    if (!isFuture(dateObj)) {
+      toast.error('Scheduled time must be in the future.');
+      return null;
+    }
+
+    return dateObj.toISOString();
+  };
+
   const handleSendNotification = async () => {
-    await createNotification({
+    let scheduledFor = null;
+    if (showSchedule) {
+      scheduledFor = getISOString();
+      if (!scheduledFor && (scheduledDate || scheduledTime)) return; // Validation failed
+    }
+
+    const commonBody = {
       title,
       message: description,
-      recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS" | "ALL",
-      status: 'Sent',
-    });
+      priority: 'normal',
+      action_url: null,
+      action_text: null,
+      is_draft: false,
+      scheduled_for: scheduledFor,
+    };
+
+    if (recipient === 'All') {
+      await createNotification({
+        ...commonBody,
+        recipient_group: 'all',
+      });
+    } else {
+      await createNotification({
+        ...commonBody,
+        recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS",
+      });
+    }
   };
 
   const handleSaveDraft = async () => {
-    await createNotification({
+    let scheduledFor = null;
+    if (showSchedule) {
+      scheduledFor = getISOString();
+       if (!scheduledFor && (scheduledDate || scheduledTime)) return; // Validation failed
+    }
+
+    const commonBody = {
       title,
       message: description,
-      recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS" | "ALL",
-      status: 'Draft',
-    });
+      priority: 'normal',
+      action_url: null,
+      action_text: null,
+      is_draft: true,
+      scheduled_for: scheduledFor,
+    };
+
+    if (recipient === 'All') {
+      await createNotification({
+        ...commonBody,
+        recipient_group: 'all',
+      });
+    } else {
+      await createNotification({
+        ...commonBody,
+        recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS",
+      });
+    }
   };
 
   return (
@@ -117,12 +222,28 @@ export default function CreateNotification() {
                 <button
                   onClick={() => setShowSchedule(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  disabled
                 >
                   <Calendar className="w-4 h-4" />
-                  Schedule Notification
+                  {scheduledDate ? 'Edit Schedule' : 'Schedule Notification'}
                 </button>
               </div>
+
+              {scheduledDate && (
+                 <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-system-blue-light uppercase tracking-wide">Scheduled For</span>
+                      <p className="text-sm text-gray-900 mt-0.5">
+                        {format(new Date(`${scheduledDate}T${scheduledTime}`), 'PPPP p')}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => { setScheduledDate(''); setScheduledTime(''); }}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      ✕
+                    </button>
+                 </div>
+              )}
 
               <div className="space-y-3">
                 <button 
@@ -130,7 +251,7 @@ export default function CreateNotification() {
                   className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Sending...' : 'Send Notification'}
+                  {isLoading ? 'Sending...' : (scheduledDate ? 'Schedule Notification' : 'Send Notification')}
                 </button>
 
                 <button 
@@ -142,78 +263,77 @@ export default function CreateNotification() {
                 </button>
               </div>
             </div>
-          ) : scheduleOption === 'custom' && customDate ? (
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6 text-center">
-                Pick date & time
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={customDate}
-                    onChange={(e) => setCustomDate(e.target.value)}
-                    placeholder="Dec 3rd, Wed"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                  />
-                </div>
-
-                <div>
-                  <input
-                    type="text"
-                    value={customTime}
-                    onChange={(e) => setCustomTime(e.target.value)}
-                    placeholder="3:30 PM"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setScheduleOption('');
-                    setCustomDate('');
-                    setCustomTime('');
-                  }}
-                  className="flex-1 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSchedule(false);
-                    setScheduleOption('');
-                  }}
-                  className="flex-1 py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors"
-                >
-                  Schedule Notification
-                </button>
-              </div>
-            </div>
           ) : (
             <div className="p-4">
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6 text-center">
+                Schedule Notification
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4 mb-8">
                 {scheduleOptions.map((option) => (
                   <button
                     key={option.id}
-                    onClick={() => {
-                      if (option.id === 'custom') {
-                        setScheduleOption('custom');
-                        setCustomDate('Dec 3rd, Wed');
-                      } else {
-                        setScheduleOption(option.id);
-                        setShowSchedule(false);
-                      }
-                    }}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-system-blue-light hover:bg-blue-50 transition-colors text-center"
+                    onClick={() => handlePresetSelect(option)}
+                    className={`p-4 border-2 rounded-lg transition-colors text-center ${
+                       option.id === 'custom' && scheduledDate && scheduledTime === '' ? 'border-system-blue-light bg-blue-50' : 'border-gray-200 hover:border-system-blue-light hover:bg-blue-50'
+                    }`}
                   >
                     <div className="text-3xl mb-2">{option.icon}</div>
                     <p className="text-sm font-semibold text-gray-900 mb-1">{option.label}</p>
-                    {option.time && <p className="text-xs text-gray-600">{option.time}</p>}
+                    {option.timeLabel && <p className="text-xs text-gray-600">{option.timeLabel}</p>}
                   </button>
                 ))}
+              </div>
+
+              {/* Custom Date Picker Area */}
+              <div className="border-t border-gray-100 pt-6">
+                 <p className="text-sm font-medium text-gray-700 mb-4">Or pick a specific time:</p>
+                 <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Date</label>
+                      <input 
+                        type="date" 
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Time</label>
+                      <input 
+                        type="time" 
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      />
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={() => {
+                    setShowSchedule(false);
+                    // Don't clear state, just hide view, allows user to "cancel" editing schedule but keep previous selection if any? 
+                    // Or strictly cancel? Let's treat as "Back"
+                  }}
+                  className="flex-1 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    if (!scheduledDate || !scheduledTime) {
+                      toast.error('Please select a date and time');
+                      return;
+                    }
+                    setShowSchedule(false);
+                  }}
+                  className="flex-1 py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors"
+                >
+                  Confirm Schedule
+                </button>
               </div>
             </div>
           )}

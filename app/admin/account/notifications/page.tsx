@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
   useGetAllNotificationsQuery, 
+  useGetAdminSystemNotificationsQuery,
   useMarkNotificationAsReadMutation, 
   useMarkAllNotificationsAsReadMutation,
-  useDeleteInboxNotificationMutation
+  useDeleteInboxNotificationMutation,
+  usePublishNotificationMutation,
+  useDeleteSystemNotificationMutation
 } from '@/lib/api/adminApi';
 import { useAppSelector } from '@/lib/hooks';
 import { format } from 'date-fns';
@@ -18,21 +21,50 @@ export default function NotificationManagement() {
   const router = useRouter();
   const token = useAppSelector((state) => state.auth.accessToken);
   const [activeTab, setActiveTab] = useState('general');
+  const [systemFilter, setSystemFilter] = useState<'all' | 'sent' | 'draft'>('all');
 
-  // We fetch all for general tab, filter locally or via API if needed.
-  // For now, General = Inbox.
-  const { data: notificationsResponse, isLoading, isError, refetch } = useGetAllNotificationsQuery(
-    activeTab === 'general' ? undefined : undefined, 
-    { skip: activeTab === 'created' } // Skip inbox fetch if viewing 'created' (system) notifications
+  // Inbox Query
+  const { 
+    data: inboxResponse, 
+    isLoading: isInboxLoading, 
+    isError: isInboxError, 
+    refetch: refetchInbox 
+  } = useGetAllNotificationsQuery(
+    undefined, 
+    { skip: activeTab === 'created' }
   );
 
-  const notifications = (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
+  // System (Sent) Notifications Query
+  const systemQueryParams = systemFilter === 'all' 
+    ? undefined 
+    : { is_draft: systemFilter === 'draft' };
+
+  const {
+    data: systemResponse,
+    isLoading: isSystemLoading,
+    isError: isSystemError,
+    refetch: refetchSystem
+  } = useGetAdminSystemNotificationsQuery(
+    systemQueryParams,
+    { skip: activeTab === 'general' }
+  );
+
+  // Debugging logs
+  console.log('Inbox Response:', inboxResponse);
+  console.log('System Response:', systemResponse);
+
+  // Handle various response shapes (direct array, paginated object, or wrapped in data)
+  // The API response shows: { count: 6, results: [...] }
+  const notifications = (inboxResponse as any)?.results || (inboxResponse?.data as any)?.results || inboxResponse?.data || [];
+  const systemNotifications = (systemResponse as any)?.results || (systemResponse?.data as any)?.results || systemResponse?.data || [];
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
-  const [deleteNotification] = useDeleteInboxNotificationMutation();
+  const [deleteInboxNotification] = useDeleteInboxNotificationMutation();
+  const [deleteSystemNotification] = useDeleteSystemNotificationMutation();
+  const [publishNotification] = usePublishNotificationMutation();
 
-  // WebSocket Connection (Same logic as Vendor)
+  // WebSocket Connection
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -46,10 +78,13 @@ export default function NotificationManagement() {
     ws.current.onopen = () => console.log('Admin Connected to notification service');
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'notification' || data.type === 'unread_count') refetch();
+      if (data.type === 'notification' || data.type === 'unread_count') {
+        refetchInbox();
+        // Ideally refetchSystem too if another admin created one, but less critical
+      }
     };
     return () => ws.current?.close();
-  }, [token, refetch]);
+  }, [token, refetchInbox]);
 
   const handleMarkAsRead = async (e: React.MouseEvent, id: string, isRead: boolean) => {
     e.stopPropagation();
@@ -70,15 +105,39 @@ export default function NotificationManagement() {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteInbox = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Delete this notification?')) return;
+    if (!confirm('Delete this notification from your inbox?')) return;
     try {
-        await deleteNotification(id).unwrap();
+        await deleteInboxNotification(id).unwrap();
         toast.success('Deleted');
-        refetch();
+        refetchInbox();
     } catch (err) {
         toast.error('Failed to delete');
+    }
+  };
+
+  const handleDeleteSystem = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Delete this system notification? This cannot be undone.')) return;
+    try {
+        await deleteSystemNotification(id).unwrap();
+        toast.success('System notification deleted');
+        refetchSystem();
+    } catch (err) {
+        toast.error('Failed to delete');
+    }
+  };
+
+  const handlePublish = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Publish this draft notification? It will be sent immediately.')) return;
+    try {
+        await publishNotification(id).unwrap();
+        toast.success('Notification published');
+        refetchSystem();
+    } catch (err) {
+        toast.error('Failed to publish');
     }
   };
 
@@ -130,21 +189,120 @@ export default function NotificationManagement() {
             {/* Created / System Notifications Tab */}
             {activeTab === 'created' && (
               <div className="space-y-3 mb-6">
-                  {/* Placeholder for system notifications list - assume separate API or mock for now */}
-                  <div className="text-center text-gray-500 py-10">
-                      System notifications management would go here.
+                {/* Sub-tabs for System Notifications */}
+                <div className="flex gap-2 mb-4 border-b border-gray-100 pb-2">
+                  <button
+                    onClick={() => setSystemFilter('all')}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                      systemFilter === 'all' 
+                        ? 'bg-gray-200 text-gray-800' 
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setSystemFilter('sent')}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                      systemFilter === 'sent' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    Sent
+                  </button>
+                  <button
+                    onClick={() => setSystemFilter('draft')}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                      systemFilter === 'draft' 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    Drafts
+                  </button>
+                </div>
+
+                {isSystemLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <LoadingSpinner />
                   </div>
+                ) : isSystemError ? (
+                  <div className="text-center text-red-500">Failed to load system notifications.</div>
+                ) : systemNotifications.length === 0 ? (
+                    <div className="text-center text-gray-500 py-10">
+                      {systemFilter === 'draft' ? 'No draft notifications found.' : 'No sent notifications found.'}
+                    </div>
+                ) : (
+                  systemNotifications.map((notif: any) => (
+                    <div 
+                        key={notif.id} 
+                        className="border rounded-lg p-4 bg-white relative group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0 bg-gray-100 text-gray-600"
+                        >
+                          {notif.is_draft ? '📝' : '🚀'}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-1">
+                                <h3 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
+                                  {notif.title}
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    {notif.is_draft && (
+                                      <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">Draft</span>
+                                    )}
+                                    {notif.scheduled_for && (
+                                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-medium">Scheduled</span>
+                                    )}
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                                        {format(new Date(notif.created_at), 'MMM do, yyyy')}
+                                    </span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">{notif.message}</p>
+                            <p className="text-xs text-gray-400">
+                              Recipient: <span className="font-medium text-gray-600">{notif.recipient_group || notif.recipient_type || 'Unknown'}</span>
+                            </p>
+                            
+                            <div className="flex items-center gap-3 mt-3">
+                              {notif.is_draft && (
+                                <button 
+                                  onClick={(e) => handlePublish(e, notif.id)}
+                                  className="text-xs bg-green-50 text-green-600 px-3 py-1.5 rounded-md font-medium hover:bg-green-100 flex items-center gap-1"
+                                >
+                                  <Send className="w-3 h-3" /> Publish
+                                </button>
+                              )}
+                            </div>
+                        </div>
+                      </div>
+
+                      {/* Delete Button */}
+                      <button 
+                        onClick={(e) => handleDeleteSystem(e, notif.id)}
+                        className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete System Notification"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
             {/* General / Inbox Tab */}
             {activeTab === 'general' && (
               <div className="space-y-3 mb-6">
-                {isLoading ? (
+                {isInboxLoading ? (
                   <div className="flex justify-center items-center h-40">
                     <LoadingSpinner />
                   </div>
-                ) : isError ? (
+                ) : isInboxError ? (
                   <div className="text-center text-red-500">Failed to load notifications.</div>
                 ) : notifications.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">No notifications.</div>
@@ -162,11 +320,11 @@ export default function NotificationManagement() {
                         <div 
                           className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
                           style={{ 
-                            backgroundColor: notif.notification_type?.color ? `${notif.notification_type.color}20` : '#F3F4F6',
-                            color: notif.notification_type?.color || '#374151'
+                            backgroundColor: notif.notification_type_color ? `${notif.notification_type_color}20` : '#F3F4F6',
+                            color: notif.notification_type_color || '#374151'
                           }}
                         >
-                          {notif.notification_type?.icon || '📢'}
+                          {notif.notification_type_icon || '📢'}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -197,7 +355,7 @@ export default function NotificationManagement() {
 
                       {/* Delete Button */}
                       <button 
-                        onClick={(e) => handleDelete(e, notif.id)}
+                        onClick={(e) => handleDeleteInbox(e, notif.id)}
                         className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Delete"
                       >

@@ -24,7 +24,7 @@ export default function VendorNotificationsPage() {
   const { data: notificationsResponse, isLoading, error, refetch } = useGetVendorNotificationsQuery(queryParams);
   
   // Handle pagination structure (results array) or flat array
-  const notifications = (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
+  const notifications = (notificationsResponse as any)?.results || (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllNotificationsAsReadMutation();
@@ -168,11 +168,11 @@ export default function VendorNotificationsPage() {
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
                     style={{ 
-                        backgroundColor: notification.notification_type?.color ? `${notification.notification_type.color}20` : '#F3F4F6',
-                        color: notification.notification_type?.color || '#374151'
+                        backgroundColor: notification.notification_type_color ? `${notification.notification_type_color}20` : '#F3F4F6',
+                        color: notification.notification_type_color || '#374151'
                     }}
                   >
-                    {notification.notification_type?.icon || '📢'}
+                    {notification.notification_type_icon || '📢'}
                   </div>
 
                   <div className="flex-1 min-w-0">

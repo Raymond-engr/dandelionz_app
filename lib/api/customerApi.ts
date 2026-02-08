@@ -34,13 +34,21 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  notification_type: NotificationType;
+  notification_type?: NotificationType; // Optional
+  notification_type_display?: string | null;
+  notification_type_icon?: string | null;
+  notification_type_color?: string | null;
   priority: string;
+  category?: string;
   action_url: string | null;
   action_text: string | null;
   is_read: boolean;
+  is_active?: boolean;
+  is_archived?: boolean;
   created_at: string;
+  sent_at?: string | null;
   read_at: string | null;
+  scheduled_for?: string | null;
 }
 
 interface NotificationStats {
