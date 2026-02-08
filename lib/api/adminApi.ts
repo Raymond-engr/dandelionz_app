@@ -222,17 +222,26 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  notification_type: NotificationType; // Full object now
-  recipient_type?: "USERS" | "VENDORS" | "ALL" | "ADMIN"; // For sent notifications
-  status?: string; // For sent notifications
+  notification_type?: NotificationType; // Optional as backend sends flat fields
+  notification_type_display?: string | null;
+  notification_type_icon?: string | null;
+  notification_type_color?: string | null;
+  recipient_type?: "USERS" | "VENDORS" | "ALL" | "ADMIN";
+  recipient_group?: string;
+  status?: string;
   priority: string;
+  category?: string;
   action_url: string | null;
   action_text: string | null;
   is_read: boolean;
   is_active: boolean;
+  is_archived?: boolean;
+  is_draft?: boolean;
   created_at: string;
+  sent_at?: string | null;
   read_at: string | null;
   scheduled_at: string | null;
+  scheduled_for?: string | null;
 }
 
 interface NotificationStats {
@@ -796,6 +805,17 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Notification Management (System - Admin Only)
+    getAdminSystemNotifications: builder.query<
+      { success: boolean; data: { results: Notification[]; count: number } },
+      { page?: number; is_draft?: boolean } | void
+    >({
+      query: (params) => ({
+        url: "/user/admin/notifications/",
+        params: params || undefined,
+      }),
+      providesTags: ["Notification"],
+    }),
+
     createNotification: builder.mutation<
       { success: boolean; data: Notification },
       Partial<Notification>
@@ -808,6 +828,17 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
+    publishNotification: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (notification_id) => ({
+        url: `/user/admin/notifications/publish/${notification_id}/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
     getNotificationDetails: builder.query<
       { success: boolean; data: Notification },
       string
@@ -816,7 +847,7 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Notification"],
     }),
 
-    deleteNotification: builder.mutation<
+    deleteSystemNotification: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -916,11 +947,13 @@ export const {
   useGetDisputeDetailsQuery,
   useResolveDisputeMutation,
   useGetAllNotificationsQuery,
+  useGetAdminSystemNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
   useCreateNotificationMutation,
+  usePublishNotificationMutation,
   useGetNotificationDetailsQuery,
-  useDeleteNotificationMutation,
+  useDeleteSystemNotificationMutation,
   useDeleteInboxNotificationMutation,
   useGetNotificationStatsQuery,
   useGetAllWithdrawalsQuery,
