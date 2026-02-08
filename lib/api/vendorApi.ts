@@ -70,12 +70,10 @@ interface Order {
 }
 
 interface VendorAnalytics {
+  total_balance: number;
   total_orders: number;
-  total_revenue: string;
-  pending_orders: number;
-  completed_orders: number;
-  total_products: number;
-  active_products: number;
+  total_products_sold: number;
+  new_customers: number;
 }
 
 interface WalletBalance {
@@ -196,7 +194,7 @@ export const vendorApi = baseApi.injectEndpoints({
       FormData
     >({
       query: (body) => ({
-        url: "/api/store/products/create/",
+        url: "/store/products/create/",
         method: "POST",
         body,
       }),
@@ -259,7 +257,7 @@ export const vendorApi = baseApi.injectEndpoints({
 
     createDraft: builder.mutation<{ success: boolean; data: Product }, FormData>({
       query: (body) => ({
-        url: "/store/vendor/drafts/",
+        url: "/store/products/create/",
         method: "POST",
         body,
       }),

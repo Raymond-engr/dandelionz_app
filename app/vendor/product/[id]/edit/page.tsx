@@ -101,10 +101,12 @@ function EditProductComponent() {
       let existingImages: string[] = [];
       let mainIndex = 0;
       
-      if (productData.images && Array.isArray(productData.images)) {
-          existingImages = productData.images.map((img: any) => 
-              typeof img === 'string' ? img : img.image
-          );
+      // Fix: Check for length > 0 to fallback to 'image' property correctly
+      if (productData.images && Array.isArray(productData.images) && productData.images.length > 0) {
+          existingImages = productData.images
+            .map((img: any) => (typeof img === 'string' ? img : (img.image_url || img.image)))
+            .filter((url: any) => typeof url === 'string' && url.length > 0);
+            
           const foundIndex = productData.images.findIndex((img: any) => typeof img !== 'string' && img.is_main);
           if (foundIndex !== -1) mainIndex = foundIndex;
       } else if (productData.image) {
@@ -365,10 +367,17 @@ function EditProductComponent() {
             <div className="grid grid-cols-4 gap-4 mt-4">
                 {previewUrls.map((url, index) => (
                     <div key={index} className="relative group border rounded-lg overflow-hidden aspect-square">
-                        <Image src={url} alt={`Preview ${index}`} width={100} height={100} className="w-full h-full object-cover" unoptimized />
+                        <Image 
+                            src={url} 
+                            alt={`Preview ${index}`} 
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                            className="object-cover" 
+                            unoptimized={url.startsWith('blob:')}
+                        />
                         <button
                             onClick={() => handleRemoveImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
