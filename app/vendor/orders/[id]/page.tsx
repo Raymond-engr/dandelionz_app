@@ -1,0 +1,169 @@
+'use client';
+
+import React, { use } from 'react';
+import AppLayout from '@/components/AppLayout';
+import { useRouter } from 'next/navigation';
+import { useGetVendorOrderDetailsQuery } from '@/lib/api/vendorApi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { ChevronLeft } from 'lucide-react';
+
+interface VendorOrderDetailsProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function VendorOrderDetailsPage({ params: paramsPromise }: VendorOrderDetailsProps) {
+  const params = use(paramsPromise);
+  const router = useRouter();
+  const orderId = params.id;
+
+  const { data: response, isLoading, error } = useGetVendorOrderDetailsQuery(orderId);
+  const order = response?.data;
+
+  // Use API timeline if available, otherwise fallback to basic status display or empty
+  const trackingSteps = order?.timeline?.map((step: any) => ({
+    label: step.label,
+    date: step.timestamp ? new Date(step.timestamp).toLocaleDateString() : '',
+    completed: step.completed
+  })) || [];
+
+  if (isLoading) {
+    return (
+      <AppLayout showBottomNav={true} userRole="vendor">
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <AppLayout showBottomNav={true} userRole="vendor">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+          <p className="text-red-500 mb-4">Failed to load order details.</p>
+          <button onClick={() => router.back()} className="text-system-blue-light underline">
+            Go Back
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout showBottomNav={true} userRole="vendor">
+      <div className="min-h-screen bg-white">
+        {/* Header */}
+        <div className="flex items-center justify-center p-4 border-b border-gray-200 relative">
+          <button onClick={() => router.back()} className="absolute left-4 p-2 -ml-2">
+            <ChevronLeft className="w-6 h-6 text-gray-900" />
+          </button>
+          <h1 className="text-lg font-semibold text-system-blue-light">Order Details</h1>
+        </div>
+
+        <div className="p-6 pb-24">
+          {/* Order Info */}
+          <div className="mb-6">
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
+                    <p className="text-sm text-gray-600">Date: <span className="font-medium text-gray-900">{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span></p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ml-2 ${
+                    order.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                    order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                }`}>
+                    {order.status}
+                </span>
+            </div>
+
+            {/* Customer Info */}
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Customer</h3>
+                <p className="text-sm font-medium text-gray-900">{order.customer?.full_name || 'N/A'}</p>
+                <p className="text-xs text-gray-600">{order.customer?.email || 'N/A'}</p>
+                {order.customer?.phone_number && <p className="text-xs text-gray-600">{order.customer.phone_number}</p>}
+            </div>
+
+            {/* Order Items */}
+            <div className="mt-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Items</h3>
+                <div className="border rounded-lg overflow-hidden">
+                    {order.items?.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 border-b last:border-0 flex justify-between items-center">
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
+                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-900">
+                                ₦{parseFloat(item.price || item.item_subtotal || '0').toLocaleString()}
+                            </p>
+                        </div>
+                    )) || (order.order_items?.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 border-b last:border-0 flex justify-between items-center">
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
+                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-900">
+                                ₦{parseFloat(item.item_subtotal || '0').toLocaleString()}
+                            </p>
+                        </div>
+                    )))}
+                </div>
+                
+                {/* Totals */}
+                <div className="mt-4 flex justify-between items-center pt-2 border-t">
+                    <span className="font-semibold text-gray-900">Total Amount</span>
+                    <span className="text-lg font-bold text-system-blue-light">
+                        ₦{parseFloat(order.total_amount || order.total_price || '0').toLocaleString()}
+                    </span>
+                </div>
+            </div>
+          </div>
+
+          {/* Tracking Timeline */}
+          {trackingSteps.length > 0 && (
+            <div className="mt-8">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Order Timeline</h3>
+                <div className="relative pl-2">
+                    {trackingSteps.map((step: any, index: number) => (
+                    <div key={index} className="flex items-start gap-4 mb-6 last:mb-0">
+                        {/* Timeline Circle */}
+                        <div className="relative z-10">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                            step.completed 
+                            ? 'bg-system-blue-light border-system-blue-light' 
+                            : 'bg-white border-gray-300'
+                        }`}>
+                            {step.completed && (
+                            <div className="w-3 h-3 rounded-full bg-white"></div>
+                            )}
+                        </div>
+                        {/* Connecting Line */}
+                        {index < trackingSteps.length - 1 && (
+                            <div className={`absolute left-1/2 top-6 w-0.5 h-10 -translate-x-1/2 ${
+                            step.completed ? 'bg-system-blue-light' : 'bg-gray-300'
+                            }`} />
+                        )}
+                        </div>
+
+                        {/* Step Info */}
+                        <div className="flex-1 pt-0.5">
+                        <p className={`text-sm font-medium ${
+                            step.completed ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
+                            {step.label}
+                        </p>
+                        {step.date && <p className="text-xs text-gray-500">{step.date}</p>}
+                        </div>
+                    </div>
+                    ))}
+                </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
