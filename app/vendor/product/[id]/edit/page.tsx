@@ -42,6 +42,23 @@ function getIdFromPath(pathname: string | null) {
   return segments[segments.length - 1] ?? '';
 }
 
+interface EditProductFormData {
+  name: string;
+  description: string;
+  category: string;
+  brand: string;
+  tags: string;
+  stock: number;
+  price: number;
+  discount: number;
+  images: { file: File | string; id?: number; color?: string }[];
+  mainImageIndex: number;
+  variants: {
+    colors: string[];
+    sizes: string[];
+  };
+}
+
 function EditProductComponent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,7 +74,7 @@ function EditProductComponent() {
   const [updateStoreProduct, { isLoading: isUpdatingStore }] = usePartialUpdateStoreProductMutation();
   const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EditProductFormData>({
     name: '',
     description: '',
     category: '',
@@ -66,11 +83,11 @@ function EditProductComponent() {
     stock: 0,
     price: 0,
     discount: 0,
-    images: [] as File[],
+    images: [], // Combined for new and existing
     mainImageIndex: 0,
     variants: {
-      colors: [] as string[],
-      sizes: [] as string[]
+      colors: [],
+      sizes: []
     }
   });
 
@@ -140,7 +157,7 @@ function EditProductComponent() {
       const newFiles = Array.from(e.target.files);
       setFormData(prev => ({
           ...prev,
-          images: [...prev.images, ...newFiles]
+          images: [...prev.images, ...newFiles.map(file => ({ file, color: '' }))]
       }));
       
       // Add previews for new files
@@ -150,29 +167,28 @@ function EditProductComponent() {
   };
 
   const handleRemoveImage = (index: number) => {
-      // Logic to remove image. 
-      // Note: This is complex in edit mode because we have existing images (URLs) mixed with new images (Files).
-      // For simplicity in this iteration, we will remove from previewUrls. 
-      // If it's a new file (index >= original_length), remove from formData.images.
-      // Ideally, we need to track which existing images to DELETE from backend.
-      
-      // Simplification: Just update UI for now, fully implementing delete logic requires tracking deleted IDs.
-      // Given the "source of truth" request, we prioritize the creation flow structure.
-      
-      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
-      
-      // Adjust mainImageIndex
-      if (index === formData.mainImageIndex) {
-          setFormData(prev => ({ ...prev, mainImageIndex: 0 }));
-      } else if (index < formData.mainImageIndex) {
-          setFormData(prev => ({ ...prev, mainImageIndex: prev.mainImageIndex - 1 }));
-      }
-      
-      // Remove from File array if it corresponds to a new file
-      // We need to know how many were existing images.
-      // This part is tricky without tracking original count.
-      // For this pass, we will assume we just clear the preview.
-      // IMPORTANT: Real implementation needs to separate "existing" from "new".
+    setFormData(prev => {
+        const removedImage = prev.images[index];
+        const newImages = prev.images.filter((_, i) => i !== index);
+        let newMainIndex = prev.mainImageIndex;
+        if (index === prev.mainImageIndex) {
+            newMainIndex = 0;
+        } else if (index < prev.mainImageIndex) {
+            newMainIndex--;
+        }
+        
+        // Revoke object URL if it was a new file
+        if (removedImage && typeof removedImage.file !== 'string') {
+            URL.revokeObjectURL(URL.createObjectURL(removedImage.file)); // Create then revoke to get the same URL
+        }
+
+        return {
+            ...prev,
+            images: newImages,
+            mainImageIndex: newMainIndex
+        };
+    });
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const toggleColor = (color: string) => {
@@ -219,22 +235,13 @@ function EditProductComponent() {
     }
 
     // Append ONLY NEW images
-    // Note: This logic assumes we are ADDING images. Updating existing ones would require a more complex API.
-    // The backend should handle appending these to the existing list or replacing depending on API design.
-    // Based on "create" logic:
-    formData.images.forEach((file, index) => {
-        // We append them starting from index 0 for the *new* batch.
-        // Backend logic for "Edit" needs to handle this.
-        changes.append(`images_data[${index}].image`, file);
-        
-        // Determine if this new image is main.
-        // Logic: If mainImageIndex points to one of these new images.
-        // We need to know the offset.
-        // For now, we will just send false unless we are sure.
-        // Simplification: Not setting is_main for new images in Edit mode to avoid conflicts,
-        // unless the user explicitly selected one of these new ones.
-        
-        // changes.append(`images_data[${index}].is_main`, ...);
+    formData.images.forEach((img, index) => {
+        if (typeof img.file !== 'string') { // Only append File objects (new images)
+            changes.append(`images_data[${index}][image]`, img.file);
+            if (img.color) {
+                changes.append(`images_data[${index}][variant_association]`, img.color);
+            }
+        }
     });
     
     try {
@@ -367,26 +374,43 @@ function EditProductComponent() {
             <div className="grid grid-cols-4 gap-4 mt-4">
                 {previewUrls.map((url, index) => (
                     <div key={index} className="relative group border rounded-lg overflow-hidden aspect-square">
-                        <Image 
-                            src={url} 
-                            alt={`Preview ${index}`} 
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                            className="object-cover" 
-                            unoptimized={url.startsWith('blob:')}
-                        />
-                        <button
-                            onClick={() => handleRemoveImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                        >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                        {/* 
-                           Note: "Set Main" logic in edit mode is complex without backend support to re-order existing images.
-                           Hiding it for now to avoid UI confusion until backend supports it fully.
-                        */}
-                    </div>
-                ))}
+                                                    <Image 
+                                                        src={url} 
+                                                        alt={`Preview ${index}`} 
+                                                        fill
+                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                        className="object-cover" 
+                                                        unoptimized={url.startsWith('blob:')}
+                                                    />
+                                                    <button
+                                                        onClick={() => handleRemoveImage(index)}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    >
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                    {/* 
+                                                       Note: "Set Main" logic in edit mode is complex without backend support to re-order existing images.
+                                                       Hiding it for now to avoid UI confusion until backend supports it fully.
+                                                    */}
+                                                    {formData.variants.colors.length > 0 && (
+                                                        <div className="absolute bottom-0 left-0 right-0 p-1 bg-white bg-opacity-75">
+                                                            <select
+                                                                value={formData.images[index].color || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedImages = [...formData.images];
+                                                                    updatedImages[index].color = e.target.value;
+                                                                    setFormData(prev => ({ ...prev, images: updatedImages }));
+                                                                }}
+                                                                className="w-full text-xs p-1 border rounded"
+                                                            >
+                                                                <option value="">No Color</option>
+                                                                {formData.variants.colors.map(color => (
+                                                                    <option key={color} value={color}>{color}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>                ))}
             </div>
         )}
       </div>

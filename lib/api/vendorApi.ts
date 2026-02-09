@@ -26,6 +26,18 @@ interface VendorProfile {
   is_verified_vendor: boolean;
 }
 
+interface Video {
+  id: number;
+  video: string;
+  video_url: string;
+  title: string | null;
+  description: string | null;
+  duration: string | null;
+  file_size: number | null;
+  uploaded_at: string;
+  updated_at: string;
+}
+
 interface Product {
   slug: string;
   name: string;
@@ -37,6 +49,7 @@ interface Product {
   stock: number;
   image?: string;
   images: any[];
+  videos?: Video[];
   variants: {
     colors: string[];
     sizes: string[];
