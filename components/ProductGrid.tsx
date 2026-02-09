@@ -16,7 +16,7 @@ export default function ProductGrid({ products, hideAddToCart = false }: Product
   }
 
   return (
-    <div className="grid grid-cols-1 min-[250px]:grid-cols-2 min-[500px]:grid-cols-3 gap-4 p-4">
+    <div className="grid grid-cols-1 min-[250px]:grid-cols-2 min-[500px]:grid-cols-3 gap-4">
       {products.map((product) => (
         <ProductCard key={product.id} product={product} hideAddToCart={hideAddToCart} />
       ))}

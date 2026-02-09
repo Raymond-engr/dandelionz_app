@@ -18,7 +18,7 @@ interface ProductFormData {
   description: string;
   category: string;
   brand: string;
-  images: File[];
+  images: { file: File; color?: string }[];
   mainImageIndex: number;
   tags: string;
   stock: number;
@@ -28,6 +28,9 @@ interface ProductFormData {
     colors: string[];
     sizes: string[];
   };
+  video: File | null;
+  videoTitle: string;
+  videoDescription: string;
 }
 
 const CATEGORIES = [
@@ -70,7 +73,10 @@ export default function AddNewProductPage() {
     variants: {
       colors: [],
       sizes: []
-    }
+    },
+    video: null,
+    videoTitle: '',
+    videoDescription: ''
   });
 
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -85,7 +91,7 @@ export default function AddNewProductPage() {
   }, [profileData]);
 
   React.useEffect(() => {
-    const urls = formData.images.map(file => URL.createObjectURL(file));
+    const urls = formData.images.map(img => URL.createObjectURL(img.file));
     setPreviewUrls(urls);
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [formData.images]);
@@ -120,7 +126,7 @@ export default function AddNewProductPage() {
     if (e.target.files && e.target.files.length > 0) {
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, ...Array.from(e.target.files || [])]
+        images: [...prev.images, ...Array.from(e.target.files || []).map(file => ({ file, color: '' }))]
       }));
     }
   };
@@ -151,10 +157,14 @@ export default function AddNewProductPage() {
     productData.append('stock', formData.stock.toString());
     
     // Images
-    formData.images.forEach((file, index) => {
-        productData.append(`images_data[${index}].image`, file);
-        productData.append(`images_data[${index}].is_main`, (index === formData.mainImageIndex).toString());
-        productData.append(`images_data[${index}].alt_text`, formData.name);
+    formData.images.forEach((img, index) => {
+        productData.append(`images_data[${index}][image]`, img.file);
+        productData.append(`images_data[${index}][is_main]`, (index === formData.mainImageIndex).toString());
+        productData.append(`images_data[${index}][alt_text]`, formData.name);
+        
+        if (img.color) {
+            productData.append(`images_data[${index}][variant_association]`, img.color);
+        }
     });
 
     if (formData.brand) {
@@ -170,6 +180,17 @@ export default function AddNewProductPage() {
     // Variants as JSON string
     if (formData.variants.colors.length > 0 || formData.variants.sizes.length > 0) {
         productData.append('variants', JSON.stringify(formData.variants));
+    }
+
+    // Video Data
+    if (formData.video) {
+        productData.append('video_data[video]', formData.video);
+        if (formData.videoTitle) {
+            productData.append('video_data[title]', formData.videoTitle);
+        }
+        if (formData.videoDescription) {
+            productData.append('video_data[description]', formData.videoDescription);
+        }
     }
 
     return productData;
@@ -392,8 +413,90 @@ export default function AddNewProductPage() {
                                 >
                                     {formData.mainImageIndex === index ? 'Main Image' : 'Set as Main'}
                                 </button>
+                                {formData.variants.colors.length > 0 && (
+                                    <div className="mt-1">
+                                        <select
+                                            value={formData.images[index].color || ''}
+                                            onChange={(e) => {
+                                                const newImages = [...formData.images];
+                                                newImages[index].color = e.target.value;
+                                                setFormData({...formData, images: newImages});
+                                            }}
+                                            className="w-full text-xs p-1 border rounded"
+                                        >
+                                            <option value="">No Color</option>
+                                            {formData.variants.colors.map(color => (
+                                                <option key={color} value={color}>{color}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         ))}
+                    </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 mb-2 block">Upload Product Video (Optional)</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    id="product-video" 
+                    onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                            setFormData({...formData, video: e.target.files[0]});
+                        }
+                    }} 
+                    accept="video/*" 
+                  />
+                  {!formData.video ? (
+                    <label htmlFor="product-video" className="cursor-pointer block">
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p className="text-sm text-gray-600">Click to upload video</p>
+                    </label>
+                  ) : (
+                    <div className="relative group border rounded-lg overflow-hidden p-4 bg-gray-50">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700 truncate">{formData.video.name}</span>
+                            <button
+                                onClick={() => setFormData({...formData, video: null, videoTitle: '', videoDescription: ''})}
+                                className="text-red-500 hover:text-red-700"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                  )}
+                </div>
+
+                {formData.video && (
+                    <div className="mt-4 space-y-4">
+                        <div>
+                            <label className="text-xs text-gray-600 mb-2 block">Video Title</label>
+                            <input
+                              type="text"
+                              value={formData.videoTitle}
+                              onChange={(e) => setFormData({...formData, videoTitle: e.target.value})}
+                              placeholder="e.g., Product Demo"
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-gray-600 mb-2 block">Video Description</label>
+                            <textarea
+                              value={formData.videoDescription}
+                              onChange={(e) => setFormData({...formData, videoDescription: e.target.value})}
+                              placeholder="Describe what's in the video..."
+                              rows={2}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light resize-none"
+                            />
+                        </div>
                     </div>
                 )}
               </div>

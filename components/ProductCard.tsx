@@ -119,8 +119,8 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
         <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
           {product.name}
         </h3>
-        <div className="flex items-start justify-between mb-3 gap-2">
-          <div className="flex flex-col">
+        <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
+          <div className="flex flex-col min-w-0">
             <p className="text-base font-bold text-system-blue-light break-all line-clamp-2">
               {(product.discount ?? 0) > 0 ? (
                 <>
