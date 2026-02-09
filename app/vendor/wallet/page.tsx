@@ -32,7 +32,7 @@ export default function VendorWalletPage() {
           {/* Withdrawable Amount Card */}
           <div className="bg-system-blue-light rounded-lg p-6 mb-6">
             <p className="text-white text-sm mb-2">Withdrawable Amount</p>
-            {isLoading ? <div className="h-10 w-48 bg-blue-400 animate-pulse rounded-md mb-4"></div> : <p className="text-white text-4xl font-bold mb-4">₦{parseFloat(stats?.withdrawable_balance || '0').toFixed(2)}</p>}
+            {isLoading ? <div className="h-10 w-48 bg-blue-400 animate-pulse rounded-md mb-4"></div> : <p className="text-white text-4xl font-bold mb-4">₦{parseFloat(stats?.withdrawable_balance || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
             <button
               onClick={() => router.push('/vendor/wallet/withdraw')}
               disabled={isLoading}
@@ -52,12 +52,12 @@ export default function VendorWalletPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">Available Balance</p>
-                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.available_balance || '0').toFixed(2)}</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.available_balance || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
 
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">Total Earnings</p>
-                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.total_earnings || '0').toFixed(2)}</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.total_earnings || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -67,7 +67,7 @@ export default function VendorWalletPage() {
 
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">This Month</p>
-                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.this_month_earnings || '0').toFixed(2)}</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.this_month_earnings || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
             </div>

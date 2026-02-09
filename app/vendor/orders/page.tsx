@@ -105,7 +105,7 @@ export default function VendorOrdersPage() {
                           <p className="text-sm font-medium text-gray-900 truncate">{order.order_id}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">₦{parseFloat(order.total_amount).toFixed(2)}</p>
+                          <p className="text-sm font-bold text-gray-900">₦{parseFloat(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           <p className="text-xs text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>

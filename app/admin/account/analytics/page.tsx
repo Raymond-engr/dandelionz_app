@@ -120,7 +120,7 @@ export default function AdminAnalyticsPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <p className="text-xs text-gray-600 mb-1">Sales 2025</p>
-                <p className="text-2xl font-bold text-gray-900">₦{analytics?.data?.total_sales || '0.00'}</p>
+                <p className="text-2xl font-bold text-gray-900">₦{parseFloat(analytics?.data?.total_sales || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 <p className="text-xs text-green-600">+0.5% vs LAST YEAR</p>
               </div>
               <div className="flex gap-2">

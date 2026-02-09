@@ -96,7 +96,7 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                             </div>
                             <p className="text-sm font-semibold text-gray-900">
-                                ₦{parseFloat(item.price || item.item_subtotal || '0').toLocaleString()}
+                                ₦{parseFloat(item.price || item.item_subtotal || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                         </div>
                     )) || (order.order_items?.map((item: any, idx: number) => (
@@ -106,7 +106,7 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                             </div>
                             <p className="text-sm font-semibold text-gray-900">
-                                ₦{parseFloat(item.item_subtotal || '0').toLocaleString()}
+                                ₦{parseFloat(item.item_subtotal || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                         </div>
                     )))}
@@ -116,7 +116,7 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
                 <div className="mt-4 flex justify-between items-center pt-2 border-t">
                     <span className="font-semibold text-gray-900">Total Amount</span>
                     <span className="text-lg font-bold text-system-blue-light">
-                        ₦{parseFloat(order.total_amount || order.total_price || '0').toLocaleString()}
+                        ₦{parseFloat(order.total_amount || order.total_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                 </div>
             </div>

@@ -43,7 +43,7 @@ export default function TransactionHistoryPage() {
                         <p className="text-xs text-gray-600">{transaction.payment_method}</p>
                       </div>
                     </div>
-                    <p className="text-base font-bold text-gray-900">₦{transaction.amount}</p>
+                    <p className="text-base font-bold text-gray-900">₦{parseFloat(transaction.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                   <div className="flex justify-between items-center">
                      <span className={`text-xs px-2 py-1 rounded ${transaction.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
