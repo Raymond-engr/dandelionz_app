@@ -90,7 +90,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="bg-green-50 rounded-lg p-3">
                 <p className="text-xs text-gray-700 mb-1">Total Spend</p>
-                <p className="text-xl font-bold text-gray-900">₦{parseFloat(user.total_spend || '0').toLocaleString()}</p>
+                <p className="text-xl font-bold text-gray-900">₦{parseFloat(user.total_spend || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="bg-purple-50 rounded-lg p-3">
                 <p className="text-xs text-gray-700 mb-1">Total Order</p>

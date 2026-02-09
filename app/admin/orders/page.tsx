@@ -82,7 +82,7 @@ export default function OrderManagement() {
                       {order.status}
                     </span>
                   </div>
-                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price).toLocaleString()}</p>
+                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </button>
               ))}
             </div>
