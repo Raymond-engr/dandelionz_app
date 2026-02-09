@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   useGetVendorNotificationsQuery, 
@@ -13,11 +14,14 @@ import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
+import { resolveNotificationUrl } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 export default function VendorNotificationsPage() {
   const router = useRouter();
   const token = useAppSelector((state) => state.auth.accessToken);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   
   // Pass filter param if 'unread', else void/undefined for all
   const queryParams = filter === 'unread' ? { is_read: false } : undefined;
@@ -25,6 +29,12 @@ export default function VendorNotificationsPage() {
   
   // Handle pagination structure (results array) or flat array
   const notifications = (notificationsResponse as any)?.results || (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
+
+  // Client-side filtering to ensure UI consistency (in case API doesn't filter)
+  const filteredNotifications = notifications.filter((notification: any) => {
+    if (filter === 'unread') return !notification.is_read;
+    return true;
+  });
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllNotificationsAsReadMutation();
@@ -80,16 +90,22 @@ export default function VendorNotificationsPage() {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this notification?')) return;
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-        await deleteNotification(id).unwrap();
+        await deleteNotification(deleteId).unwrap();
         toast.success('Notification deleted');
         refetch();
     } catch (err) {
         toast.error('Failed to delete notification');
+    } finally {
+        setDeleteId(null);
     }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteId(id);
   };
 
   if (isLoading) {
@@ -120,7 +136,7 @@ export default function VendorNotificationsPage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-system-blue-light">Notifications</h1>
-          {notifications.length > 0 && (
+          {filteredNotifications.length > 0 && (
              <button 
                 onClick={handleMarkAllAsRead} 
                 disabled={isMarkingAll}
@@ -148,12 +164,12 @@ export default function VendorNotificationsPage() {
         </div>
 
         <div className="p-4">
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="text-center text-gray-500 mt-8">
                 {filter === 'unread' ? 'No unread notifications.' : 'No notifications yet.'}
             </div>
           ) : (
-            notifications.map((notification: any) => (
+            filteredNotifications.map((notification: any) => (
               <div 
                 key={notification.id} 
                 onClick={(e) => handleMarkAsRead(e, notification.id, notification.is_read)}
@@ -189,21 +205,21 @@ export default function VendorNotificationsPage() {
                     </p>
                     
                     {notification.action_url && (
-                        <a 
-                            href={notification.action_url}
+                        <Link 
+                            href={resolveNotificationUrl(notification.action_url, 'vendor')}
                             onClick={(e) => e.stopPropagation()} 
                             className="text-xs text-system-blue-light font-medium mt-2 inline-block hover:underline"
                         >
                             {notification.action_text || 'View Details'} &rarr;
-                        </a>
+                        </Link>
                     )}
                   </div>
                 </div>
 
-                {/* Delete Button (Visible on hover or always for touch) */}
+                {/* Delete Button */}
                 <button 
-                    onClick={(e) => handleDelete(e, notification.id)}
-                    className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => handleDeleteClick(e, notification.id)}
+                    className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-opacity md:opacity-0 md:group-hover:opacity-100"
                     title="Delete Notification"
                 >
                     <Trash2 className="w-4 h-4" />
@@ -212,6 +228,16 @@ export default function VendorNotificationsPage() {
             ))
           )}
         </div>
+
+        <Modal 
+            isOpen={!!deleteId}
+            onClose={() => setDeleteId(null)}
+            title="Delete Notification"
+            description="Are you sure you want to delete this notification? This action cannot be undone."
+            confirmText="Delete"
+            isDestructive={true}
+            onConfirm={confirmDelete}
+        />
       </div>
     </AppLayout>
   );

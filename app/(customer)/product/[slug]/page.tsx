@@ -147,8 +147,8 @@ export default function ProductDetailPage() {
     return (
         <AppLayout showBottomNav={true} userRole="customer">
             <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-                <h1 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h1>
-                <p className="text-sm text-gray-600 mb-6">We couldn&apos;t find the product you&apos;re looking for.</p>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
+                <p className="text-base text-gray-600 mb-6">We couldn&apos;t find the product you&apos;re looking for.</p>
                 <button 
                     onClick={() => router.push('/')}
                     className="px-6 py-3 bg-system-blue-light text-white rounded-lg font-medium"
@@ -175,7 +175,7 @@ export default function ProductDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-base font-semibold text-gray-900">Product Description</h1>
+          <h1 className="text-lg font-semibold text-gray-900">Product Description</h1>
           <div className="w-6"></div>
         </div>
 
@@ -183,13 +183,13 @@ export default function ProductDetailPage() {
         <div className="px-4 pt-4">
           
           {/* Main Image */}
-          <div className="relative w-1/2 aspect-square bg-gray-100 rounded-2xl mb-4 overflow-hidden mx-auto">
+          <div className="relative w-full aspect-square bg-gray-100 rounded-2xl mb-4 overflow-hidden mx-auto">
             <Image
               src={images[selectedImage]}
               alt={product.name}
               fill 
               className="object-contain" 
-              sizes="(max-width: 768px) 50vw, 25vw"
+              sizes="(max-width: 768px) 100vw, 50vw"
               priority
               unoptimized={images[selectedImage]?.startsWith('http')}
               onError={(e) => {
@@ -226,19 +226,19 @@ export default function ProductDetailPage() {
 
         {/* Product Info */}
         <div className="px-4 pb-24">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {product.name}
           </h2>
 
           {/* Variants (Colors) */}
           {product.variants && product.variants.length > 0 && (
              <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Select Color</p>
+                <p className="text-base font-semibold text-gray-900 mb-2">Select Color</p>
                 <div className="flex gap-2">
                     {product.variants.map((variant: any, idx: number) => (
                         <button
                             key={idx}
-                            className={`px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                            className={`px-3 py-1.5 border rounded-lg text-base transition-colors ${
                                 // Logic to select variant - for now just visual as we don't have separate SKUs
                                 'border-gray-200 hover:border-system-blue-light'
                             }`}
@@ -252,11 +252,11 @@ export default function ProductDetailPage() {
 
           {/* Description */}
           <div className="mb-4">
-            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            <p className="text-base text-gray-600 leading-relaxed mb-3">
               {product.description}
             </p>
             {product.store_name && (
-                <p className="text-sm font-medium text-system-blue-light">
+                <p className="text-base font-medium text-system-blue-light">
                     Store: {product.store_name}
                 </p>
             )}
@@ -265,9 +265,9 @@ export default function ProductDetailPage() {
           {/* Price and Rating */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-xs text-gray-500 mb-1">Amount</p>
+              <p className="text-sm text-gray-500 mb-1">Amount</p>
                 <div className="flex flex-col">
-                  <p className="text-2xl font-bold text-system-blue-light">
+                  <p className="text-3xl font-bold text-system-blue-light">
                     {(product.discount ?? 0) > 0 ? (
                         <>
                         ₦{(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -278,10 +278,10 @@ export default function ProductDetailPage() {
                   </p>
                   {(product.discount ?? 0) > 0 && (
                     <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-500 line-through">
+                        <span className="text-base text-gray-500 line-through">
                             ₦{parseFloat(product.price).toLocaleString()}
                         </span>
-                        <span className="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                        <span className="text-sm font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
                             -{product.discount}%
                         </span>
                     </div>
@@ -292,7 +292,7 @@ export default function ProductDetailPage() {
               <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
                 <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
               </svg>
-              <span className="text-sm font-semibold text-gray-900">{product.rating ?? '0.0'}</span>
+              <span className="text-base font-semibold text-gray-900">{product.rating ?? '0.0'}</span>
             </div>
           </div>
 
@@ -328,12 +328,12 @@ export default function ProductDetailPage() {
 
           {/* Reviews Section */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reviews ({reviews.length})</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Reviews ({reviews.length})</h3>
             
             {/* Add Review Form */}
             {isAuthenticated ? (
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <h4 className="text-sm font-medium mb-3">Write a Review</h4>
+                <h4 className="text-base font-medium mb-3">Write a Review</h4>
                 <div className="flex gap-2 mb-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button 
@@ -352,7 +352,7 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <textarea
-                  className="w-full p-3 text-sm border rounded-lg mb-3 focus:outline-none focus:ring-1 focus:ring-system-blue-light"
+                  className="w-full p-3 text-base border rounded-lg mb-3 focus:outline-none focus:ring-1 focus:ring-system-blue-light"
                   rows={3}
                   placeholder="Share your thoughts about this product..."
                   value={userComment}
@@ -361,17 +361,17 @@ export default function ProductDetailPage() {
                 <button
                   onClick={handleSubmitReview}
                   disabled={isSubmittingReview}
-                  className="px-4 py-2 bg-system-blue-light text-white text-sm rounded-lg hover:bg-[#020360] transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-system-blue-light text-white text-base rounded-lg hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
                   {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>
               </div>
             ) : (
                 <div className="bg-gray-50 p-4 rounded-lg mb-6 text-center">
-                    <p className="text-sm text-gray-600 mb-2">Please sign in to write a review.</p>
+                    <p className="text-base text-gray-600 mb-2">Please sign in to write a review.</p>
                     <button 
                         onClick={() => router.push(`/login?redirect=${pathname}`)}
-                        className="text-sm text-system-blue-light font-medium hover:underline"
+                        className="text-base text-system-blue-light font-medium hover:underline"
                     >
                         Sign In
                     </button>
@@ -386,8 +386,8 @@ export default function ProductDetailPage() {
                 {reviews.map((review: any) => (
                   <div key={review.id} className="border-b pb-4 last:border-0">
                     <div className="flex justify-between items-start mb-1">
-                      <p className="text-sm font-medium text-gray-900">{review.customer_name || 'Anonymous'}</p>
-                      <span className="text-xs text-gray-500">{review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}</span>
+                      <p className="text-base font-medium text-gray-900">{review.customer_name || 'Anonymous'}</p>
+                      <span className="text-sm text-gray-500">{review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}</span>
                     </div>
                     <div className="flex gap-1 mb-2">
                       {[...Array(5)].map((_, i) => (
@@ -400,12 +400,12 @@ export default function ProductDetailPage() {
                         </svg>
                       ))}
                     </div>
-                    <p className="text-sm text-gray-600">{review.comment}</p>
+                    <p className="text-base text-gray-600">{review.comment}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to review!</p>
+              <p className="text-base text-gray-500 italic">No reviews yet. Be the first to review!</p>
             )}
           </div>
         </div>
