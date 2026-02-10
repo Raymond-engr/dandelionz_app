@@ -95,7 +95,7 @@ export default function DisputesRefundsPage() {
                         }`}>
                           {dispute.status}
                         </span>
-                        <p className="text-base font-bold text-gray-900 mt-1">₦{dispute.amount}</p>
+                        <p className="text-base font-bold text-gray-900 mt-1">₦{parseFloat(dispute.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 mb-2">{format(new Date(dispute.created_at), 'MMM do, yyyy')}</p>

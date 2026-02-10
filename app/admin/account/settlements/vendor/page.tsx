@@ -88,6 +88,9 @@ export default function VendorSettlementsPage() {
                         </div>
                       </div>
                       <div className="text-right">
+                        <p className="text-base font-bold text-gray-900">₦{parseFloat(vendor.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded ${
+                            activeTab === 'processed' ? 'bg-green-100 text-green-700' : 
                         <p className="text-base font-bold text-gray-900">₦{parseFloat(withdrawal.amount).toLocaleString()}</p>
                         <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded capitalize ${
                             activeTab === 'successful' ? 'bg-green-100 text-green-700' : 

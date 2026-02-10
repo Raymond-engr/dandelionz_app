@@ -60,7 +60,7 @@ export default function ConfirmWithdrawalPage() {
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Amount</span>
-              <span className="text-sm font-semibold text-gray-900">₦{parseFloat(amount).toFixed(2)}</span>
+              <span className="text-sm font-semibold text-gray-900">₦{parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Bank</span>

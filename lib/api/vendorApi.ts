@@ -74,12 +74,22 @@ interface Order {
     product_name: string;
     quantity: number;
     price: string;
+    item_subtotal?: string;
   }>;
   total_amount: string;
+  total_price?: string; // Add this as it might come from the other endpoint
   status: string;
   shipping_address: string;
   created_at: string;
   updated_at: string;
+  ordered_at?: string; // Add this
+  timeline?: {
+    status?: string;
+    label: string;
+    timestamp: string | null;
+    completed: boolean;
+  }[];
+  order_items?: any[]; // Fallback for differing structures
 }
 
 interface VendorAnalytics {
@@ -341,7 +351,7 @@ export const vendorApi = baseApi.injectEndpoints({
       { success: boolean; data: Order },
       string
     >({
-      query: (uuid) => `/user/vendor/orders/${uuid}/`,
+      query: (uuid) => `/transactions/orders/${uuid}/`,
       providesTags: ["Order"],
     }),
 
