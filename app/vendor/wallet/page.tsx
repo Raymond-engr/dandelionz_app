@@ -49,15 +49,25 @@ export default function VendorWalletPage() {
           {isLoading ? <LoadingSpinner /> : (
             <div>
               <h2 className="text-base font-semibold text-gray-900 mb-4">Overview</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">Available Balance</p>
                   <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.available_balance || '0').toFixed(2)}</p>
                 </div>
 
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Pending Balance</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.pending_balance || '0').toFixed(2)}</p>
+                </div>
+
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">Total Earnings</p>
                   <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.total_earnings || '0').toFixed(2)}</p>
+                </div>
+
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Pending Orders</p>
+                  <p className="text-xl font-bold text-gray-900">{stats?.pending_order_count || 0}</p>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -68,6 +78,17 @@ export default function VendorWalletPage() {
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-xs text-gray-600 mb-1">This Month</p>
                   <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.this_month_earnings || '0').toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-indigo-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Credits</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.total_credits || '0').toFixed(2)}</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Debits</p>
+                  <p className="text-xl font-bold text-gray-900">₦{parseFloat(stats?.total_debits || '0').toFixed(2)}</p>
                 </div>
               </div>
             </div>

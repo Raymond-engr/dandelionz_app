@@ -7,7 +7,7 @@ import {
   useGetVendorDetailsQuery, 
   useApproveVendorMutation,
   useVerifyVendorKYCMutation,
-  useSuspendVendorWithReasonMutation
+  useSuspendVendorMutation
 } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -24,10 +24,9 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
   const { data, isLoading, error } = useGetVendorDetailsQuery(vendorId);
   const [approveVendor, { isLoading: isApproving }] = useApproveVendorMutation();
   const [verifyKYC, { isLoading: isVerifying }] = useVerifyVendorKYCMutation();
-  const [suspendVendor, { isLoading: isSuspending }] = useSuspendVendorWithReasonMutation();
+  const [suspendVendor, { isLoading: isSuspending }] = useSuspendVendorMutation();
 
   const [action, setAction] = useState('Approve Vendor');
-  const [reason, setReason] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -44,13 +43,9 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         }).unwrap();
         setSuccessMessage('Vendor approved successfully');
       } else if (action === 'Suspend Vendor') {
-        if (!reason.trim()) {
-          toast.error('A reason is required to suspend a vendor.');
-          return;
-        }
         await suspendVendor({ 
           uuid: vendorId, 
-          reason: reason 
+          suspend: true 
         }).unwrap();
         setSuccessMessage('Vendor suspended successfully');
       } else if (action === 'Reject Vendor') {
@@ -159,19 +154,62 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
             </div>
 
             {/* Vendor Information */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Email Address</label>
-                <p className="text-sm font-medium text-gray-900">{vendor.email}</p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Store Name</label>
-                <p className="text-sm font-medium text-gray-900">{vendor.store_name}</p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Address</label>
-                <p className="text-sm font-medium text-gray-900">{vendor.address || 'N/A'}</p>
-              </div>
+            <div className="space-y-6 mb-6">
+              <section>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-1">Business Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500 block mb-1">Full Name</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.full_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Email Address</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Phone Number</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.phone_number || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500 block mb-1">Store Description</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.store_description || 'No description provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Reg. Number</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.business_registration_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Joined Date</label>
+                    <p className="text-sm font-medium text-gray-900">
+                      {vendor.created_at ? new Date(vendor.created_at).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500 block mb-1">Address</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.address || 'N/A'}</p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-1">Payment Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Bank Name</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.bank_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Account Number</label>
+                    <p className="text-sm font-medium text-gray-900">{vendor.account_number || 'N/A'}</p>
+                  </div>
+                  {vendor.recipient_code && (
+                    <div className="col-span-2">
+                      <label className="text-xs text-gray-500 block mb-1">Recipient Code</label>
+                      <p className="text-sm font-medium text-gray-900">{vendor.recipient_code}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
 
             {/* Action Controls */}
@@ -187,16 +225,6 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                 <option>Reject Vendor</option>
                 <option>Verify KYC</option>
               </select>
-
-              <textarea
-                placeholder="Reason for action..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-20 resize-none"
-                disabled={isSuspending || isApproving || isVerifying || action !== 'Suspend Vendor'}
-              />
-
-
 
               <button 
                 onClick={handleConfirmAction}

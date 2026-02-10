@@ -20,11 +20,9 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
 
   const orderId = params.id;
   
-  const { data: orderData, isLoading, error, refetch } = useGetOrderDetailsQuery(orderId);
+  const { data: order, isLoading, error, refetch } = useGetOrderDetailsQuery(orderId);
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
-
-  const order = orderData?.data;
 
   const handleAction = async () => {
     if (!order) return;
@@ -47,11 +45,15 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
     }
   };
   
-  const trackingSteps = [
-    { label: 'Order Placed', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
+  // Use API timeline if available, otherwise fallback to local logic
+  const trackingSteps = order?.timeline?.map(step => ({
+    label: step.label,
+    active: step.completed
+  })) || [
+    { label: 'Order Placed', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' || order?.status === 'PAID' },
+    { label: 'Payment Confirmed', active: order?.status === 'PAID' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
     { label: 'Product Shipped', active: order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
-    { label: 'Ready for pickup', active: order?.status === 'DELIVERED' },
-    { label: 'Collected', active: false },
+    { label: 'Delivered', active: order?.status === 'DELIVERED' },
   ];
   
   if (isLoading) {
@@ -91,16 +93,30 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-3 mb-6">
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Full Name</label>
-                <p className="text-sm font-medium text-gray-900">{order.customer.full_name}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {typeof order.customer === 'object' ? order.customer.full_name : (order.customer_email || 'N/A')}
+                </p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Email Address</label>
-                <p className="text-sm font-medium text-gray-900">{order.customer.email}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {typeof order.customer === 'object' ? order.customer.email : (order.customer_email || 'N/A')}
+                </p>
               </div>
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Phone Number</label>
-                <p className="text-sm font-medium text-gray-900">{order.customer.phone_number || 'N/A'}</p>
-              </div>
+              {typeof order.customer === 'string' && (
+                <div>
+                  <label className="text-xs text-gray-600 block mb-1">Customer ID</label>
+                  <p className="text-sm font-medium text-gray-900 truncate">{order.customer}</p>
+                </div>
+              )}
+              {order.shipping_address && (
+                <div>
+                   <label className="text-xs text-gray-600 block mb-1">Shipping Address</label>
+                   <p className="text-sm font-medium text-gray-900">
+                     {order.shipping_address.address}, {order.shipping_address.city}, {order.shipping_address.state}
+                   </p>
+                </div>
+              )}
             </div>
 
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Vendor Information</h2>
@@ -115,25 +131,25 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
               {order.order_items?.map((item: OrderItem, index: number) => (
                 <div key={index} className="pb-2 border-b border-gray-200 last:border-b-0">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">{item.product_name}</p>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">{item.product.name}</p>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Quantity:</span>
                     <span className="font-medium text-gray-900">{item.quantity}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium text-gray-900">₦{parseFloat(item.item_subtotal).toLocaleString()}</span>
+                    <span className="font-medium text-gray-900">₦{item.item_subtotal.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Delivery Fee:</span>
-                  <span className="font-medium text-gray-900">₦{deliveryFee.toLocaleString()}</span>
+                  <span className="font-medium text-gray-900">₦{parseFloat(order.delivery_fee).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-300">
                   <span className="text-base font-semibold text-gray-900">Total Amount:</span>
-                  <span className="text-base font-bold text-gray-900">₦{(parseFloat(order.total_price || order.total_amount || '0') + deliveryFee).toLocaleString()}</span>
+                  <span className="text-base font-bold text-gray-900">₦{parseFloat(order.total_with_delivery || order.total_price).toLocaleString()}</span>
                 </div>
               </div>
             </div>

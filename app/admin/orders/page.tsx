@@ -75,7 +75,9 @@ export default function OrderManagement() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="text-left flex-1">
                       <p className="text-sm font-semibold text-gray-900">{order.order_id}</p>
-                      <p className="text-xs text-gray-600">{order.customer.full_name}</p>
+                      <p className="text-xs text-gray-600">
+                        {typeof order.customer === 'object' ? order.customer.full_name : (order.customer_email || order.customer)}
+                      </p>
                       <p className="text-xs text-gray-600">{format(new Date(order.ordered_at), 'PPP')}</p>
                     </div>
                     <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status)}`}>

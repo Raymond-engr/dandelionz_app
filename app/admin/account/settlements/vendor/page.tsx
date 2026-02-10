@@ -4,16 +4,19 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import { useGetVendorSettlementsQuery } from '@/lib/api/adminApi';
+import { useGetAllWithdrawalsQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 
 export default function VendorSettlementsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'processed' | 'pending' | 'failed'>('processed');
-  const { data, isLoading } = useGetVendorSettlementsQuery({ status: activeTab.toUpperCase() });
+  const [activeTab, setActiveTab] = useState<'successful' | 'pending' | 'failed'>('successful');
+  const { data, isLoading } = useGetAllWithdrawalsQuery({ 
+    status: activeTab,
+    type: 'vendor'
+  });
 
-  const vendors = data?.data || [];
+  const withdrawals = data?.data || [];
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -28,14 +31,14 @@ export default function VendorSettlementsPage() {
         <div className="p-4">
           <div className="flex gap-2 mb-4">
             <button
-              onClick={() => setActiveTab('processed')}
+              onClick={() => setActiveTab('successful')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'processed'
+                activeTab === 'successful'
                   ? 'bg-blue-100 text-[#030482]'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
-              Processed
+              Successful
             </button>
             <button
               onClick={() => setActiveTab('pending')}
@@ -64,36 +67,41 @@ export default function VendorSettlementsPage() {
                <div className="flex justify-center py-10">
                  <LoadingSpinner />
                </div>
-            ) : vendors.length === 0 ? (
-               <div className="text-center text-gray-500 py-10">No {activeTab} settlements found.</div>
+            ) : withdrawals.length === 0 ? (
+               <div className="text-center text-gray-500 py-10">No {activeTab} withdrawals found.</div>
             ) : (
-               vendors.map((vendor) => (
-                  <div key={vendor.id} className="bg-gray-50 rounded-lg p-4">
+               withdrawals.map((withdrawal) => (
+                  <div 
+                    key={withdrawal.id} 
+                    className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => router.push(`/admin/account/settlements/vendor/${withdrawal.id}`)}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {vendor.vendor_name.substring(0, 2).toUpperCase()}
+                          {withdrawal.requestor_name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{vendor.vendor_name}</p>
-                          <p className="text-xs text-gray-600">{format(new Date(vendor.payout_date), 'MMM do, yyyy')}</p>
+                          <p className="text-sm font-semibold text-gray-900">{withdrawal.requestor_name}</p>
+                          <p className="text-xs text-gray-600">{format(new Date(withdrawal.created_at), 'MMM do, yyyy')}</p>
+                          <p className="text-[10px] text-gray-400 font-mono mt-1">{withdrawal.reference}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-base font-bold text-gray-900">₦{vendor.amount}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded ${
-                            activeTab === 'processed' ? 'bg-green-100 text-green-700' : 
+                        <p className="text-base font-bold text-gray-900">₦{parseFloat(withdrawal.amount).toLocaleString()}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded capitalize ${
+                            activeTab === 'successful' ? 'bg-green-100 text-green-700' : 
                             activeTab === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
                             'bg-red-100 text-red-700'
                           }`}>
-                          {vendor.status}
+                          {withdrawal.status}
                         </span>
                       </div>
                     </div>
                     {activeTab === 'failed' && (
-                        <button className="w-full py-2.5 bg-purple-100 text-[#030482] rounded-lg text-sm font-semibold">
-                           Retry Payment
-                        </button>
+                        <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+                          Reason: {withdrawal.failure_reason || 'Unknown error'}
+                        </div>
                     )}
                   </div>
                ))
