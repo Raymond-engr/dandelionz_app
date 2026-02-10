@@ -25,7 +25,7 @@ export default function VendorSettlementsPage() {
           <button onClick={() => router.back()} className="absolute left-4">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
-          <h1 className="text-lg font-semibold text-[#030482]">Vendor Settlements</h1>
+          <h1 className="text-lg font-semibold text-system-blue-light">Vendor Settlements</h1>
         </div>
 
         <div className="p-4">
@@ -34,7 +34,7 @@ export default function VendorSettlementsPage() {
               onClick={() => setActiveTab('successful')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'successful'
-                  ? 'bg-blue-100 text-[#030482]'
+                  ? 'bg-blue-100 text-system-blue-light'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -44,7 +44,7 @@ export default function VendorSettlementsPage() {
               onClick={() => setActiveTab('pending')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'pending'
-                  ? 'bg-blue-100 text-[#030482]'
+                  ? 'bg-blue-100 text-system-blue-light'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -54,7 +54,7 @@ export default function VendorSettlementsPage() {
               onClick={() => setActiveTab('failed')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'failed'
-                  ? 'bg-blue-100 text-[#030482]'
+                  ? 'bg-blue-100 text-system-blue-light'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -78,7 +78,7 @@ export default function VendorSettlementsPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold shrink-0">
                           {withdrawal.requestor_name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -88,9 +88,6 @@ export default function VendorSettlementsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-base font-bold text-gray-900">₦{parseFloat(vendor.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded ${
-                            activeTab === 'processed' ? 'bg-green-100 text-green-700' : 
                         <p className="text-base font-bold text-gray-900">₦{parseFloat(withdrawal.amount).toLocaleString()}</p>
                         <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded capitalize ${
                             activeTab === 'successful' ? 'bg-green-100 text-green-700' : 
