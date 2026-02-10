@@ -3,9 +3,19 @@
 import Link from 'next/link';
 import { Home, Order, Wallet, Account, Shop } from './icons'; 
 import { usePathname } from 'next/navigation';
+import { useAppSelector } from '@/lib/hooks';
+import { useGetNotificationStatsQuery } from '@/lib/api/vendorApi';
 
 export default function VendorBottomNav() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const { data: statsResponse } = useGetNotificationStatsQuery(undefined, {
+    skip: !isAuthenticated,
+    pollingInterval: 60000,
+  });
+
+  const unreadCount = statsResponse?.data?.unread_count || 0;
 
   const navItems = [
     {
@@ -40,7 +50,12 @@ export default function VendorBottomNav() {
       href: '/vendor/account',
       name: 'Account',
       icon: (active: boolean) => (
-        <Account className="w-6 h-6" active={active} />
+        <div className="relative">
+          <Account className="w-6 h-6" active={active} />
+          {unreadCount > 0 && (
+             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white box-content"></span>
+          )}
+        </div>
       )
     },
   ];

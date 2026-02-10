@@ -49,10 +49,19 @@ interface OrderSummary {
 export interface Vendor {
   user_uuid: string;
   email: string;
+  full_name?: string;
+  phone_number?: string;
   store_name: string;
+  store_description?: string;
+  business_registration_number?: string;
+  address?: string;
+  bank_name?: string;
+  account_number?: string;
+  recipient_code?: string;
   is_verified_vendor: boolean;
   is_active: boolean;
-  address?: string;
+  is_verified?: boolean;
+  created_at?: string;
 }
 
 export interface User {
@@ -71,29 +80,43 @@ export interface User {
 }
 
 export interface Order {
-  uuid?: string;
+  id: number;
   order_id: string;
-  customer: {
+  customer: string | {
     uuid?: string;
     full_name: string;
     email: string;
     phone_number?: string;
   };
+  customer_email?: string;
   vendor?: {
     uuid: string;
     store_name: string;
   };
-  total_amount?: string;
-  total_price: string;
-  delivery_fee?: string;
-  payment_status?: string;
   status: string;
-  current_status?: string;
-  created_at?: string;
+  payment_status: string;
+  total_price: string;
+  delivery_fee: string;
+  discount: string;
+  subtotal: string;
+  total_with_delivery: string;
+  tracking_number: string | null;
   ordered_at: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  returned_at: string | null;
   updated_at: string;
-  shipping_address?: ShippingAddress;
-  order_items?: OrderItem[];
+  is_paid: boolean;
+  is_delivered: boolean;
+  order_items: OrderItem[];
+  payment?: any;
+  timeline?: {
+    status: string;
+    label: string;
+    timestamp: string | null;
+    completed: boolean;
+  }[];
+  shipping_address: ShippingAddress | null;
 }
 
 export interface Product {
@@ -258,10 +281,39 @@ export interface ShippingAddress {
 }
 
 export interface OrderItem {
-  product_name: string;
+  id: number;
+  product: {
+    id: number;
+    name: string;
+    price: string;
+    description?: string;
+    brand?: string;
+    images?: any[];
+  };
   quantity: number;
-  item_subtotal: string;
-  vendor_name: string;
+  price_at_purchase: string;
+  item_subtotal: number;
+}
+
+export interface Withdrawal {
+  id: number;
+  reference: string;
+  amount: string;
+  requestor_name: string;
+  requestor_email: string;
+  requestor_type: "Vendor" | "Customer";
+  status: "pending" | "processing" | "successful" | "failed" | "cancelled";
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  created_at: string;
+  processed_at: string | null;
+  failure_reason: string | null;
+}
+
+export interface WithdrawalDetail extends Withdrawal {
+  requestor_id: string;
+  recipient_code?: string;
 }
 
 export const adminApi = baseApi.injectEndpoints({
@@ -484,13 +536,13 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Vendor"],
     }),
 
-    suspendVendorWithReason: builder.mutation<
-      { success: boolean; message: string },
-      { uuid: string; reason: string }
+    suspendVendor: builder.mutation<
+      { success: boolean; suspended: boolean },
+      { uuid: string; suspend: boolean }
     >({
       query: ({ uuid, ...body }) => ({
         url: `/user/admin/vendors/${uuid}/suspend/`,
-        method: "POST",
+        method: "POST", // SoT says POST or PUT, keeping POST
         body,
       }),
       invalidatesTags: ["Vendor"],
@@ -539,7 +591,7 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Order"],
     }),
 
-    getOrderDetails: builder.query<{ success: boolean; data: Order }, string>({
+    getOrderDetails: builder.query<Order, string>({
       query: (order_id) => `/user/admin/orders/${order_id}/`,
       providesTags: ["Order"],
     }),
@@ -879,17 +931,46 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Withdrawal Management
-    getAllWithdrawals: builder.query<{ success: boolean; data: any[] }, void>({
-      query: () => "/user/admin/withdrawals/",
+    getAllWithdrawals: builder.query<
+      { success: boolean; count: number; data: Withdrawal[] },
+      { status?: string; type?: string } | void
+    >({
+      query: (params) => ({
+        url: "/admin/finance/withdrawals/",
+        params: params || undefined,
+      }),
       providesTags: ["Payment"],
     }),
 
-    processWithdrawal: builder.mutation<
+    getWithdrawalDetail: builder.query<
+      { success: boolean; data: WithdrawalDetail },
+      string | number
+    >({
+      query: (id) => ({
+        url: "/admin/finance/withdrawals/detail/",
+        params: { id },
+      }),
+      providesTags: ["Payment"],
+    }),
+
+    approveWithdrawal: builder.mutation<
       { success: boolean; message: string },
-      { withdrawal_id: string; approve: boolean }
+      { withdrawal_id: string | number; notes?: string }
     >({
       query: (body) => ({
-        url: "/user/admin/withdrawals/process/",
+        url: "/admin/finance/withdrawals/approve/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Payment", "Settlement"],
+    }),
+
+    rejectWithdrawal: builder.mutation<
+      { success: boolean; message: string },
+      { withdrawal_id: string | number; reason: string }
+    >({
+      query: (body) => ({
+        url: "/admin/finance/withdrawals/reject/",
         method: "POST",
         body,
       }),
@@ -913,7 +994,7 @@ export const {
   useGetVendorDetailsQuery,
   useApproveVendorMutation,
   useVerifyVendorKYCMutation,
-  useSuspendVendorWithReasonMutation,
+  useSuspendVendorMutation,
   useGetVendorProductsQuery,
   useGetVendorOrdersQuery,
   useGetVendorAnalyticsQuery,
@@ -957,7 +1038,9 @@ export const {
   useDeleteInboxNotificationMutation,
   useGetNotificationStatsQuery,
   useGetAllWithdrawalsQuery,
-  useProcessWithdrawalMutation,
+  useGetWithdrawalDetailQuery,
+  useApproveWithdrawalMutation,
+  useRejectWithdrawalMutation,
   useGetWalletStatsQuery,
   useGetWalletTransactionsQuery,
   useRequestWithdrawalMutation,

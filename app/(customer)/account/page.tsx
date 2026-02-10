@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
+import { useGetCustomerProfileQuery, useGetNotificationStatsQuery } from '@/lib/api/customerApi';
 import { useAppSelector, useLogout } from '@/lib/hooks';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -21,11 +21,19 @@ export default function AccountPage() {
   const { data: profile, isLoading } = useGetCustomerProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
+
+  const { data: statsResponse } = useGetNotificationStatsQuery(undefined, {
+    skip: !isAuthenticated,
+    pollingInterval: 30000, // Poll every 30 seconds
+  });
+
   const logout = useLogout();
+  
+  const unreadCount = statsResponse?.data?.unread_count || 0;
 
   const accountLinks = [
     { label: 'Profile', href: '/account/profile', icon: UserIcon },
-    { label: 'Notifications', href: '/account/notifications', icon: BellIcon },
+    { label: 'Notifications', href: '/account/notifications', icon: BellIcon, showBadge: true },
     { label: 'Order', href: '/orders', icon: OrderIcon },
     { label: 'Track Order', href: '/order-tracking', icon: TrackIcon },
     { label: 'Delivery Address', href: '/account/address', icon: LocationIcon },
@@ -99,7 +107,15 @@ export default function AccountPage() {
               className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               <div className="flex items-center gap-3">
-                <link.icon />
+                <div className="relative">
+                  <link.icon />
+                  {/* Notification Badge */}
+                  {link.showBadge && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white box-content">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
                 <span className="text-sm font-medium text-gray-900">{link.label}</span>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -102,7 +102,11 @@ interface VendorAnalytics {
 interface WalletBalance {
   withdrawable_balance: string;
   available_balance: string;
+  pending_balance: string;
+  pending_order_count: number;
   total_earnings: string;
+  total_credits: string;
+  total_debits: string;
   total_withdrawals: number;
   this_month_earnings: string;
 }
@@ -377,16 +381,16 @@ export const vendorApi = baseApi.injectEndpoints({
       { success: boolean; data: WalletBalance },
       void
     >({
-      query: () => "/user/vendor/wallet/",
+      query: () => "/vendor/wallet/",
       providesTags: ["Payment"],
     }),
 
     requestWithdrawal: builder.mutation<
-      { success: boolean; message: string },
+      { success: boolean; message: string; reference?: string },
       { amount: string; pin: string }
     >({
       query: (body) => ({
-        url: "/user/vendor/wallet/withdraw/",
+        url: "/vendor/wallet/withdraw/",
         method: "POST",
         body,
       }),
@@ -395,10 +399,10 @@ export const vendorApi = baseApi.injectEndpoints({
 
     getTransactionHistory: builder.query<
       { success: boolean; data: Transaction[] },
-      { type?: string }
+      { limit?: number; offset?: number; type?: string }
     >({
       query: (params) => ({
-        url: "/user/vendor/wallet/transactions/",
+        url: "/vendor/wallet/transactions/",
         params,
       }),
       providesTags: ["Payment"],
@@ -409,7 +413,7 @@ export const vendorApi = baseApi.injectEndpoints({
       { success: boolean; data: PaymentSettings },
       void
     >({
-      query: () => "/user/vendor/payment-settings/",
+      query: () => "/vendor/payment-settings/",
       providesTags: ["Payment"],
     }),
 
@@ -418,7 +422,7 @@ export const vendorApi = baseApi.injectEndpoints({
       Partial<PaymentSettings>
     >({
       query: (body) => ({
-        url: "/user/vendor/payment-settings/",
+        url: "/vendor/payment-settings/",
         method: "PUT",
         body,
       }),
@@ -430,7 +434,7 @@ export const vendorApi = baseApi.injectEndpoints({
       { pin: string; confirm_pin: string }
     >({
       query: (body) => ({
-        url: "/user/vendor/payment-settings/pin/",
+        url: "/vendor/payment-settings/pin/",
         method: "POST",
         body,
       }),
@@ -442,7 +446,7 @@ export const vendorApi = baseApi.injectEndpoints({
       { pin: string }
     >({
       query: (body) => ({
-        url: "/user/vendor/payment-settings/pin/verify/",
+        url: "/vendor/payment-settings/pin/verify/",
         method: "POST",
         body,
       }),
@@ -453,7 +457,7 @@ export const vendorApi = baseApi.injectEndpoints({
       void
     >({
       query: () => ({
-        url: "/user/vendor/payment-settings/pin/forgot/",
+        url: "/vendor/payment-settings/pin/forgot/",
         method: "POST",
       }),
     }),
