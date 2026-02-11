@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useGetOrderDetailsQuery } from '@/lib/api/publicApi';
+import { useGetCustomerOrderDetailsQuery } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 function TrackingContent() {
@@ -12,7 +12,7 @@ function TrackingContent() {
   const orderIdParam = searchParams.get('id');
   const [inputId, setInputId] = useState('');
 
-  const { data: response, isLoading, error } = useGetOrderDetailsQuery(orderIdParam || '', {
+  const { data: response, isLoading, error } = useGetCustomerOrderDetailsQuery(orderIdParam || '', {
     skip: !orderIdParam
   });
   const order = response;

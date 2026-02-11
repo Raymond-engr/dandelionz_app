@@ -2,7 +2,7 @@
 
 import AppLayout from '@/components/AppLayout';
 import { 
-  useGetVendorAnalyticsQuery, 
+  useGetVendorAnalyticsSelfQuery, 
   useGetVendorProfileQuery,
   useGetVendorOrdersListQuery,
 } from '@/lib/api/vendorApi';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function VendorHomePage() {
-  const { data: analytics, isLoading: analyticsLoading } = useGetVendorAnalyticsQuery();
+  const { data: analytics, isLoading: analyticsLoading } = useGetVendorAnalyticsSelfQuery();
   const { data: profile, isLoading: profileLoading } = useGetVendorProfileQuery();
   const { data: ordersData, isLoading: ordersLoading } = useGetVendorOrdersListQuery({ limit: 5 });
 

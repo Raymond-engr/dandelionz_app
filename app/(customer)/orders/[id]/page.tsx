@@ -3,7 +3,7 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams } from 'next/navigation';
-import { useGetOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation } from '@/lib/api/publicApi';
+import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,7 @@ export default function OrderDetailsPage() {
   const params = useParams();
   const orderId = params.id as string;
 
-  const { data: response, isLoading: isLoadingOrder, error } = useGetOrderDetailsQuery(orderId);
+  const { data: response, isLoading: isLoadingOrder, error } = useGetCustomerOrderDetailsQuery(orderId);
   // Fetch plans to check if this order is an installment order
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
   

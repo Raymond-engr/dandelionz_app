@@ -4,10 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Plus, Trash2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
-  useGetAllNotificationsQuery, 
+  useAdminGetAllNotificationsQuery, 
   useGetAdminSystemNotificationsQuery,
-  useMarkNotificationAsReadMutation, 
-  useMarkAllNotificationsAsReadMutation,
+  useAdminMarkNotificationAsReadMutation, 
+  useAdminMarkAllNotificationsAsReadMutation,
   useDeleteInboxNotificationMutation,
   usePublishNotificationMutation,
   useDeleteSystemNotificationMutation
@@ -29,7 +29,7 @@ export default function NotificationManagement() {
     isLoading: isInboxLoading, 
     isError: isInboxError, 
     refetch: refetchInbox 
-  } = useGetAllNotificationsQuery(
+  } = useAdminGetAllNotificationsQuery(
     undefined, 
     { skip: activeTab === 'created' }
   );
@@ -58,8 +58,8 @@ export default function NotificationManagement() {
   const notifications = (inboxResponse as any)?.results || (inboxResponse?.data as any)?.results || inboxResponse?.data || [];
   const systemNotifications = (systemResponse as any)?.results || (systemResponse?.data as any)?.results || systemResponse?.data || [];
 
-  const [markAsRead] = useMarkNotificationAsReadMutation();
-  const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+  const [markAsRead] = useAdminMarkNotificationAsReadMutation();
+  const [markAllAsRead] = useAdminMarkAllNotificationsAsReadMutation();
   const [deleteInboxNotification] = useDeleteInboxNotificationMutation();
   const [deleteSystemNotification] = useDeleteSystemNotificationMutation();
   const [publishNotification] = usePublishNotificationMutation();

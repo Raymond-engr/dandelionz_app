@@ -234,7 +234,7 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order", "Cart"],
     }),
 
-    getOrderDetails: builder.query<Order, string>({
+    getCustomerOrderDetails: builder.query<Order, string>({
       query: (uuid) => `/transactions/orders/${uuid}/`,
       providesTags: ["Order"],
     }),
@@ -407,7 +407,7 @@ export const {
   useRemoveFromWishlistMutation,
   useGetCustomerOrdersQuery,
   useCreateOrderMutation,
-  useGetOrderDetailsQuery,
+  useGetCustomerOrderDetailsQuery,
   useGetOrderReceiptQuery,
   usePayForOrderMutation,
   useAddProductReviewMutation,

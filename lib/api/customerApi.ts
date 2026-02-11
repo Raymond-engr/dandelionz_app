@@ -121,7 +121,7 @@ export const customerApi = baseApi.injectEndpoints({
       providesTags: ["Notification"],
     }),
 
-    markNotificationAsRead: builder.mutation<
+    customerMarkNotificationAsRead: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -133,7 +133,7 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    markAllNotificationsAsRead: builder.mutation<
+    customerMarkAllNotificationsAsRead: builder.mutation<
       { success: boolean; message: string },
       void
     >({
@@ -144,7 +144,7 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    deleteNotification: builder.mutation<
+    customerDeleteNotification: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -155,7 +155,7 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    archiveNotification: builder.mutation<
+    customerArchiveNotification: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -166,7 +166,7 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    getNotificationStats: builder.query<
+    customerGetNotificationStats: builder.query<
       { success: boolean; data: NotificationStats },
       void
     >({
@@ -183,11 +183,11 @@ export const {
   useChangeCustomerPasswordMutation,
   useDeleteCustomerAccountMutation,
   useGetCustomerNotificationsQuery,
-  useMarkNotificationAsReadMutation,
-  useMarkAllNotificationsAsReadMutation,
-  useDeleteNotificationMutation,
-  useArchiveNotificationMutation,
-  useGetNotificationStatsQuery,
+  useCustomerMarkNotificationAsReadMutation,
+  useCustomerMarkAllNotificationsAsReadMutation,
+  useCustomerDeleteNotificationMutation,
+  useCustomerArchiveNotificationMutation,
+  useCustomerGetNotificationStatsQuery,
 } = customerApi;
 
 

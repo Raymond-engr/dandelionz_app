@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   useGetVendorNotificationsQuery, 
-  useMarkNotificationAsReadMutation, 
-  useMarkAllNotificationsAsReadMutation,
-  useDeleteNotificationMutation
+  useVendorMarkNotificationAsReadMutation, 
+  useVendorMarkAllNotificationsAsReadMutation,
+  useVendorDeleteNotificationMutation
 } from '@/lib/api/vendorApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -36,9 +36,9 @@ export default function VendorNotificationsPage() {
     return true;
   });
 
-  const [markAsRead] = useMarkNotificationAsReadMutation();
-  const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllNotificationsAsReadMutation();
-  const [deleteNotification] = useDeleteNotificationMutation();
+  const [markAsRead] = useVendorMarkNotificationAsReadMutation();
+  const [markAllAsRead, { isLoading: isMarkingAll }] = useVendorMarkAllNotificationsAsReadMutation();
+  const [deleteNotification] = useVendorDeleteNotificationMutation();
 
   // WebSocket Connection
   const ws = useRef<WebSocket | null>(null);

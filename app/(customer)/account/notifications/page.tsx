@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   useGetCustomerNotificationsQuery, 
-  useMarkNotificationAsReadMutation, 
-  useMarkAllNotificationsAsReadMutation,
-  useDeleteNotificationMutation
+  useCustomerMarkNotificationAsReadMutation, 
+  useCustomerMarkAllNotificationsAsReadMutation,
+  useCustomerDeleteNotificationMutation
 } from '@/lib/api/customerApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -36,9 +36,9 @@ export default function CustomerNotificationsPage() {
     return true;
   });
 
-  const [markAsRead] = useMarkNotificationAsReadMutation();
-  const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllNotificationsAsReadMutation();
-  const [deleteNotification] = useDeleteNotificationMutation();
+  const [markAsRead] = useCustomerMarkNotificationAsReadMutation();
+  const [markAllAsRead, { isLoading: isMarkingAll }] = useCustomerMarkAllNotificationsAsReadMutation();
+  const [deleteNotification] = useCustomerDeleteNotificationMutation();
 
   // WebSocket Connection
   const ws = useRef<WebSocket | null>(null);

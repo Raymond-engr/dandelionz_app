@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { Home, Order, Wallet, Account, Shop } from './icons'; 
 import { usePathname } from 'next/navigation';
 import { useAppSelector } from '@/lib/hooks';
-import { useGetNotificationStatsQuery } from '@/lib/api/vendorApi';
+import { useVendorGetNotificationStatsQuery } from '@/lib/api/vendorApi';
 
 export default function VendorBottomNav() {
   const pathname = usePathname();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const { data: statsResponse } = useGetNotificationStatsQuery(undefined, {
+  const { data: statsResponse } = useVendorGetNotificationStatsQuery(undefined, {
     skip: !isAuthenticated,
     pollingInterval: 60000,
   });

@@ -326,7 +326,7 @@ export const vendorApi = baseApi.injectEndpoints({
     }),
 
     // Order Management
-    getVendorOrders: builder.query<
+    getVendorOrdersSummary: builder.query<
       { success: boolean; data: OrderSummary },
       void // No params for summary
     >({
@@ -368,7 +368,7 @@ export const vendorApi = baseApi.injectEndpoints({
     }),
 
     // Analytics
-    getVendorAnalytics: builder.query<
+    getVendorAnalyticsSelf: builder.query<
       { success: boolean; data: VendorAnalytics },
       void
     >({
@@ -385,7 +385,7 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Payment"],
     }),
 
-    requestWithdrawal: builder.mutation<
+    vendorRequestWithdrawal: builder.mutation<
       { success: boolean; message: string; reference?: string },
       { amount: string; pin: string }
     >({
@@ -474,7 +474,7 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Notification"],
     }),
 
-    markNotificationAsRead: builder.mutation<
+    vendorMarkNotificationAsRead: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -486,7 +486,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    markAllNotificationsAsRead: builder.mutation<
+    vendorMarkAllNotificationsAsRead: builder.mutation<
       { success: boolean; message: string },
       void
     >({
@@ -497,7 +497,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    deleteNotification: builder.mutation<
+    vendorDeleteNotification: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -508,7 +508,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    archiveNotification: builder.mutation<
+    vendorArchiveNotification: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -519,7 +519,7 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    getNotificationStats: builder.query<
+    vendorGetNotificationStats: builder.query<
       { success: boolean; data: NotificationStats },
       void
     >({
@@ -527,7 +527,7 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Notification"],
     }),
 
-    bulkDeleteNotifications: builder.mutation<
+    vendorBulkDeleteNotifications: builder.mutation<
       { success: boolean; message: string },
       string[]
     >({
@@ -567,13 +567,13 @@ export const {
   useUpdateDraftMutation,
   useSubmitDraftMutation,
   useDeleteDraftMutation,
-  useGetVendorOrdersQuery,
+  useGetVendorOrdersSummaryQuery,
   useGetVendorOrdersListQuery,
   useGetVendorOrderDetailsQuery,
   useUpdateVendorOrderStatusMutation,
-  useGetVendorAnalyticsQuery,
+  useGetVendorAnalyticsSelfQuery,
   useGetWalletBalanceQuery,
-  useRequestWithdrawalMutation,
+  useVendorRequestWithdrawalMutation,
   useGetTransactionHistoryQuery,
   useGetPaymentSettingsQuery,
   useUpdatePaymentSettingsMutation,
@@ -581,11 +581,11 @@ export const {
   useVerifyPaymentPINMutation,
   useRequestPINResetMutation,
   useGetVendorNotificationsQuery,
-  useMarkNotificationAsReadMutation,
-  useMarkAllNotificationsAsReadMutation,
-  useDeleteNotificationMutation,
-  useArchiveNotificationMutation,
-  useGetNotificationStatsQuery,
-  useBulkDeleteNotificationsMutation,
+  useVendorMarkNotificationAsReadMutation,
+  useVendorMarkAllNotificationsAsReadMutation,
+  useVendorDeleteNotificationMutation,
+  useVendorArchiveNotificationMutation,
+  useVendorGetNotificationStatsQuery,
+  useVendorBulkDeleteNotificationsMutation,
   useDeleteAccountMutation,
 } = vendorApi;

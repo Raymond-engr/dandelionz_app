@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useRequestWithdrawalMutation } from '@/lib/api/adminApi';
+import { useAdminRequestWithdrawalMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,7 @@ export default function WithdrawPage() {
   const router = useRouter();
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
-  const [requestWithdrawal, { isLoading }] = useRequestWithdrawalMutation();
+  const [requestWithdrawal, { isLoading }] = useAdminRequestWithdrawalMutation();
 
   const handleWithdraw = async () => {
     if (!amount || !pin) {
