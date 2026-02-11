@@ -2,11 +2,11 @@
 
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useGetVendorOrdersQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
+import { useGetVendorOrdersSummaryQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function VendorOrdersPage() {
-  const { data: orderSummaryData, isLoading: isLoadingSummary, error: summaryError } = useGetVendorOrdersQuery();
+  const { data: orderSummaryData, isLoading: isLoadingSummary, error: summaryError } = useGetVendorOrdersSummaryQuery();
   const { data: orderListData, isLoading: isLoadingList, error: listError } = useGetVendorOrdersListQuery({});
 
   const orders = orderListData?.data || [];

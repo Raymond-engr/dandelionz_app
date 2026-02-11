@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useGetCustomerProfileQuery, useGetNotificationStatsQuery } from '@/lib/api/customerApi';
+import { useGetCustomerProfileQuery, useCustomerGetNotificationStatsQuery } from '@/lib/api/customerApi';
 import { useAppSelector, useLogout } from '@/lib/hooks';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -22,7 +22,7 @@ export default function AccountPage() {
     skip: !isAuthenticated,
   });
 
-  const { data: statsResponse } = useGetNotificationStatsQuery(undefined, {
+  const { data: statsResponse } = useCustomerGetNotificationStatsQuery(undefined, {
     skip: !isAuthenticated,
     pollingInterval: 30000, // Poll every 30 seconds
   });

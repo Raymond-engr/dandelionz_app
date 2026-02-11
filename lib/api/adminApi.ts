@@ -373,7 +373,7 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Wallet"],
     }),
 
-    requestWithdrawal: builder.mutation<{ success: boolean; message: string }, { amount: string; pin: string }>({
+    adminRequestWithdrawal: builder.mutation<{ success: boolean; message: string }, { amount: string; pin: string }>({
       query: (body) => ({
         url: "/user/admin/wallet/withdraw/",
         method: "POST",
@@ -556,14 +556,14 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Product"],
     }),
 
-    getVendorOrders: builder.query<{ success: boolean; data: Order[] }, string>(
+    adminGetVendorOrders: builder.query<{ success: boolean; data: Order[] }, string>(
       {
         query: (uuid) => `/user/admin/vendors/${uuid}/orders/`,
         providesTags: ["Order"],
       }
     ),
 
-    getVendorAnalytics: builder.query<
+    adminGetVendorAnalytics: builder.query<
       { success: boolean; data: Analytics },
       string
     >({
@@ -591,7 +591,7 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Order"],
     }),
 
-    getOrderDetails: builder.query<Order, string>({
+    getAdminOrderDetails: builder.query<Order, string>({
       query: (order_id) => `/user/admin/orders/${order_id}/`,
       providesTags: ["Order"],
     }),
@@ -822,7 +822,7 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Notification Management (Inbox)
-    getAllNotifications: builder.query<
+    adminGetAllNotifications: builder.query<
       { success: boolean; data: Notification[] },
       { page?: number; page_size?: number; is_read?: boolean } | void
     >({
@@ -833,7 +833,7 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Notification"],
     }),
 
-    markNotificationAsRead: builder.mutation<
+    adminMarkNotificationAsRead: builder.mutation<
       { success: boolean; message: string },
       string
     >({
@@ -845,7 +845,7 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    markAllNotificationsAsRead: builder.mutation<
+    adminMarkAllNotificationsAsRead: builder.mutation<
       { success: boolean; message: string },
       void
     >({
@@ -922,7 +922,7 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
-    getNotificationStats: builder.query<
+    adminGetNotificationStats: builder.query<
       { success: boolean; data: NotificationStats },
       void
     >({
@@ -996,11 +996,11 @@ export const {
   useVerifyVendorKYCMutation,
   useSuspendVendorMutation,
   useGetVendorProductsQuery,
-  useGetVendorOrdersQuery,
-  useGetVendorAnalyticsQuery,
+  useAdminGetVendorOrdersQuery,
+  useAdminGetVendorAnalyticsQuery,
   useGetOrderSummaryQuery,
   useGetAllOrdersQuery,
-  useGetOrderDetailsQuery,
+  useGetAdminOrderDetailsQuery,
   useUpdateOrderStatusMutation,
   useCancelOrderWithReasonMutation,
   useAssignLogisticsMutation,
@@ -1027,23 +1027,23 @@ export const {
   useGetAllDisputesQuery,
   useGetDisputeDetailsQuery,
   useResolveDisputeMutation,
-  useGetAllNotificationsQuery,
+  useAdminGetAllNotificationsQuery,
   useGetAdminSystemNotificationsQuery,
-  useMarkNotificationAsReadMutation,
-  useMarkAllNotificationsAsReadMutation,
+  useAdminMarkNotificationAsReadMutation,
+  useAdminMarkAllNotificationsAsReadMutation,
   useCreateNotificationMutation,
   usePublishNotificationMutation,
   useGetNotificationDetailsQuery,
   useDeleteSystemNotificationMutation,
   useDeleteInboxNotificationMutation,
-  useGetNotificationStatsQuery,
+  useAdminGetNotificationStatsQuery,
   useGetAllWithdrawalsQuery,
   useGetWithdrawalDetailQuery,
   useApproveWithdrawalMutation,
   useRejectWithdrawalMutation,
   useGetWalletStatsQuery,
   useGetWalletTransactionsQuery,
-  useRequestWithdrawalMutation,
+  useAdminRequestWithdrawalMutation,
   useGetAdminPaymentSettingsQuery,
   useUpdateAdminPaymentSettingsMutation,
   useChangePaymentPinMutation,

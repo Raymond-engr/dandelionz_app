@@ -3,7 +3,7 @@
 import React, { useState, use } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation } from '@/lib/api/adminApi';
+import { useGetAdminOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { OrderItem } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
 
   const orderId = params.id;
   
-  const { data: order, isLoading, error, refetch } = useGetOrderDetailsQuery(orderId);
+  const { data: order, isLoading, error, refetch } = useGetAdminOrderDetailsQuery(orderId);
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
 

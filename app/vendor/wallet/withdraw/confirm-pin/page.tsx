@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useRequestWithdrawalMutation } from '@/lib/api/vendorApi';
+import { useVendorRequestWithdrawalMutation } from '@/lib/api/vendorApi';
 import toast from 'react-hot-toast';
 
 export default function ConfirmWithdrawalPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [requestWithdrawal, { isLoading, error }] = useRequestWithdrawalMutation();
+  const [requestWithdrawal, { isLoading, error }] = useVendorRequestWithdrawalMutation();
 
   const [pin, setPin] = useState('');
   const [localError, setLocalError] = useState('');

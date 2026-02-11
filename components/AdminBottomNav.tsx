@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { Home, Order, Account, Shop, Product, Users } from './icons'; 
 import { usePathname } from 'next/navigation';
 import { useAppSelector } from '@/lib/hooks';
-import { useGetNotificationStatsQuery } from '@/lib/api/adminApi';
+import { useAdminGetNotificationStatsQuery } from '@/lib/api/adminApi';
 
 export default function AdminBottomNav() {
   const pathname = usePathname();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const { data: statsResponse } = useGetNotificationStatsQuery(undefined, {
+  const { data: statsResponse } = useAdminGetNotificationStatsQuery(undefined, {
     skip: !isAuthenticated,
     pollingInterval: 60000,
   });
