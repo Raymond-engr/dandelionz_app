@@ -5,6 +5,7 @@ import { Bell, Users, Store, ShoppingCart, Package } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAnalyticsQuery } from '@/lib/api/adminApi';
+import { useAppSelector } from '@/lib/hooks';
 
 interface StatCardProps {
   title: string;
@@ -37,6 +38,7 @@ const StatCard = ({ title, value, change, icon, bgColor = "bg-white", isLoading 
 export default function AdminDashboard() {
   const router = useRouter();
   const { data: analytics, isLoading, error } = useGetAnalyticsQuery();
+  const { unreadCount } = useAppSelector((state) => state.notification);
 
   if (error) {
     return (
@@ -65,8 +67,11 @@ export default function AdminDashboard() {
               <h1 className="text-base text-gray-600 mb-1">Welcome back,</h1>
               <p className="text-xl font-bold text-gray-900">Admin</p>
             </div>
-            <button onClick={() => router.push('/admin/account/notifications')}>
+            <button onClick={() => router.push('/admin/account/notifications')} className="relative">
               <Bell className="w-6 h-6 text-system-blue-dark" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white box-content"></span>
+              )}
             </button>
           </div>
 
