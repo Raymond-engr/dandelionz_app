@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useGetVendorProfileQuery, usePartialUpdateVendorProfileMutation } from '@/lib/api/vendorApi';
+import { useGetVendorProfileQuery, useUpdateVendorProfileMutation, useUploadVendorPhotoMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -30,7 +30,8 @@ interface NominatimResult {
 export default function VendorProfilePage() {
   const router = useRouter();
   const { data: profileData, isLoading, error } = useGetVendorProfileQuery();
-  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateVendorProfileMutation();
+  const [updateProfile, { isLoading: isSaving }] = useUpdateVendorProfileMutation();
+  const [uploadPhoto, { isLoading: isUploading }] = useUploadVendorPhotoMutation();
 
   const [isEditing, setIsEditing] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
@@ -159,13 +160,6 @@ export default function VendorProfilePage() {
     }
   };
 
-  const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-
   const handleSave = async () => {
     // Validation
     if (formData.account_number && !/^\d{10}$/.test(formData.account_number)) {
@@ -173,58 +167,59 @@ export default function VendorProfilePage() {
       return;
     }
 
-    const updateData = new FormData();
-
-    // Only append fields that have changed to be efficient
-    if (formData.fullName !== profileData?.data.user.full_name) {
-        updateData.append('full_name', formData.fullName);
-    }
-    if (formData.phoneNumber !== profileData?.data.user.phone_number) {
-        updateData.append('phone_number', formData.phoneNumber);
-    }
-    if (formData.storeName !== profileData?.data.store_name) {
-        updateData.append('store_name', formData.storeName);
-    }
-    if (formData.storeDescription !== profileData?.data.store_description) {
-        updateData.append('store_description', formData.storeDescription);
-    }
-    if (formData.address !== profileData?.data.address) {
-        updateData.append('address', formData.address);
-    }
-    if (latitude !== null && latitude !== profileData?.data.latitude) {
-        updateData.append('latitude', latitude.toString());
-    }
-    if (longitude !== null && longitude !== profileData?.data.longitude) {
-        updateData.append('longitude', longitude.toString());
-    }
-    if (formData.bank_name !== profileData?.data.bank_name) {
-        updateData.append('bank_name', formData.bank_name);
-    }
-    if (formData.account_number !== profileData?.data.account_number) {
-        updateData.append('account_number', formData.account_number);
-    }
-    if (profilePictureFile) {
-        try {
-            const base64Image = await toBase64(profilePictureFile);
-            updateData.append('profile_picture', base64Image);
-        } catch (error) {
-            console.error("Error converting file to base64", error);
-            toast.error("Failed to process image");
-            return;
-        }
-    }
-    
-    // Check if any data has been changed
-    if ([...updateData.entries()].length === 0) {
-        setIsEditing(false);
-        return;
-    }
+    let photoUploaded = false;
+    let profileUpdated = false;
 
     try {
-      await updateProfile(updateData).unwrap();
-      toast.success('Profile updated successfully');
+      // 1. Handle Photo Upload
+      if (profilePictureFile) {
+        const photoData = new FormData();
+        photoData.append('profile_picture', profilePictureFile);
+        await uploadPhoto(photoData).unwrap();
+        photoUploaded = true;
+      }
+
+      // 2. Handle Profile Data Update
+      const changedFields: any = {};
+      if (formData.fullName !== profileData?.data.user.full_name) {
+        changedFields.full_name = formData.fullName;
+      }
+      if (formData.phoneNumber !== profileData?.data.user.phone_number) {
+        changedFields.phone_number = formData.phoneNumber;
+      }
+      if (formData.storeName !== profileData?.data.store_name) {
+        changedFields.store_name = formData.storeName;
+      }
+      if (formData.storeDescription !== profileData?.data.store_description) {
+        changedFields.store_description = formData.storeDescription;
+      }
+      if (formData.address !== profileData?.data.address) {
+        changedFields.address = formData.address;
+      }
+      if (latitude !== null && latitude !== profileData?.data.latitude) {
+        changedFields.latitude = latitude;
+      }
+      if (longitude !== null && longitude !== profileData?.data.longitude) {
+        changedFields.longitude = longitude;
+      }
+      if (formData.bank_name !== profileData?.data.bank_name) {
+        changedFields.bank_name = formData.bank_name;
+      }
+      if (formData.account_number !== profileData?.data.account_number) {
+        changedFields.account_number = formData.account_number;
+      }
+
+      if (Object.keys(changedFields).length > 0) {
+        await updateProfile(changedFields).unwrap();
+        profileUpdated = true;
+      }
+
+      if (photoUploaded || profileUpdated) {
+        toast.success('Profile updated successfully');
+      }
+      
       setIsEditing(false);
-      setProfilePictureFile(null); // Reset file input after successful upload
+      setProfilePictureFile(null);
     } catch (err) {
       console.error(err);
       toast.error('Failed to update profile');
@@ -496,10 +491,10 @@ export default function VendorProfilePage() {
               <>
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
+                  disabled={isSaving || isUploading}
                   className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving || isUploading ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={handleCancel}

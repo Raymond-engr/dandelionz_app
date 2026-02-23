@@ -77,6 +77,18 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["Customer"],
     }),
 
+    uploadCustomerPhoto: builder.mutation<
+      { success: boolean; data: CustomerProfile },
+      FormData
+    >({
+      query: (body) => ({
+        url: "/user/customer/account/photo/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Customer"],
+    }),
+
     partialUpdateCustomerProfile: builder.mutation<
       CustomerProfile,
       FormData
@@ -180,6 +192,7 @@ export const {
   useGetCustomerProfileQuery,
   useUpdateCustomerProfileMutation,
   usePartialUpdateCustomerProfileMutation,
+  useUploadCustomerPhotoMutation,
   useChangeCustomerPasswordMutation,
   useDeleteCustomerAccountMutation,
   useGetCustomerNotificationsQuery,

@@ -200,6 +200,30 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Vendor"],
     }),
 
+    updateVendorProfile: builder.mutation<
+      { success: boolean; data: VendorProfile },
+      Partial<VendorProfile>
+    >({
+      query: (body) => ({
+        url: "/user/vendor/profile/",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Vendor"],
+    }),
+
+    uploadVendorPhoto: builder.mutation<
+      { success: boolean; data: VendorProfile },
+      FormData
+    >({
+      query: (body) => ({
+        url: "/user/vendor/account/photo/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Vendor"],
+    }),
+
     changeVendorPassword: builder.mutation<
       { success: boolean; message: string },
       { current_password: string; new_password: string }
@@ -561,6 +585,8 @@ export const vendorApi = baseApi.injectEndpoints({
 export const {
   useGetVendorProfileQuery,
   usePartialUpdateVendorProfileMutation,
+  useUpdateVendorProfileMutation,
+  useUploadVendorPhotoMutation,
   useChangeVendorPasswordMutation,
   useGetStoreProductsQuery,
   useCreateStoreProductMutation,
