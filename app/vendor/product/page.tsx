@@ -8,6 +8,7 @@ import {
   useGetDraftsQuery,
   useDeleteStoreProductMutation,
   useDeleteDraftMutation,
+  useSubmitDraftMutation,
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -25,6 +26,7 @@ export default function VendorProductsPage() {
   
   const [deleteStoreProduct, { isLoading: isDeletingStore }] = useDeleteStoreProductMutation();
   const [deleteDraft, { isLoading: isDeletingDraft }] = useDeleteDraftMutation();
+  const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<DeleteConfirmState | null>(null);
 
@@ -34,6 +36,15 @@ export default function VendorProductsPage() {
   const isLoading = isLoadingStore || isLoadingDrafts;
   const isDeleting = isDeletingStore || isDeletingDraft;
   const error = storeError || draftError;
+
+  const handleSubmitDraft = async (slug: string) => {
+    try {
+      await submitDraft(slug).unwrap();
+      toast.success('Product submitted for approval!');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to submit product');
+    }
+  };
 
   const handleDelete = async () => {
     if (!showDeleteConfirm) return;
@@ -208,6 +219,15 @@ export default function VendorProductsPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </Link>
+                          <button
+                            onClick={() => handleSubmitDraft(product.slug)}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                            disabled={isSubmitting}
+                          >
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                          </button>
                           <button
                             onClick={() => setShowDeleteConfirm({ slug: product.slug, type: 'draft' })}
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"

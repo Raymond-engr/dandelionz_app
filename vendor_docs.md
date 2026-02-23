@@ -513,7 +513,7 @@ This section summarizes the discrepancies found between the API documentation, t
 - **Status**: Closed
 
 - **Section**: `POST /user/vendor/products/add/` & `POST /store/vendor/drafts/`
-- **Findings**: The 'Add New Product' page has been refactored. It now correctly uses `useCreateStoreProductMutation` to publish a product directly and `useCreateDraftMutation` to save a product as a draft.
+- **Findings**: The 'Add New Product' page has been standardized to follow the recommended draft-first flow. It now uses `useCreateDraftMutation` to save a product as a draft, and the "Save & Submit" action sequentially calls `useCreateDraftMutation` followed by `useSubmitDraftMutation`. The previous shortcut flow (`useCreateStoreProductMutation`) has been removed from the UI to ensure consistency and proper media handling. Additionally, a "Submit for Approval" action has been added directly to the draft product list for better accessibility.
 - **Actionable Items**: None.
 - **Priority**: High
 - **Status**: Closed

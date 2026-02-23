@@ -23,17 +23,21 @@ export default function WithdrawalDetailPage() {
   const [rejectWithdrawal, { isLoading: isRejecting }] = useRejectWithdrawalMutation();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [approveNotes, setApproveNotes] = useState('');
 
   const withdrawal = data?.data;
 
   const handleApprove = async () => {
-    if (!window.confirm('Are you sure you want to approve this withdrawal?')) return;
-
     try {
-      const res = await approveWithdrawal({ withdrawal_id: id }).unwrap();
+      const res = await approveWithdrawal({ 
+        withdrawal_id: id,
+        notes: approveNotes 
+      }).unwrap();
       if (res.success) {
         toast.success(res.message);
+        setShowApproveModal(false);
         router.back();
       }
     } catch (err: any) {
@@ -178,6 +182,12 @@ export default function WithdrawalDetailPage() {
                 <span className="text-sm text-gray-500">Account Name</span>
                 <span className="text-sm font-medium text-gray-900">{withdrawal.account_name}</span>
               </div>
+              {withdrawal.recipient_code && (
+                <div className="flex justify-between pt-2 border-t border-gray-50">
+                  <span className="text-sm text-gray-500">Recipient Code</span>
+                  <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">{withdrawal.recipient_code}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -192,23 +202,60 @@ export default function WithdrawalDetailPage() {
                 Reject
               </button>
               <button
-                onClick={handleApprove}
+                onClick={() => setShowApproveModal(true)}
                 disabled={isApproving || isRejecting}
                 className="py-3 px-4 bg-system-blue-light text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-100 hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {isApproving ? 'Approving...' : 'Approve'}
+                Approve
               </button>
             </div>
           )}
 
-          {withdrawal.failure_reason && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
-              <p className="text-xs text-red-500 mb-1 font-semibold uppercase">Rejection Reason</p>
-              <p className="text-sm text-red-700">{withdrawal.failure_reason}</p>
+          {(withdrawal.failure_reason || (withdrawal as any).notes) && (
+            <div className={`p-4 rounded-xl ${withdrawal.failure_reason ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'}`}>
+              <p className={`text-xs mb-1 font-semibold uppercase ${withdrawal.failure_reason ? 'text-red-500' : 'text-blue-500'}`}>
+                {withdrawal.failure_reason ? 'Rejection Reason' : 'Admin Notes'}
+              </p>
+              <p className={`text-sm ${withdrawal.failure_reason ? 'text-red-700' : 'text-blue-700'}`}>
+                {withdrawal.failure_reason || (withdrawal as any).notes}
+              </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Approve Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 animate-in slide-in-from-bottom duration-300">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Approve Withdrawal</h3>
+            <p className="text-sm text-gray-500 mb-4">You are about to approve this withdrawal request. You can add optional notes or a payment reference below.</p>
+            
+            <textarea
+              value={approveNotes}
+              onChange={(e) => setApproveNotes(e.target.value)}
+              placeholder="e.g., Transfer completed via Paystack dashboard. Ref: TXN_12345"
+              className="w-full h-32 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none mb-6"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={isApproving}
+                className="flex-1 py-3 bg-system-blue-light text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-100"
+              >
+                {isApproving ? 'Approving...' : 'Confirm Approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {showRejectModal && (
