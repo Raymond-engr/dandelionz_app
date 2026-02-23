@@ -21,16 +21,61 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
   const router = useRouter();
   const vendorId = params.id;
 
-  const { data, isLoading, error } = useGetVendorDetailsQuery(vendorId);
+  const { data, isLoading, error, refetch } = useGetVendorDetailsQuery(vendorId);
   const [approveVendor, { isLoading: isApproving }] = useApproveVendorMutation();
   const [verifyKYC, { isLoading: isVerifying }] = useVerifyVendorKYCMutation();
   const [suspendVendor, { isLoading: isSuspending }] = useSuspendVendorMutation();
 
-  const [action, setAction] = useState('Approve Vendor');
+  const [action, setAction] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const vendor = data?.data;
+
+  // Configuration for actions with descriptions and styling
+  const ACTION_CONFIG = React.useMemo(() => ({
+    'Approve Vendor': {
+      description: "Activate the vendor's store. This allows them to list products and start selling on the platform.",
+      color: 'text-green-600',
+      buttonText: 'Approve Vendor',
+      show: vendor ? !vendor.is_active : false
+    },
+    'Suspend Vendor': {
+      description: "Temporarily disable this store. The vendor will be unable to process new orders until reactivated.",
+      color: 'text-orange-600',
+      buttonText: 'Suspend Vendor',
+      show: vendor ? vendor.is_active : false
+    },
+    'Reject Vendor': {
+      description: "Deactivate this vendor's account. They will be notified that their application or status has been rejected.",
+      color: 'text-red-600',
+      buttonText: 'Reject Vendor',
+      show: vendor ? vendor.is_active : false
+    },
+    'Verify KYC': {
+      description: "Mark this vendor's identity and business documents as verified. This builds trust with customers.",
+      color: 'text-blue-600',
+      buttonText: 'Verify Documents',
+      show: vendor ? !vendor.is_verified_vendor : false
+    }
+  }), [vendor]);
+
+  const availableActions = React.useMemo(() => {
+    return Object.entries(ACTION_CONFIG)
+      .filter(([_, config]) => config.show)
+      .map(([name]) => name);
+  }, [ACTION_CONFIG]);
+
+  // Sync selected action with available options
+  React.useEffect(() => {
+    if (availableActions.length > 0) {
+      if (!action || !availableActions.includes(action)) {
+        setAction(availableActions[0]);
+      }
+    } else {
+      setAction('');
+    }
+  }, [availableActions, action]);
 
   const handleConfirmAction = async () => {
     if (!vendor) return;
@@ -41,11 +86,12 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
           user_uuid: vendorId, 
           approve: true 
         }).unwrap();
-        setSuccessMessage('Vendor approved successfully');
+        setSuccessMessage('Vendor approved and activated successfully');
       } else if (action === 'Suspend Vendor') {
-        await suspendVendor({ 
-          uuid: vendorId, 
-          suspend: true 
+        // According to backend update, /approve/ now toggles is_active
+        await approveVendor({ 
+          user_uuid: vendorId, 
+          approve: false 
         }).unwrap();
         setSuccessMessage('Vendor suspended successfully');
       } else if (action === 'Reject Vendor') {
@@ -55,14 +101,18 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         }).unwrap();
         setSuccessMessage('Vendor rejected successfully');
       } else if (action === 'Verify KYC') {
-        await verifyKYC({ user_uuid: vendorId }).unwrap();
+        await verifyKYC({ 
+          user_uuid: vendorId, 
+          approve: true 
+        }).unwrap();
         setSuccessMessage('Vendor KYC verified successfully');
       }
       
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        router.back();
+        // Refresh data instead of back() to show updated status immediately
+        refetch();
       }, 2000);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to perform action');
@@ -213,27 +263,48 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
             </div>
 
             {/* Action Controls */}
-            <div className="space-y-3">
-              <select
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-                disabled={isSuspending || isApproving || isVerifying}
-              >
-                <option>Approve Vendor</option>
-                <option>Suspend Vendor</option>
-                <option>Reject Vendor</option>
-                <option>Verify KYC</option>
-              </select>
+            {availableActions.length > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                    Choose Action
+                  </label>
+                  <select
+                    value={action}
+                    onChange={(e) => setAction(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light bg-white"
+                    disabled={isSuspending || isApproving || isVerifying}
+                  >
+                    {availableActions.map((act) => (
+                      <option key={act} value={act}>{act}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <button 
-                onClick={handleConfirmAction}
-                disabled={isSuspending || isApproving || isVerifying}
-                className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
-              >
-                {(isSuspending || isApproving || isVerifying) ? 'Processing...' : 'Confirm Action'}
-              </button>
-            </div>
+                {/* Action Description Feedback */}
+                {action && (
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p className="text-xs text-blue-800 leading-relaxed italic">
+                      {ACTION_CONFIG[action as keyof typeof ACTION_CONFIG].description}
+                    </p>
+                  </div>
+                )}
+
+                <button 
+                  onClick={handleConfirmAction}
+                  disabled={isSuspending || isApproving || isVerifying}
+                  className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                >
+                  {(isSuspending || isApproving || isVerifying) 
+                    ? 'Processing...' 
+                    : (ACTION_CONFIG[action as keyof typeof ACTION_CONFIG]?.buttonText || 'Confirm Action')}
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                <p className="text-sm text-gray-500 font-medium">No pending actions for this vendor.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

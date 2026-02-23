@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useChangeVendorPasswordMutation } from '@/lib/api/vendorApi';
 import toast from 'react-hot-toast';
+import PasswordCriteria, { validatePassword } from '@/components/PasswordCriteria';
 
 export default function VendorChangePasswordPage() {
   const router = useRouter();
@@ -37,8 +38,9 @@ export default function VendorChangePasswordPage() {
       return;
     }
 
-    if (passwords.new.length < 8) {
-      setError('New password must be at least 8 characters long');
+    const criteria = validatePassword(passwords.new);
+    if (!criteria.length || !criteria.uppercase || !criteria.lowercase || !criteria.special) {
+      setError('New password does not meet all security requirements.');
       return;
     }
 
@@ -151,7 +153,7 @@ export default function VendorChangePasswordPage() {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+                  {passwords.new && <PasswordCriteria password={passwords.new} />}
                 </div>
 
                 <div>

@@ -11,9 +11,8 @@ import { Order } from '@/lib/api/adminApi';
 
 export default function OrderManagement() {
   const router = useRouter();
-  const { data: ordersData, isLoading, error } = useGetAllOrdersQuery({});
+  const { data: orders = [], isLoading, error } = useGetAllOrdersQuery({});
 
-  const orders = ordersData?.data || [];
   const totalOrders = orders.length;
 
   const handleOrderClick = (orderId: string) => {
@@ -24,8 +23,12 @@ export default function OrderManagement() {
     switch (status.toLowerCase()) {
       case 'delivered':
         return 'bg-green-100 text-green-700';
+      case 'paid':
+        return 'bg-blue-100 text-blue-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
+      case 'processing':
+        return 'bg-purple-100 text-purple-700';
       case 'cancelled':
         return 'bg-red-100 text-red-700';
       default:
@@ -76,15 +79,15 @@ export default function OrderManagement() {
                     <div className="text-left flex-1">
                       <p className="text-sm font-semibold text-gray-900">{order.order_id}</p>
                       <p className="text-xs text-gray-600">
-                        {typeof order.customer === 'object' ? order.customer.full_name : (order.customer_email || order.customer)}
+                        {order.customer?.full_name || 'N/A'}
                       </p>
-                      <p className="text-xs text-gray-600">{format(new Date(order.ordered_at), 'PPP')}</p>
+                      <p className="text-xs text-gray-600">{order.ordered_at ? format(new Date(order.ordered_at), 'PPP') : 'N/A'}</p>
                     </div>
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status)}`}>
-                      {order.status}
+                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status || order.current_status)}`}>
+                      {order.status || order.current_status}
                     </span>
                   </div>
-                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </button>
               ))}
             </div>

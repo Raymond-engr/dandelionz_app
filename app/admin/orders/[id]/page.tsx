@@ -45,15 +45,15 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
     }
   };
   
-  // Use API timeline if available, otherwise fallback to local logic
+  // Use API timeline if available, otherwise fallback to improved local logic
   const trackingSteps = order?.timeline?.map(step => ({
     label: step.label,
     active: step.completed
   })) || [
-    { label: 'Order Placed', active: order?.status === 'PENDING' || order?.status === 'PROCESSING' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' || order?.status === 'PAID' },
-    { label: 'Payment Confirmed', active: order?.status === 'PAID' || order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
-    { label: 'Product Shipped', active: order?.status === 'SHIPPED' || order?.status === 'DELIVERED' },
-    { label: 'Delivered', active: order?.status === 'DELIVERED' },
+    { label: 'Order Placed', active: !!order?.ordered_at },
+    { label: 'Payment Confirmed', active: order?.payment_status === 'PAID' || order?.current_status === 'PAID' || order?.current_status === 'SHIPPED' || order?.current_status === 'DELIVERED' },
+    { label: 'Product Shipped', active: order?.current_status === 'SHIPPED' || order?.current_status === 'DELIVERED' },
+    { label: 'Delivered', active: order?.current_status === 'DELIVERED' },
   ];
   
   if (isLoading) {
@@ -75,8 +75,6 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
     );
   }
 
-  const deliveryFee = 0;
-
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-[600px] bg-white relative">
@@ -94,21 +92,21 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Full Name</label>
                 <p className="text-sm font-medium text-gray-900">
-                  {typeof order.customer === 'object' ? order.customer.full_name : (order.customer_email || 'N/A')}
+                  {order.customer?.full_name || 'N/A'}
                 </p>
               </div>
               <div>
                 <label className="text-xs text-gray-600 block mb-1">Email Address</label>
                 <p className="text-sm font-medium text-gray-900">
-                  {typeof order.customer === 'object' ? order.customer.email : (order.customer_email || 'N/A')}
+                  {order.customer?.email || 'N/A'}
                 </p>
               </div>
-              {typeof order.customer === 'string' && (
-                <div>
-                  <label className="text-xs text-gray-600 block mb-1">Customer ID</label>
-                  <p className="text-sm font-medium text-gray-900 truncate">{order.customer}</p>
-                </div>
-              )}
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">Phone Number</label>
+                <p className="text-sm font-medium text-gray-900">
+                  {order.customer?.phone_number || 'N/A'}
+                </p>
+              </div>
               {order.shipping_address && (
                 <div>
                    <label className="text-xs text-gray-600 block mb-1">Shipping Address</label>
@@ -119,19 +117,15 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               )}
             </div>
 
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Vendor Information</h2>
-            <div className="space-y-3 mb-6">
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">Store Name</label>
-                <p className="text-sm font-medium text-gray-900">{order.vendor?.store_name || 'N/A'}</p>
-              </div>
-            </div>
-
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Order Summary</h2>
             <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
               {order.order_items?.map((item: OrderItem, index: number) => (
                 <div key={index} className="pb-2 border-b border-gray-200 last:border-b-0">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">{item.product.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">{item.product_name}</p>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Vendor:</span>
+                    <span className="font-medium text-gray-900">{item.vendor_name || 'Unnamed Store'}</span>
+                  </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Quantity:</span>
                     <span className="font-medium text-gray-900">{item.quantity}</span>
@@ -145,11 +139,11 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Delivery Fee:</span>
-                  <span className="font-medium text-gray-900">₦{parseFloat(order.delivery_fee).toLocaleString()}</span>
+                  <span className="font-medium text-gray-900">₦{parseFloat(order.delivery_fee || '0').toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-300">
                   <span className="text-base font-semibold text-gray-900">Total Amount:</span>
-                  <span className="text-base font-bold text-gray-900">₦{parseFloat(order.total_with_delivery || order.total_price).toLocaleString()}</span>
+                  <span className="text-base font-bold text-gray-900">₦{parseFloat(order.total_price || '0').toLocaleString()}</span>
                 </div>
               </div>
             </div>

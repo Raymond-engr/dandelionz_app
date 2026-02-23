@@ -103,6 +103,38 @@ export interface Product {
   reviews?: any[];
 }
 
+export interface InstallmentPayment {
+  id: number;
+  payment_number: number;
+  amount: string;
+  status: 'PAID' | 'PENDING' | 'FAILED';
+  due_date: string;
+  payment_date: string | null;
+  reference: string;
+  gateway: string;
+  paid_at: string | null;
+  verified: boolean;
+  created_at: string;
+  is_overdue: boolean;
+}
+
+export interface InstallmentPlan {
+  id: number;
+  order_id: string;
+  duration: string;
+  total_amount: string;
+  installment_amount: string;
+  number_of_installments: number;
+  paid_installments_count: number;
+  pending_installments_count: number;
+  status: 'ACTIVE' | 'COMPLETED' | 'DEFAULTED';
+  is_fully_paid: boolean;
+  start_date: string;
+  created_at: string;
+  updated_at: string;
+  installments?: InstallmentPayment[];
+}
+
 type GetProductsResponse = {
   success: boolean;
   data: Product[];
@@ -346,15 +378,9 @@ export const publicApi = baseApi.injectEndpoints({
 
     verifyInstallmentPayment: builder.query<
       {
-        status: string;
+        success: boolean;
         message: string;
-        data: {
-          payment_number: number;
-          amount: string;
-          status: string;
-          plan_id: number;
-          is_plan_completed: boolean;
-        };
+        data: InstallmentPayment;
       },
       { reference: string }
     >({
@@ -367,13 +393,17 @@ export const publicApi = baseApi.injectEndpoints({
 
     initializeNextInstallment: builder.mutation<
       {
-        authorization_url: string;
-        reference: string;
-        amount: number;
-        payment_number: number;
-        installment_plan_id: number;
+        success: boolean;
+        data: {
+          authorization_url: string;
+          reference: string;
+          amount: number;
+          payment_number: number;
+          installment_plan_id: number;
+        };
+        message: string;
       },
-      { data: { plan_id: number; payment_number: number } }
+      { plan_id: number; payment_number: number }
     >({
       query: (body) => ({
         url: "/transactions/installment-plans/init-payment/",
@@ -382,13 +412,18 @@ export const publicApi = baseApi.injectEndpoints({
       }),
     }),
 
-    getInstallmentPlans: builder.query<{ success: boolean; data: any[] }, void>({
+    getInstallmentPlans: builder.query<{ success: boolean; data: InstallmentPlan[] }, void>({
       query: () => "/transactions/installment-plans/",
       providesTags: ["Order"],
     }),
 
-    getInstallmentPlanDetails: builder.query<{ success: boolean; data: any }, number>({
+    getInstallmentPlanDetails: builder.query<{ success: boolean; data: InstallmentPlan }, number>({
       query: (id) => `/transactions/installment-plans/${id}/`,
+      providesTags: ["Order"],
+    }),
+
+    getInstallmentPayments: builder.query<{ success: boolean; data: InstallmentPayment[] }, number>({
+      query: (plan_id) => `/transactions/installment-plans/${plan_id}/payments/`,
       providesTags: ["Order"],
     }),
   }),
@@ -419,4 +454,5 @@ export const {
   useInitializeNextInstallmentMutation,
   useGetInstallmentPlansQuery,
   useGetInstallmentPlanDetailsQuery,
+  useGetInstallmentPaymentsQuery,
 } = publicApi;
