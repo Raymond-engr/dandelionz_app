@@ -501,8 +501,20 @@ export const adminApi = baseApi.injectEndpoints({
       { success: boolean; message: string },
       { uuid: string; action: "suspend" | "activate"; reason: string }
     >({
+      query: ({ uuid, action, reason }) => ({
+        url: `/user/admin/users/${uuid}/${action}/`,
+        method: "POST",
+        body: { reason },
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    activateUser: builder.mutation<
+      { success: boolean; message: string },
+      { uuid: string; reason: string }
+    >({
       query: ({ uuid, ...body }) => ({
-        url: `/user/admin/users/${uuid}/suspend/`,
+        url: `/user/admin/users/${uuid}/activate/`,
         method: "POST",
         body,
       }),
@@ -1002,6 +1014,7 @@ export const {
   useGetUserDetailsQuery,
   useSuspendUserMutation,
   useUpdateUserStatusMutation,
+  useActivateUserMutation,
   useGetAllVendorsQuery,
   useGetVendorDetailsQuery,
   useApproveVendorMutation,

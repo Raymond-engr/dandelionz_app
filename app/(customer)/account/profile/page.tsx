@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
+import { useGetCustomerProfileQuery, useUpdateCustomerProfileMutation, useUploadCustomerPhotoMutation } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -12,7 +12,8 @@ import toast from 'react-hot-toast';
 export default function ProfilePage() {
   const router = useRouter();
   const { data: profileData, isLoading, error } = useGetCustomerProfileQuery();
-  const [updateProfile, { isLoading: isSaving }] = usePartialUpdateCustomerProfileMutation();
+  const [updateProfile, { isLoading: isSaving }] = useUpdateCustomerProfileMutation();
+  const [uploadPhoto, { isLoading: isUploading }] = useUploadCustomerPhotoMutation();
 
   const [showPassword, setShowPassword] = useState(false); // Retained for password visibility toggle
   const [isEditing, setIsEditing] = useState(false);
@@ -60,43 +61,37 @@ export default function ProfilePage() {
     }
   };
 
-  const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-
   const handleSave = async () => {
-    const updateData = new FormData();
-    
-    // Append only changed fields
-    if (formData.fullName !== profileData?.user.full_name) {
-      updateData.append('full_name', formData.fullName);
-    }
-    if (formData.phoneNumber !== profileData?.user.phone_number) {
-        updateData.append('phone_number', formData.phoneNumber);
-    }
-    // Address is now handled in /account/address
-    if (profilePictureFile) {
-      try {
-        const base64Image = await toBase64(profilePictureFile);
-        updateData.append('profile_picture', base64Image);
-      } catch (error) {
-        console.error("Error converting file to base64", error);
-        toast.error("Failed to process image");
-        return;
-      }
-    }
-
-    if ([...updateData.entries()].length === 0) { // Check if no changes
-        setIsEditing(false);
-        return;
-    }
+    let photoUploaded = false;
+    let profileUpdated = false;
 
     try {
-      await updateProfile(updateData).unwrap();
-      toast.success('Profile updated successfully');
+      // 1. Handle Photo Upload
+      if (profilePictureFile) {
+        const photoData = new FormData();
+        photoData.append('profile_picture', profilePictureFile);
+        await uploadPhoto(photoData).unwrap();
+        photoUploaded = true;
+      }
+
+      // 2. Handle Profile Data Update
+      const changedFields: any = {};
+      if (formData.fullName !== profileData?.user.full_name) {
+        changedFields.full_name = formData.fullName;
+      }
+      if (formData.phoneNumber !== profileData?.user.phone_number) {
+        changedFields.phone_number = formData.phoneNumber;
+      }
+
+      if (Object.keys(changedFields).length > 0) {
+        await updateProfile(changedFields).unwrap();
+        profileUpdated = true;
+      }
+
+      if (photoUploaded || profileUpdated) {
+        toast.success('Profile updated successfully');
+      }
+      
       setIsEditing(false);
       setProfilePictureFile(null);
     } catch (err) {
@@ -286,10 +281,10 @@ export default function ProfilePage() {
               <>
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
+                  disabled={isSaving || isUploading}
                   className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving || isUploading ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={handleCancel}
