@@ -27,9 +27,15 @@ export default function ConfirmWithdrawalPage() {
     }
 
     try {
-      await requestWithdrawal({ amount, pin }).unwrap();
+      const result = await requestWithdrawal({ amount, pin }).unwrap();
       toast.success('Withdrawal request submitted successfully!');
-      router.push('/vendor/wallet');
+      
+      const successQuery = new URLSearchParams({
+        amount,
+        reference: result.reference || '',
+      }).toString();
+      
+      router.push(`/vendor/wallet/success?${successQuery}`);
     } catch (err: any) {
       console.error('Withdrawal failed:', err);
       setLocalError(err?.data?.message || 'Failed to process withdrawal.');
@@ -76,18 +82,30 @@ export default function ConfirmWithdrawalPage() {
             </div>
           </div>
 
-          <div>
-            <label className="text-xs text-gray-600 mb-2 block">Enter Payment PIN</label>
-            <input
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]{4}"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light text-center tracking-widest text-lg"
-              placeholder="••••"
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-600 mb-2 block">Enter Payment PIN</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light text-center tracking-widest text-lg"
+                placeholder="••••"
+              />
+            </div>
+            
+            <div className="text-right">
+              <button 
+                type="button"
+                onClick={() => router.push('/vendor/account/payment-settings/forgot-pin')}
+                className="text-xs text-system-blue-light hover:underline font-medium"
+              >
+                Forgot PIN?
+              </button>
+            </div>
           </div>
 
           <button

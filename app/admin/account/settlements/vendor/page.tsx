@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 export default function VendorSettlementsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'successful' | 'pending' | 'failed'>('successful');
+  const [activeTab, setActiveTab] = useState<'successful' | 'pending' | 'processing' | 'failed' | 'cancelled'>('successful');
   const { data, isLoading } = useGetAllWithdrawalsQuery({ 
     status: activeTab,
     type: 'vendor'
@@ -29,36 +29,56 @@ export default function VendorSettlementsPage() {
         </div>
 
         <div className="p-4">
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setActiveTab('successful')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'successful'
-                  ? 'bg-blue-100 text-system-blue-light'
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              Successful
-            </button>
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'pending'
-                  ? 'bg-blue-100 text-system-blue-light'
+                  ? 'bg-yellow-100 text-yellow-700'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
               Pending
             </button>
             <button
-              onClick={() => setActiveTab('failed')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'failed'
+              onClick={() => setActiveTab('processing')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'processing'
                   ? 'bg-blue-100 text-system-blue-light'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
+              Processing
+            </button>
+            <button
+              onClick={() => setActiveTab('successful')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'successful'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              Successful
+            </button>
+            <button
+              onClick={() => setActiveTab('failed')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'failed'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
               Failed
+            </button>
+            <button
+              onClick={() => setActiveTab('cancelled')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'cancelled'
+                  ? 'bg-gray-200 text-gray-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              Cancelled
             </button>
           </div>
 
@@ -92,15 +112,17 @@ export default function VendorSettlementsPage() {
                         <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded capitalize ${
                             activeTab === 'successful' ? 'bg-green-100 text-green-700' : 
                             activeTab === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                            'bg-red-100 text-red-700'
+                            activeTab === 'processing' ? 'bg-blue-100 text-blue-700' : 
+                            activeTab === 'failed' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-200 text-gray-700'
                           }`}>
                           {withdrawal.status}
                         </span>
                       </div>
                     </div>
-                    {activeTab === 'failed' && (
+                    {(activeTab === 'failed' || activeTab === 'cancelled') && withdrawal.failure_reason && (
                         <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
-                          Reason: {withdrawal.failure_reason || 'Unknown error'}
+                          Reason: {withdrawal.failure_reason}
                         </div>
                     )}
                   </div>

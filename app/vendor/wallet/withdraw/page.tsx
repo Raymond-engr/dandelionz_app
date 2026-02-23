@@ -152,7 +152,15 @@ export default function WithdrawPage() {
             Proceed
           </button>
           {!paymentSettingsData?.data?.has_pin && (
-              <p className="text-sm text-red-500 text-center">Please set a payment PIN in Payment Settings to proceed.</p>
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex flex-col items-center">
+                  <p className="text-sm text-blue-600 mb-3 text-center font-medium">Please set a payment PIN to proceed with withdrawal.</p>
+                  <Link 
+                    href="/vendor/account/payment-settings/change-pin" 
+                    className="px-6 py-2 bg-system-blue-light text-white rounded-lg text-sm font-semibold shadow-sm"
+                  >
+                    Set Payment PIN
+                  </Link>
+              </div>
           )}
         </div>
       </div>

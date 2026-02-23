@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import {
-  useCreateStoreProductMutation,
   useCreateDraftMutation,
+  useSubmitDraftMutation,
   useGetVendorProfileQuery,
 } from '@/lib/api/vendorApi';
 import Image from 'next/image';
@@ -55,8 +55,8 @@ const CATEGORIES = [
 export default function AddNewProductPage() {
   const router = useRouter();
   const { data: profileData, isLoading: isLoadingProfile } = useGetVendorProfileQuery();
-  const [createStoreProduct, { isLoading: isPublishing, error: publishError }] = useCreateStoreProductMutation();
   const [createDraft, { isLoading: isSavingDraft, error: draftError }] = useCreateDraftMutation();
+  const [submitDraft, { isLoading: isSubmitting, error: submitError }] = useSubmitDraftMutation();
 
   const [currentStep, setCurrentStep] = useState<ProductStep>('basic');
   const [formData, setFormData] = useState<ProductFormData>({
@@ -96,9 +96,9 @@ export default function AddNewProductPage() {
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [formData.images]);
 
-  const isLoading = isPublishing || isSavingDraft;
-  const isError = !!(publishError || draftError);
-  const error = publishError || draftError;
+  const isLoading = isSavingDraft || isSubmitting;
+  const isError = !!(draftError || submitError);
+  const error = draftError || submitError;
 
   const handleProceed = () => {
     if (currentStep === 'basic') {
@@ -210,11 +210,17 @@ export default function AddNewProductPage() {
   const handlePublish = async () => {
     const productData = buildProductData();
     try {
-      await createStoreProduct(productData).unwrap();
-      toast.success('Product published successfully!');
+      const draftResult = await createDraft(productData).unwrap();
+      if (draftResult.data.slug) {
+        await submitDraft(draftResult.data.slug).unwrap();
+        toast.success('Product saved and submitted for approval!');
+      } else {
+        toast.error('Draft created but slug missing, please submit from list.');
+      }
       router.push('/vendor/product');
-    } catch (err) {
-      console.error('Failed to create product:', err);
+    } catch (err: any) {
+      console.error('Failed to create/submit product:', err);
+      toast.error(err?.data?.message || 'Failed to complete the operation.');
     }
   };
 
@@ -699,7 +705,7 @@ export default function AddNewProductPage() {
                   disabled={isLoading}
                   className="flex-1 py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
                 >
-                  {isPublishing ? 'Publishing...' : 'Publish Product'}
+                  {isLoading ? 'Processing...' : 'Save & Submit'}
                 </button>
               </div>
             </div>

@@ -319,6 +319,7 @@ export interface Withdrawal {
   created_at: string;
   processed_at: string | null;
   failure_reason: string | null;
+  notes?: string | null;
 }
 
 export interface WithdrawalDetail extends Withdrawal {
