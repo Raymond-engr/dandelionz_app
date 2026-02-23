@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useConfirmPasswordResetMutation } from '@/lib/api/authApi';
+import PasswordCriteria, { validatePassword } from '@/components/PasswordCriteria';
 
 export default function ConfirmPasswordResetPage() {
   const router = useRouter();
@@ -34,8 +35,9 @@ export default function ConfirmPasswordResetPage() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setFormError('Password must be at least 8 characters long.');
+    const criteria = validatePassword(newPassword);
+    if (!criteria.length || !criteria.uppercase || !criteria.lowercase || !criteria.special) {
+      setFormError('Password does not meet all security requirements.');
       return;
     }
 
@@ -125,6 +127,7 @@ export default function ConfirmPasswordResetPage() {
               required
               disabled={isLoading}
             />
+            {newPassword && <PasswordCriteria password={newPassword} />}
           </div>
 
           <div className="flex flex-col gap-2">

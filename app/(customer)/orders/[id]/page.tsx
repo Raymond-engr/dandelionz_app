@@ -34,17 +34,18 @@ export default function OrderDetailsPage() {
   const handlePayNextInstallment = async (planId: number, nextPaymentNumber: number) => {
     try {
       const payload = await initNextInstallment({ 
-        data: { plan_id: planId, payment_number: nextPaymentNumber } 
+        plan_id: planId, 
+        payment_number: nextPaymentNumber 
       }).unwrap();
 
-      if (payload.authorization_url) {
-        window.location.href = payload.authorization_url;
+      if (payload.data?.authorization_url) {
+        window.location.href = payload.data.authorization_url;
       } else {
         toast.error("Failed to get payment link.");
       }
     } catch (err: any) {
         console.error("Installment payment failed", err);
-        toast.error("Could not initiate payment.");
+        toast.error(err?.data?.message || "Could not initiate payment.");
     }
   };
 
@@ -104,12 +105,12 @@ export default function OrderDetailsPage() {
                 {!plan.is_fully_paid && (
                   <div className="mt-3">
                     <p className="text-sm text-gray-700 mb-2">
-                      Next Due: <span className="font-semibold">{plan.installment_amount}</span>
+                      Next Due: <span className="font-semibold">₦{parseFloat(plan.installment_amount).toLocaleString()}</span>
                     </p>
                     <button
                       onClick={() => handlePayNextInstallment(plan.id, plan.paid_installments_count + 1)}
                       disabled={isPaying}
-                      className="w-full py-2.5 bg-system-blue-light text-white text-sm rounded-md font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                      className="w-full py-2.5 bg-system-blue-light text-white text-sm rounded-md font-medium hover:bg-[#020360] transition-colors disabled:opacity-50 shadow-sm"
                     >
                       {isPaying ? 'Processing...' : `Pay Installment ${plan.paid_installments_count + 1}`}
                     </button>

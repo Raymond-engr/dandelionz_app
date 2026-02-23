@@ -100,24 +100,31 @@ interface VendorAnalytics {
 }
 
 interface WalletBalance {
-  withdrawable_balance: string;
-  available_balance: string;
-  pending_balance: string;
+  withdrawable_balance: number;
+  available_balance: number;
+  pending_balance: number;
   pending_order_count: number;
-  total_earnings: string;
-  total_credits: string;
-  total_debits: string;
+  total_earnings: number;
+  total_credits: number;
+  total_debits: number;
   total_withdrawals: number;
-  this_month_earnings: string;
+  this_month_earnings: number;
 }
 
 interface Transaction {
   id: string;
-  type: "credit" | "debit";
+  type: "CREDIT" | "DEBIT";
   amount: string;
   description: string;
-  status: string;
+  status: "successful" | "failed" | "pending";
   created_at: string;
+}
+
+interface PaginatedTransactionsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Transaction[];
 }
 
 interface PaymentSettings {
@@ -398,7 +405,7 @@ export const vendorApi = baseApi.injectEndpoints({
     }),
 
     getTransactionHistory: builder.query<
-      { success: boolean; data: Transaction[] },
+      PaginatedTransactionsResponse,
       { limit?: number; offset?: number; type?: string }
     >({
       query: (params) => ({
@@ -418,7 +425,7 @@ export const vendorApi = baseApi.injectEndpoints({
     }),
 
     updatePaymentSettings: builder.mutation<
-      { success: boolean; data: PaymentSettings },
+      { success: boolean; message: string },
       Partial<PaymentSettings>
     >({
       query: (body) => ({

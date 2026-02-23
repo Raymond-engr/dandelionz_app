@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useRegisterMutation } from '@/lib/api/authApi';
 import { useAppDispatch } from '@/lib/hooks';
 import { setCredentials } from '@/lib/features/auth/authSlice';
+import PasswordCriteria, { validatePassword } from '@/components/PasswordCriteria';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -60,9 +61,9 @@ export default function RegisterPage() {
     }
 
     // Validate password strength
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(formData.password)) {
-      setValidationError('Password must be at least 8 characters long, contain one uppercase letter, one lowercase letter, and one number or special character.');
+    const criteria = validatePassword(formData.password);
+    if (!criteria.length || !criteria.uppercase || !criteria.lowercase || !criteria.special) {
+      setValidationError('Password does not meet all security requirements.');
       return;
     }
 
@@ -207,6 +208,7 @@ export default function RegisterPage() {
                 </svg>
               </button>
             </div>
+            {formData.password && <PasswordCriteria password={formData.password} />}
           </div>
 
           {/* Confirm Password */}

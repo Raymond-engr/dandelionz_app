@@ -76,47 +76,54 @@ export interface User {
   address?: string;
   total_spend?: string;
   total_orders?: string;
-  suspension_history?: string;
+  suspension_history?: {
+    id: number;
+    action: string;
+    reason: string;
+    admin_email: string;
+    created_at: string;
+  }[];
 }
 
 export interface Order {
-  id: number;
   order_id: string;
-  customer: string | {
-    uuid?: string;
+  customer: {
+    uuid: string;
     full_name: string;
     email: string;
-    phone_number?: string;
+    phone_number: string;
   };
-  customer_email?: string;
-  vendor?: {
-    uuid: string;
-    store_name: string;
-  };
+  current_status: string;
   status: string;
   payment_status: string;
   total_price: string;
   delivery_fee: string;
   discount: string;
-  subtotal: string;
-  total_with_delivery: string;
   tracking_number: string | null;
   ordered_at: string;
-  shipped_at: string | null;
-  delivered_at: string | null;
-  returned_at: string | null;
   updated_at: string;
-  is_paid: boolean;
-  is_delivered: boolean;
   order_items: OrderItem[];
-  payment?: any;
+  status_history?: {
+    id: number;
+    status: string;
+    changed_by: string;
+    admin_email: string | null;
+    reason: string;
+    changed_at: string;
+  }[];
+  // Optional fields for legacy compatibility
+  vendor?: {
+    uuid: string;
+    store_name: string;
+  };
+  total_with_delivery?: string;
+  shipping_address?: ShippingAddress | null;
   timeline?: {
     status: string;
     label: string;
     timestamp: string | null;
     completed: boolean;
   }[];
-  shipping_address: ShippingAddress | null;
 }
 
 export interface Product {
@@ -282,7 +289,13 @@ export interface ShippingAddress {
 
 export interface OrderItem {
   id: number;
-  product: {
+  product_name: string;
+  quantity: number;
+  price_at_purchase: string;
+  item_subtotal: number;
+  vendor_name: string;
+  // Legacy support
+  product?: {
     id: number;
     name: string;
     price: string;
@@ -290,9 +303,6 @@ export interface OrderItem {
     brand?: string;
     images?: any[];
   };
-  quantity: number;
-  price_at_purchase: string;
-  item_subtotal: number;
 }
 
 export interface Withdrawal {
@@ -526,7 +536,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     verifyVendorKYC: builder.mutation<
       { success: boolean; message: string },
-      { user_uuid: string }
+      { user_uuid: string; approve: boolean }
     >({
       query: (body) => ({
         url: "/user/admin/vendors/verify-kyc/",
@@ -581,18 +591,20 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     getAllOrders: builder.query<
-      { success: boolean; data: Order[] },
+      Order[],
       { status?: string; vendor_uuid?: string }
     >({
       query: (params) => ({
         url: "/user/admin/orders/",
         params,
       }),
+      transformResponse: (response: { success: boolean; data: Order[] }) => response.data,
       providesTags: ["Order"],
     }),
 
     getAdminOrderDetails: builder.query<Order, string>({
       query: (order_id) => `/user/admin/orders/${order_id}/`,
+      transformResponse: (response: { success: boolean; data: Order }) => response.data,
       providesTags: ["Order"],
     }),
 

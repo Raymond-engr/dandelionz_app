@@ -19,8 +19,8 @@ export default function WithdrawPage() {
   const [localError, setLocalError] = useState<string>('');
 
   useEffect(() => {
-    if (walletData?.data?.withdrawable_balance) {
-      setWithdrawAmount(parseFloat(walletData.data.withdrawable_balance).toFixed(2));
+    if (walletData?.data?.withdrawable_balance !== undefined) {
+      setWithdrawAmount(walletData.data.withdrawable_balance.toFixed(2));
     }
     if (paymentSettingsData?.data) {
       setBankName(paymentSettingsData.data.bank_name || '');
@@ -40,7 +40,7 @@ export default function WithdrawPage() {
       setLocalError('Please ensure bank details are complete in Payment Settings.');
       return;
     }
-    if (amount > parseFloat(walletData?.data?.withdrawable_balance || '0')) {
+    if (amount > (walletData?.data?.withdrawable_balance || 0)) {
         setLocalError('Amount exceeds withdrawable balance.');
         return;
     }
