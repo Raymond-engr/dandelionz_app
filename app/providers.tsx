@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/lib/store';
 import { useEffect } from 'react';
 import { setCredentials } from '@/lib/features/auth/authSlice';
+import { NotificationProvider } from '@/lib/features/notification/NotificationProvider';
 // import AuthCheck from '@/components/AuthCheck';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -35,8 +36,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <Provider store={store}>
-      {/* <AuthCheck /> */}
-      {children}
+      <NotificationProvider>
+        {/* <AuthCheck /> */}
+        {children}
+      </NotificationProvider>
     </Provider>
   );
 }

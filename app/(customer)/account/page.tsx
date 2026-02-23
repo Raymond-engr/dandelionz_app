@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useGetCustomerProfileQuery, useCustomerGetNotificationStatsQuery } from '@/lib/api/customerApi';
+import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
 import { useAppSelector, useLogout } from '@/lib/hooks';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -17,20 +17,14 @@ export default function AccountPage() {
     () => false
   );
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const unreadCount = useAppSelector((state) => state.notification.unreadCount);
 
   const { data: profile, isLoading } = useGetCustomerProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
 
-  const { data: statsResponse } = useCustomerGetNotificationStatsQuery(undefined, {
-    skip: !isAuthenticated,
-    pollingInterval: 30000, // Poll every 30 seconds
-  });
-
   const logout = useLogout();
   
-  const unreadCount = statsResponse?.data?.unread_count || 0;
-
   const accountLinks = [
     { label: 'Profile', href: '/account/profile', icon: UserIcon },
     { label: 'Notifications', href: '/account/notifications', icon: BellIcon, showBadge: true },

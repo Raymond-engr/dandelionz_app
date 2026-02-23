@@ -4,18 +4,10 @@ import Link from 'next/link';
 import { Shop, Cart, Order, Wishlist, Account } from './icons'; 
 import { usePathname } from 'next/navigation';
 import { useAppSelector } from '@/lib/hooks';
-import { useCustomerGetNotificationStatsQuery } from '@/lib/api/customerApi';
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
-
-  const { data: statsResponse } = useCustomerGetNotificationStatsQuery(undefined, {
-    skip: !isAuthenticated,
-    pollingInterval: 60000, // Poll every minute for the global nav
-  });
-
-  const unreadCount = statsResponse?.data?.unread_count || 0;
+  const { unreadCount } = useAppSelector((state) => state.notification);
 
   const navItems = [
     {
