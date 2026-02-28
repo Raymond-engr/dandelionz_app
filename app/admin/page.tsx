@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAnalyticsQuery } from '@/lib/api/adminApi';
 import { useAppSelector } from '@/lib/hooks';
+import StatCardSkeleton from '@/components/StatCardSkeleton';
 
 interface StatCardProps {
   title: string;
@@ -16,24 +17,24 @@ interface StatCardProps {
   isLoading?: boolean;
 }
 
-const StatCard = ({ title, value, change, icon, bgColor = "bg-white", isLoading }: StatCardProps) => (
-  <div className={`${bgColor} border border-gray-200 rounded-lg p-4`}>
-    <div className="flex items-start justify-between mb-2">
-      <p className="text-xs text-gray-600">{title}</p>
-      <div className={`w-8 h-8 ${bgColor === "bg-white" ? "bg-gray-100" : "bg-white/20"} rounded-lg flex items-center justify-center`}>
-        {icon}
+const StatCard = ({ title, value, change, icon, bgColor = "bg-white", isLoading }: StatCardProps) => {
+  if (isLoading) return <StatCardSkeleton />;
+  
+  return (
+    <div className={`${bgColor} border border-gray-200 rounded-lg p-4`}>
+      <div className="flex items-start justify-between mb-2">
+        <p className="text-xs text-gray-600">{title}</p>
+        <div className={`w-8 h-8 ${bgColor === "bg-white" ? "bg-gray-100" : "bg-white/20"} rounded-lg flex items-center justify-center`}>
+          {icon}
+        </div>
+      </div>
+      <p className="text-xl font-bold text-gray-900 mb-1">{value}</p>
+      <div className="flex items-center text-xs text-green-600">
+        <span>{change}</span>
       </div>
     </div>
-    {isLoading ? (
-      <div className="h-8 bg-gray-200 animate-pulse rounded w-20 mb-1"></div>
-    ) : (
-      <p className="text-xl font-bold text-gray-900 mb-1">{value}</p>
-    )}
-    <div className="flex items-center text-xs text-green-600">
-      <span>{change}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 export default function AdminDashboard() {
   const router = useRouter();

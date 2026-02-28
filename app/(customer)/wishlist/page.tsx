@@ -5,21 +5,11 @@ import AppLayout from '@/components/AppLayout';
 import ProductCard from '@/components/ProductCard';
 import { Product, useGetWishlistQuery } from '@/lib/api/publicApi';
 import Link from 'next/link';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import ProductGridSkeleton from '@/components/ProductGridSkeleton';
 
 export default function WishlistPage() {
   const { data: wishlistResponse, isLoading } = useGetWishlistQuery();
   const wishlistItems = wishlistResponse || [];
-
-  if (isLoading) {
-    return (
-      <AppLayout showBottomNav={true} userRole="customer">
-        <div className="min-h-screen flex items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout showBottomNav={true} userRole="customer">
@@ -29,7 +19,11 @@ export default function WishlistPage() {
           <h1 className="text-lg font-semibold text-gray-900 text-center">Wishlist</h1>
         </div>
 
-        {wishlistItems.length === 0 ? (
+        {isLoading ? (
+          <div className="p-4">
+            <ProductGridSkeleton />
+          </div>
+        ) : wishlistItems.length === 0 ? (
           /* Empty Wishlist */
           <div className="flex flex-col items-center justify-center py-32 px-6">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">

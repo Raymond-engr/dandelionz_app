@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useGetCategoriesQuery } from '@/lib/api/publicApi';
+import CategorySliderSkeleton from './CategorySliderSkeleton';
 
 type Category = {
   id: string | number;
@@ -15,7 +16,7 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories: hard
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   
   // Fetch dynamic categories from the API
-  const { data: apiResponse } = useGetCategoriesQuery();
+  const { data: apiResponse, isLoading } = useGetCategoriesQuery();
   const apiCategories = apiResponse || [];
 
   // Merge categories: Source of truth is the API
@@ -41,6 +42,10 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories: hard
   const handleImageError = (id: string | number) => {
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
+
+  if (isLoading) {
+    return <CategorySliderSkeleton />;
+  }
 
   return (
     <div className="mb-6">

@@ -3,6 +3,7 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useGetVendorOrdersSummaryQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
+import OrderListItemSkeleton from '@/components/OrderListItemSkeleton';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function VendorOrdersPage() {
@@ -71,7 +72,15 @@ export default function VendorOrdersPage() {
         <div className="p-4">
           <h2 className="text-base font-semibold text-gray-900 mb-4">All Orders</h2>
           
-          {isLoadingList ? <LoadingSpinner /> : orders.length === 0 ? (
+          {isLoadingList ? (
+            <div className="space-y-3">
+              <OrderListItemSkeleton />
+              <OrderListItemSkeleton />
+              <OrderListItemSkeleton />
+              <OrderListItemSkeleton />
+              <OrderListItemSkeleton />
+            </div>
+          ) : orders.length === 0 ? (
             <div className="text-center py-12">
                 <p className="text-gray-500">No orders found</p>
             </div>

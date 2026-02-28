@@ -7,14 +7,15 @@ import {
   useGetVendorOrdersListQuery,
 } from '@/lib/api/vendorApi';
 import Link from 'next/link';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import StatCardSkeleton from '@/components/StatCardSkeleton';
+import OrderListItemSkeleton from '@/components/OrderListItemSkeleton';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function VendorHomePage() {
   const { data: analytics, isLoading: analyticsLoading } = useGetVendorAnalyticsSelfQuery();
   const { data: profile, isLoading: profileLoading } = useGetVendorProfileQuery();
   const { data: ordersData, isLoading: ordersLoading } = useGetVendorOrdersListQuery({ limit: 5 });
 
-  const isLoading = analyticsLoading || profileLoading || ordersLoading;
   const vendorName = profile?.data?.user?.full_name || profile?.data?.store_name || 'Vendor';
   const { total_balance: totalBalance, total_orders: totalOrders } = analytics?.data || {};
   const recentOrders = ordersData?.data || [];
@@ -30,7 +31,7 @@ export default function VendorHomePage() {
                 Welcome back,
               </h1>
               {profileLoading ? (
-                <div className="h-8 w-32 bg-gray-200 animate-pulse rounded"></div>
+                <Skeleton className="h-8 w-32" />
               ) : (
                 <p className="text-2xl font-bold text-gray-900">{vendorName}</p>
               )}
@@ -42,40 +43,57 @@ export default function VendorHomePage() {
                 </svg>
               </Link>
               <div className="w-10 h-10 bg-system-blue-light rounded-full flex items-center justify-center text-white font-semibold">
-                {vendorName.substring(0, 2).toUpperCase()}
+                {profileLoading ? '' : vendorName.substring(0, 2).toUpperCase()}
               </div>
             </div>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Total Balance</p>
-              {analyticsLoading ? <div className="h-7 w-20 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalBalance || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
-              <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Total Orders</p>
-              {analyticsLoading ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">{totalOrders || 0}</p>}
-              <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Product Sold</p>
-              {analyticsLoading ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">0</p>}
-              <div className="flex items-center text-xs text-yellow-600"><span>+0.00%</span></div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">New Customer</p>
-              {analyticsLoading ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mb-1"></div> : <p className="text-xl font-bold text-gray-900 mb-1">0</p>}
-              <div className="flex items-center text-xs text-red-600"><span>+0.00%</span></div>
-            </div>
+            {analyticsLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Balance</p>
+                  <p className="text-xl font-bold text-gray-900 mb-1">₦{parseFloat(String(totalBalance || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Orders</p>
+                  <p className="text-xl font-bold text-gray-900 mb-1">{totalOrders || 0}</p>
+                  <div className="flex items-center text-xs text-green-600"><span>+0.00%</span></div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">Product Sold</p>
+                  <p className="text-xl font-bold text-gray-900 mb-1">0</p>
+                  <div className="flex items-center text-xs text-yellow-600"><span>+0.00%</span></div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">New Customer</p>
+                  <p className="text-xl font-bold text-gray-900 mb-1">0</p>
+                  <div className="flex items-center text-xs text-red-600"><span>+0.00%</span></div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Recent Orders */}
         <div className="p-4">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Orders</h2>
-            {ordersLoading ? <LoadingSpinner /> : recentOrders.length === 0 ? (
+            {ordersLoading ? (
+                <div className="space-y-3">
+                    <OrderListItemSkeleton />
+                    <OrderListItemSkeleton />
+                    <OrderListItemSkeleton />
+                </div>
+            ) : recentOrders.length === 0 ? (
                 <div className="bg-system-blue-light rounded-lg p-6 flex items-center justify-between">
                     <p className="text-white font-semibold text-lg">No Recent Orders</p>
                     <Link href="/vendor/orders" className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
