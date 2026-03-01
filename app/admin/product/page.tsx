@@ -12,6 +12,9 @@ import {
 import AdminCategoryListItem from '@/components/AdminCategoryListItem';
 import Link from 'next/link';
 import { Category, Product } from '@/lib/api/adminApi';
+import CategoryListItemSkeleton from '@/components/CategoryListItemSkeleton';
+import ProductListItemSkeleton from '@/components/ProductListItemSkeleton';
+
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
@@ -79,7 +82,12 @@ export default function ProductManagement() {
           {activeTab === 'categories' ? (
             <div>
               {isLoadingCategories ? (
-                <div className="text-center text-gray-500">Loading categories...</div>
+                <div className="space-y-3">
+                  <CategoryListItemSkeleton />
+                  <CategoryListItemSkeleton />
+                  <CategoryListItemSkeleton />
+                  <CategoryListItemSkeleton />
+                </div>
               ) : categoriesError ? (
                 <div className="text-center text-red-500">Failed to load categories.</div>
               ) : (
@@ -139,7 +147,11 @@ export default function ProductManagement() {
               </div>
 
               {isLoadingProducts ? (
-                <div className="text-center text-gray-500">Loading products...</div>
+                <div className="space-y-3">
+                  <ProductListItemSkeleton />
+                  <ProductListItemSkeleton />
+                  <ProductListItemSkeleton />
+                </div>
               ) : productsError ? (
                 <div className="text-center text-red-500">Failed to load products.</div>
               ) : (

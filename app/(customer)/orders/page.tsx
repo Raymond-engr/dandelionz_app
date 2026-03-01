@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Link from 'next/link';
 import { useGetCustomerOrdersQuery, useGetInstallmentPlansQuery } from '@/lib/api/publicApi';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import OrderCardSkeleton from '@/components/OrderCardSkeleton';
 
 type TabStatus = 'completed' | 'ongoing' | 'returned';
 
@@ -12,7 +12,7 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<TabStatus>('ongoing');
   const { data: response, isLoading, error } = useGetCustomerOrdersQuery({});
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
-  
+
   const allOrders = response || [];
   const installmentPlans = plansResponse?.data || [];
 
@@ -34,21 +34,11 @@ export default function OrdersPage() {
     return false;
   });
 
-  if (isLoading || isLoadingPlans) {
-    return (
-        <AppLayout showBottomNav={true} userRole="customer">
-            <div className="min-h-screen flex items-center justify-center">
-                <LoadingSpinner />
-            </div>
-        </AppLayout>
-    );
-  }
-
   if (error) {
     return (
         <AppLayout showBottomNav={true} userRole="customer">
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-red-500">Failed to load orders. Please try again later.</p>
+                <p className="text-red-500 text-center">Failed to load orders.<br /> Please try again later.</p>
             </div>
         </AppLayout>
     );
@@ -97,7 +87,14 @@ export default function OrdersPage() {
         </div>
 
         {/* Orders List */}
-        {currentOrders.length === 0 ? (
+        {isLoading || isLoadingPlans ? (
+          <div className="p-4 space-y-3">
+             <OrderCardSkeleton />
+             <OrderCardSkeleton />
+             <OrderCardSkeleton />
+             <OrderCardSkeleton />
+          </div>
+        ) : currentOrders.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-32 px-6">
             <p className="text-lg text-gray-900 mb-6">Nothing to see here</p>

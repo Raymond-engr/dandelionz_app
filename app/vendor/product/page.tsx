@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import VendorProductListItemSkeleton from '@/components/VendorProductListItemSkeleton';
 
 type ProductType = 'store' | 'draft';
 
@@ -107,8 +108,11 @@ export default function VendorProductsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="p-4">
-            <LoadingSpinner />
+          <div className="p-4 space-y-4">
+            <VendorProductListItemSkeleton />
+            <VendorProductListItemSkeleton />
+            <VendorProductListItemSkeleton />
+            <VendorProductListItemSkeleton />
           </div>
         )}
 

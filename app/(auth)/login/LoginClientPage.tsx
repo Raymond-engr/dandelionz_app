@@ -8,7 +8,7 @@ import { useLoginMutation } from '@/lib/api/authApi';
 import { useAppDispatch } from '@/lib/hooks';
 import { setCredentials } from '@/lib/features/auth/authSlice';
 
-export default function LoginPage() {
+export default function LoginClientPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();

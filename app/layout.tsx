@@ -16,9 +16,70 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dandelionz E-commerce App",
-  description: "This is a multivendor e-commerce application for Dandelionz",
+  metadataBase: new URL("https://dandelionz.com.ng"),
+  title: {
+    template: "%s | Dandelionz E-commerce",
+    default: "Dandelionz | Multivendor E-commerce Platform",
+  },
+  description: "Dandelionz is a premium multivendor e-commerce application offering a wide range of products from verified vendors.",
+  keywords: ["e-commerce", "multivendor", "shopping", "Nigeria", "Dandelionz", "online store"],
+  authors: [{ name: "Dandelionz Team" }],
+  creator: "Dandelionz",
+  publisher: "Dandelionz",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   manifest: "/manifest.json",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://dandelionz.com.ng",
+    siteName: "Dandelionz",
+    title: "Dandelionz | Multivendor E-commerce Platform",
+    description: "Shop the best products from verified vendors on Dandelionz.",
+    images: [
+      {
+        url: "/icons/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Dandelionz Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dandelionz | Multivendor E-commerce Platform",
+    description: "Shop the best products from verified vendors on Dandelionz.",
+    images: ["/icons/icon-512x512.png"],
+    creator: "@dandelionz",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    shortcut: "/icons/icon-192x192.png",
+    apple: [
+      { url: "/icons/icon-180x180.png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({

@@ -5,7 +5,8 @@ import { Users, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAllUsersQuery } from '@/lib/api/adminApi';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import UserListItemSkeleton from '@/components/UserListItemSkeleton';
+import Skeleton from '@/components/ui/Skeleton';
 import { User } from '@/lib/api/adminApi';
 
 export default function UserManagement() {
@@ -36,7 +37,7 @@ export default function UserManagement() {
           <div className="bg-system-blue-light text-white rounded-lg p-4 mb-4 flex items-center justify-between">
             <div>
               <p className="text-sm opacity-90 mb-1">Total Users</p>
-              {isLoading ? <div className="h-9 w-16 bg-white/20 animate-pulse rounded"></div> : <p className="text-3xl font-bold">{totalUsers}</p>}
+              {isLoading ? <Skeleton className="h-9 w-16 bg-white/20" /> : <p className="text-3xl font-bold">{totalUsers}</p>}
             </div>
             <Users className="w-12 h-12 opacity-80" />
           </div>
@@ -44,11 +45,11 @@ export default function UserManagement() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-green-50 rounded-lg p-4">
               <p className="text-sm text-gray-700 mb-1">Active Users</p>
-              {isLoading ? <div className="h-8 w-12 bg-green-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>}
+              {isLoading ? <Skeleton className="h-8 w-12 bg-green-200" /> : <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>}
             </div>
             <div className="bg-red-50 rounded-lg p-4">
               <p className="text-sm text-gray-700 mb-1">Suspended Users</p>
-              {isLoading ? <div className="h-8 w-12 bg-red-200 animate-pulse rounded"></div> : <p className="text-2xl font-bold text-gray-900">{suspendedUsers}</p>}
+              {isLoading ? <Skeleton className="h-8 w-12 bg-red-200" /> : <p className="text-2xl font-bold text-gray-900">{suspendedUsers}</p>}
             </div>
           </div>
 
@@ -58,8 +59,10 @@ export default function UserManagement() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center mt-8">
-              <LoadingSpinner />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <UserListItemSkeleton key={i} />
+              ))}
             </div>
           ) : error ? (
             <div className="text-center text-red-500 mt-8">

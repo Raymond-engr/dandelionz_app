@@ -5,6 +5,8 @@ import { Store, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAllVendorsQuery, Vendor } from '@/lib/api/adminApi';
+import UserListItemSkeleton from '@/components/UserListItemSkeleton';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function VendorManagement() {
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function VendorManagement() {
             <div>
               <p className="text-sm opacity-90 mb-1">Total Vendors</p>
               {isLoading ? (
-                <div className="h-10 w-16 bg-white/20 animate-pulse rounded"></div>
+                <Skeleton className="h-10 w-16 bg-white/20" />
               ) : (
                 <p className="text-3xl font-bold">{vendors.length}</p>
               )}
@@ -64,7 +66,7 @@ export default function VendorManagement() {
             <div className="bg-green-50 rounded-lg p-4">
               <p className="text-sm text-gray-700 mb-1">Active Vendors</p>
               {isLoading ? (
-                <div className="h-8 w-12 bg-green-200 animate-pulse rounded"></div>
+                <Skeleton className="h-8 w-12 bg-green-200" />
               ) : (
                 <p className="text-2xl font-bold text-gray-900">{activeVendors}</p>
               )}
@@ -72,7 +74,7 @@ export default function VendorManagement() {
             <div className="bg-red-50 rounded-lg p-4">
               <p className="text-sm text-gray-700 mb-1">Suspended Vendors</p>
               {isLoading ? (
-                <div className="h-8 w-12 bg-red-200 animate-pulse rounded"></div>
+                <Skeleton className="h-8 w-12 bg-red-200" />
               ) : (
                 <p className="text-2xl font-bold text-gray-900">{suspendedVendors}</p>
               )}
@@ -88,16 +90,8 @@ export default function VendorManagement() {
           {/* Vendors List */}
           {isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-gray-50 rounded-lg p-4 animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-300 rounded w-32 mb-2"></div>
-                      <div className="h-3 bg-gray-300 rounded w-48"></div>
-                    </div>
-                  </div>
-                </div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <UserListItemSkeleton key={i} />
               ))}
             </div>
           ) : vendors.length === 0 ? (

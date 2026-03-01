@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import HeroSliderSkeleton from './HeroSliderSkeleton';
 
-export default function HeroSlider() {
+interface HeroSliderProps {
+  isLoading?: boolean;
+}
+
+export default function HeroSlider({ isLoading = false }: HeroSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -18,14 +23,14 @@ export default function HeroSlider() {
   const [imageErrors, setImageErrors] = useState(() => Array(slides.length).fill(false));
 
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || isLoading) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % slides.length);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying, slides.length]);
+  }, [isAutoPlaying, slides.length, isLoading]);
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
@@ -40,6 +45,10 @@ export default function HeroSlider() {
       return newErrors;
     });
   };
+
+  if (isLoading) {
+    return <HeroSliderSkeleton />;
+  }
 
   return (
     <div className="w-full overflow-hidden mb-6">
