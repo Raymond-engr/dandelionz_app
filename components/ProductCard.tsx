@@ -177,7 +177,7 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
                 : 'bg-gray-50 text-system-blue-light hover:bg-system-blue-light hover:text-white'
             }`}
           >
-            {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : 'Add to Cart'}
+            {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : (product.variants && Object.keys(product.variants).length > 0 ? 'Select Options' : 'Add to Cart')}
           </button>
         )}
       </div>
