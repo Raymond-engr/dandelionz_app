@@ -115,6 +115,12 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       }
     }
 
+    console.log('Adding to cart with:', { 
+      slug: product.slug, 
+      quantity, 
+      selected_variants: selectedVariants 
+    });
+
     try {
       if (isInCart) {
         await removeFromCart({ 
@@ -130,9 +136,9 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
         }).unwrap();
         toast.success('Product added to cart');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update cart:', err);
-      toast.error('Failed to update cart');
+      toast.error(err.data?.error || 'Failed to update cart');
     }
   };
 
