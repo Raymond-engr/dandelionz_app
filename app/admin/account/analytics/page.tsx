@@ -4,12 +4,15 @@ import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, TrendingUp, Users, Store, ShoppingCart } from 'lucide-react';
-import { useGetDetailedAnalyticsQuery } from '@/lib/api/adminApi';
+import { useGetDetailedAnalyticsQuery, AnalyticsQueryParams } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
-  const { data: analytics, isLoading, error } = useGetDetailedAnalyticsQuery();
+  const [filters, setFilters] = React.useState<AnalyticsQueryParams>({ period: 'annual' });
+  const [showCustomRange, setShowCustomRange] = React.useState(false);
+  const [customRange, setCustomRange] = React.useState({ start_date: '', end_date: '' });
+  const { data: analytics, isLoading, error } = useGetDetailedAnalyticsQuery(filters);
 
   if (isLoading) {
     return (
@@ -25,11 +28,12 @@ export default function AdminAnalyticsPage() {
     return (
       <AppLayout showBottomNav={false} userRole="admin">
         <div className="min-h-screen bg-white pb-6 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Failed to load analytics</p>
+          <div className="text-center p-4">
+            <p className="text-red-600 mb-4 font-medium">Failed to load analytics</p>
+            <p className="text-sm text-gray-500 mb-6">{(error as any)?.data?.message || 'Please try again later'}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+              className="px-6 py-2 bg-system-blue-light text-white rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
             >
               Retry
             </button>
@@ -40,7 +44,7 @@ export default function AdminAnalyticsPage() {
   }
 
   const salesData = analytics?.data?.sales_chart_data || [];
-  const maxValue = salesData.length > 0 ? Math.max(...salesData.map(d => d.sales)) : 0;
+  const maxValue = salesData.length > 0 ? Math.max(...salesData.map(d => parseFloat(d.sales || '0'))) : 0;
 
   const orderStats = analytics?.data?.order_stats ? [
     { label: 'Completed', value: analytics.data.order_stats.completed, color: 'bg-[#030482]' },
@@ -124,11 +128,61 @@ export default function AdminAnalyticsPage() {
                 <p className="text-xs text-green-600">+0.5% vs LAST YEAR</p>
               </div>
               <div className="flex gap-2">
-                <button className="px-3 py-1 text-xs border border-gray-300 rounded-full">Daily</button>
-                <button className="px-3 py-1 text-xs border border-gray-300 rounded-full">Weekly</button>
-                <button className="px-3 py-1 text-xs bg-gray-900 text-white rounded-full">Annually</button>
+                <button 
+                  onClick={() => setFilters({ period: 'weekly' })}
+                  className={`px-3 py-1 text-xs border rounded-full ${filters.period === 'weekly' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Weekly
+                </button>
+                <button 
+                  onClick={() => setFilters({ period: 'monthly' })}
+                  className={`px-3 py-1 text-xs border rounded-full ${filters.period === 'monthly' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Monthly
+                </button>
+                <button 
+                  onClick={() => setFilters({ period: 'annual' })}
+                  className={`px-3 py-1 text-xs border rounded-full ${filters.period === 'annual' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Annually
+                </button>
+                <button 
+                  onClick={() => setShowCustomRange(!showCustomRange)}
+                  className={`px-3 py-1 text-xs border rounded-full ${filters.period === 'custom' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Custom
+                </button>
               </div>
             </div>
+
+            {showCustomRange && (
+              <div className="mb-4 p-3 border border-gray-200 rounded-lg bg-gray-50 flex items-end gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">From</label>
+                  <input 
+                    type="date" 
+                    value={customRange.start_date}
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, start_date: e.target.value }))}
+                    className="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">To</label>
+                  <input 
+                    type="date" 
+                    value={customRange.end_date}
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, end_date: e.target.value }))}
+                    className="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  />
+                </div>
+                <button 
+                  onClick={() => setFilters({ period: 'custom', ...customRange })}
+                  className="px-3 py-1.5 bg-gray-900 text-white text-[10px] rounded font-bold"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
 
             {/* Chart */}
             <div className="relative h-48">
@@ -143,7 +197,7 @@ export default function AdminAnalyticsPage() {
                 {/* Line chart */}
                 <polyline
                   points={salesData.map((d, i) => 
-                    `${(i * 350) / (salesData.length > 1 ? salesData.length - 1 : 1)},${180 - (d.sales / maxValue) * 160}`
+                    `${(i * 350) / (salesData.length > 1 ? salesData.length - 1 : 1)},${180 - (parseFloat(d.sales || '0') / (maxValue || 1)) * 160}`
                   ).join(' ')}
                   fill="none"
                   stroke="#030482"
@@ -155,7 +209,7 @@ export default function AdminAnalyticsPage() {
                   <circle
                     key={i}
                     cx={(i * 350) / (salesData.length > 1 ? salesData.length - 1 : 1)}
-                    cy={180 - (d.sales / maxValue) * 160}
+                    cy={180 - (parseFloat(d.sales || '0') / (maxValue || 1)) * 160}
                     r="4"
                     fill="#030482"
                   />

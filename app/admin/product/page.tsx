@@ -143,7 +143,12 @@ export default function ProductManagement() {
 
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-gray-900">Products</h2>
-                <button><Filter className="w-5 h-5 text-gray-600" /></button>
+                <div className="flex gap-2">
+                    <Link href="/admin/product/new" className="bg-system-blue-light text-white p-2 rounded-lg hover:bg-system-blue-dark transition-colors">
+                        <Plus className="w-5 h-5" />
+                    </Link>
+                    <button><Filter className="w-5 h-5 text-gray-600" /></button>
+                </div>
               </div>
 
               {isLoadingProducts ? (

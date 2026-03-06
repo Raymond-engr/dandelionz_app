@@ -68,17 +68,34 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
     }
 
     if (!product.slug) return;
+
+    // For the generic card, find the first matching item in cart
+    const cartItem = cartItems.find((item: any) => item.product_details?.slug === product.slug);
+
     try {
-      if (isInCart) {
-        await removeFromCart(product.slug).unwrap();
+      if (isInCart && cartItem) {
+        await removeFromCart({ 
+          slug: product.slug, 
+          selected_variants: cartItem.selected_variants 
+        }).unwrap();
         toast.success('Removed from cart');
       } else {
-        await addToCart({ slug: product.slug, quantity: 1 }).unwrap();
+        await addToCart({ 
+          slug: product.slug, 
+          quantity: 1,
+          selected_variants: {} 
+        }).unwrap();
         toast.success('Added to cart');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Something went wrong');
+      // If backend says variants are required, redirect to product page
+      if (err.status === 400) {
+        toast.error('Please select variants on the product page');
+        router.push(`/product/${product.slug}`);
+      } else {
+        toast.error('Something went wrong');
+      }
     }
   };
 
