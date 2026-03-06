@@ -7,7 +7,8 @@ import Image from 'next/image';
 import { 
   useGetCartQuery, 
   useRemoveFromCartMutation, 
-  useUpdateCartItemMutation 
+  useUpdateCartItemMutation,
+  CartItem
 } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -19,20 +20,19 @@ export default function CartPage() {
   const cartItems = cartResponse?.data?.items || [];
   const cartTotal = cartResponse?.data?.total || '0.00';
 
-  const handleRemoveItem = async (slug: string) => {
+  const handleRemoveItem = async (slug: string, selected_variants: Record<string, string>) => {
     if (!slug) return;
     try {
-      await removeFromCart(slug).unwrap();
+      await removeFromCart({ slug, selected_variants }).unwrap();
     } catch (err) {
       console.error('Failed to remove item:', err);
     }
   };
 
-  const handleUpdateQuantity = async (slug: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const handleUpdateQuantity = async (slug: string, newQuantity: number, selected_variants: Record<string, string>) => {
+    if (newQuantity < 0) return;
     try {
-      // The API expects 'slug' and 'quantity'
-      await updateCartItem({ slug: slug, quantity: newQuantity }).unwrap();
+      await updateCartItem({ slug, quantity: newQuantity, selected_variants }).unwrap();
     } catch (err) {
       console.error('Failed to update quantity:', err);
     }
@@ -108,6 +108,18 @@ export default function CartPage() {
                               {product?.name || 'Unknown Product'}
                             </h3>
                           </Link>
+                          
+                          {/* Selected Variants Display */}
+                          {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                              {Object.entries(item.selected_variants).map(([key, value]) => (
+                                <span key={key} className="inline-block px-1.5 py-0.5 bg-gray-100 text-[10px] text-gray-600 rounded capitalize">
+                                  {key}: {value as string}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
                           <div className="flex flex-col">
                             <p className="text-base font-bold text-system-blue-light">
                                 {product?.discount && product.discount > 0 ? (
@@ -131,7 +143,7 @@ export default function CartPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => handleRemoveItem(slug)}
+                          onClick={() => handleRemoveItem(slug, item.selected_variants)}
                           disabled={isRemoving}
                           className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                         >
@@ -145,7 +157,7 @@ export default function CartPage() {
                       <div className="flex items-center justify-between">
                          <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
                           <button
-                            onClick={() => handleUpdateQuantity(slug, item.quantity - 1)}
+                            onClick={() => handleUpdateQuantity(slug, item.quantity - 1, item.selected_variants)}
                             disabled={isUpdating || item.quantity <= 1}
                             className="w-8 h-8 flex items-center justify-center text-gray-600 font-medium hover:bg-white rounded-md transition-colors disabled:opacity-50"
                           >
@@ -155,7 +167,7 @@ export default function CartPage() {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => handleUpdateQuantity(slug, item.quantity + 1)}
+                            onClick={() => handleUpdateQuantity(slug, item.quantity + 1, item.selected_variants)}
                             disabled={isUpdating}
                             className="w-8 h-8 flex items-center justify-center text-gray-600 font-medium hover:bg-white rounded-md transition-colors disabled:opacity-50"
                           >

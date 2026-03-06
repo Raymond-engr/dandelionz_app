@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -35,10 +35,25 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
   const [quantity, setQuantity] = useState(1);
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   // Fetch real product data (hook will use cache if available)
   const { data: response, isLoading, isError, refetch: refetchProduct } = useGetProductBySlugQuery(slug);
   const product = response?.data || initialProduct;
+
+  // Parse variants into unique categories and values from Array of Objects
+  const variantOptions = useMemo(() => {
+    const options: Record<string, Set<string>> = {};
+    if (Array.isArray(product?.variants)) {
+      product.variants.forEach((variantObj: any) => {
+        Object.entries(variantObj).forEach(([key, value]) => {
+          if (!options[key]) options[key] = new Set();
+          options[key].add(value as string);
+        });
+      });
+    }
+    return options;
+  }, [product?.variants]);
 
   // Fetch reviews
   const { data: reviewsResponse, isLoading: isLoadingReviews, refetch: refetchReviews } = useGetProductReviewsQuery(slug);
@@ -58,12 +73,29 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
     skip: !isAuthenticated
   });
   const cartItems = cartResponse?.data?.items || [];
-  const isInCart = product ? cartItems.some((item: any) => item.product_details?.slug === product.slug) : false;
+  
+  // Check if this specific variant combination is in cart
+  const isInCart = product ? cartItems.some((item: any) => {
+    if (item.product_details?.slug !== product.slug) return false;
+    
+    // If product has variants, check if they match selected ones
+    if (Object.keys(variantOptions).length > 0) {
+      return JSON.stringify(item.selected_variants) === JSON.stringify(selectedVariants);
+    }
+    return true;
+  }) : false;
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
   const [removeFromCart, { isLoading: isRemovingFromCart }] = useRemoveFromCartMutation();
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
   const [removeFromWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveFromWishlistMutation();
+
+  const handleVariantSelect = (category: string, value: string) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [category]: value
+    }));
+  };
 
   const handleToggleCart = async () => {
     if (!isAuthenticated) {
@@ -72,12 +104,29 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
     }
 
     if (!product || !product.slug) return;
+
+    // Validate that all variants are selected
+    if (Object.keys(variantOptions).length > 0) {
+      const missingVariants = Object.keys(variantOptions).filter(v => !selectedVariants[v]);
+      if (missingVariants.length > 0) {
+        toast.error(`Please select ${missingVariants.join(', ')}`);
+        return;
+      }
+    }
+
     try {
       if (isInCart) {
-        await removeFromCart(product.slug).unwrap();
+        await removeFromCart({ 
+          slug: product.slug, 
+          selected_variants: selectedVariants 
+        }).unwrap();
         toast.success('Removed from cart');
       } else {
-        await addToCart({ slug: product.slug, quantity }).unwrap();
+        await addToCart({ 
+          slug: product.slug, 
+          quantity, 
+          selected_variants: selectedVariants 
+        }).unwrap();
         toast.success('Product added to cart');
       }
     } catch (err) {
@@ -267,24 +316,32 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
             {product.name}
           </h2>
 
-          {/* Variants (Colors) */}
-          {product.variants && product.variants.length > 0 && (
-             <div className="mb-6">
-                <p className="text-base font-semibold text-gray-900 mb-2">Select Color</p>
-                <div className="flex gap-2">
-                    {product.variants.map((variant: any, idx: number) => (
-                        <button
-                            key={idx}
-                            className={`px-3 py-1.5 border rounded-lg text-base transition-colors ${
-                                // Logic to select variant - for now just visual as we don't have separate SKUs
-                                'border-gray-200 hover:border-system-blue-light'
-                            }`}
-                        >
-                            {variant.color}
-                        </button>
+          {/* Dynamic Variants Selection */}
+          {Object.keys(variantOptions).length > 0 && (
+            <div className="space-y-6 mb-6">
+              {Object.entries(variantOptions).map(([category, valueSet]) => (
+                <div key={category}>
+                  <p className="text-base font-semibold text-gray-900 mb-2 capitalize">
+                    Select {category}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from(valueSet).map((value) => (
+                      <button
+                        key={value}
+                        onClick={() => handleVariantSelect(category, value)}
+                        className={`px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
+                          selectedVariants[category] === value
+                            ? 'border-system-blue-light bg-blue-50 text-system-blue-light ring-1 ring-system-blue-light'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {value}
+                      </button>
                     ))}
+                  </div>
                 </div>
-             </div>
+              ))}
+            </div>
           )}
 
           {/* Description */}

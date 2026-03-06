@@ -38,18 +38,20 @@ const StatCard = ({ title, value, change, icon, bgColor = "bg-white", isLoading 
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { data: analytics, isLoading, error } = useGetAnalyticsQuery();
+  const [period, setPeriod] = React.useState<"weekly" | "monthly" | "annual" | "custom">("weekly");
+  const { data: analytics, isLoading, error } = useGetAnalyticsQuery({ period });
   const { unreadCount } = useAppSelector((state) => state.notification);
 
   if (error) {
     return (
       <AppLayout showBottomNav={true} userRole="admin">
         <div className="min-h-screen bg-white pb-20 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Failed to load analytics</p>
+          <div className="text-center p-4">
+            <p className="text-red-600 mb-4 font-medium">Failed to load analytics</p>
+            <p className="text-sm text-gray-500 mb-6">{(error as any)?.data?.message || 'Please try again later'}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
+              className="px-6 py-2 bg-system-blue-light text-white rounded-lg font-medium shadow-sm"
             >
               Retry
             </button>
@@ -74,6 +76,22 @@ export default function AdminDashboard() {
                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white box-content"></span>
               )}
             </button>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
+            {(["weekly", "monthly", "annual"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-4 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors border ${
+                  period === p
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-600 border-gray-300"
+                }`}
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </button>
+            ))}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
