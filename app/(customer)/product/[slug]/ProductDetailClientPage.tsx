@@ -115,6 +115,12 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       }
     }
 
+    console.log('Adding to cart with:', { 
+      slug: product.slug, 
+      quantity, 
+      selected_variants: selectedVariants 
+    });
+
     try {
       if (isInCart) {
         await removeFromCart({ 

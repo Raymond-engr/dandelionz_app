@@ -203,10 +203,13 @@ export const publicApi = baseApi.injectEndpoints({
       { success: boolean; data: CartItem; message?: string },
       { slug: string; quantity: number; selected_variants?: Record<string, string> }
     >({
-      query: (body) => ({
+      query: ({ selected_variants, ...rest }) => ({
         url: "/store/cart/add/",
         method: "POST",
-        body,
+        body: {
+          ...rest,
+          selected_variants: selected_variants ? JSON.stringify(selected_variants) : undefined
+        },
       }),
       invalidatesTags: ["Cart"],
     }),
@@ -233,10 +236,13 @@ export const publicApi = baseApi.injectEndpoints({
       { success: boolean; data?: CartItem; message: string },
       { slug: string; quantity: number; selected_variants?: Record<string, string> }
     >({
-      query: (body) => ({
+      query: ({ selected_variants, ...rest }) => ({
         url: "/store/cart/update/",
         method: "PATCH",
-        body,
+        body: {
+          ...rest,
+          selected_variants: selected_variants ? JSON.stringify(selected_variants) : undefined
+        },
       }),
       invalidatesTags: ["Cart"],
     }),
