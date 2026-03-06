@@ -69,6 +69,14 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
 
     if (!product.slug) return;
 
+    // If product has variants, always redirect to detail page for selection
+    const hasVariants = product.variants && Object.keys(product.variants).length > 0;
+    if (hasVariants && !isInCart) {
+      toast.error('Please select options on the product page');
+      router.push(`/product/${product.slug}`);
+      return;
+    }
+
     // For the generic card, find the first matching item in cart
     const cartItem = cartItems.find((item: any) => item.product_details?.slug === product.slug);
 
@@ -89,13 +97,7 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
       }
     } catch (err: any) {
       console.error(err);
-      // If backend says variants are required, redirect to product page
-      if (err.status === 400) {
-        toast.error('Please select variants on the product page');
-        router.push(`/product/${product.slug}`);
-      } else {
-        toast.error('Something went wrong');
-      }
+      toast.error(err.data?.error || 'Something went wrong');
     }
   };
 
