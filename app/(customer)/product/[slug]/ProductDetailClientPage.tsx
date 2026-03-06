@@ -14,7 +14,8 @@ import {
     useRemoveFromCartMutation,
     useGetProductReviewsQuery,
     useAddProductReviewMutation,
-    Product
+    Product,
+    ProductImage
 } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -218,7 +219,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
 
   // Handle images array (fallback to dummy logic if API array is empty)
   const images = product.images && product.images.length > 0 
-    ? product.images.map(img => img.image_url) 
+    ? product.images.map((img: ProductImage) => img.image_url) 
     : [product.image || '/placeholder-category.png'];
 
   return (
@@ -289,7 +290,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
 
           {/* Thumbnail Images */}
           <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-            {images.map((img, idx) => (
+            {images.map((img: string, idx: number) => (
               <button
                 key={idx}
                 onClick={() => setSelectedImage(idx)}

@@ -161,7 +161,32 @@ type GetProductsResponse = {
 // Public/Store API (no auth required)
 export const publicApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ... rest of endpoints (I will replace the specific ones)
+    // Products
+    getProducts: builder.query<
+      GetProductsResponse,
+      { 
+        category?: string; 
+        search?: string; 
+        page?: number;
+        store?: string;
+        min_price?: number;
+        max_price?: number;
+        price?: number; // for exact price match
+        ordering?: string;
+      }
+    >({
+      query: (params) => ({
+        url: "/store/products/",
+        params,
+      }),
+      providesTags: ["Product"],
+    }),
+
+    getProductBySlug: builder.query<{ success: boolean; data: Product }, string>({
+      query: (slug) => `/store/products/${slug}/`,
+      providesTags: ["Product"],
+    }),
+
     // Categories
     getCategories: builder.query<any[], void>({
       query: () => "/store/categories/",
