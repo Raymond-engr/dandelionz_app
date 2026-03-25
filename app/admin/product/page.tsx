@@ -7,18 +7,20 @@ import { useRouter } from 'next/navigation';
 import {
   useGetAllCategoriesQuery,
   useGetAllProductsQuery,
-  useDeleteCategoryMutation
+  useDeleteCategoryMutation,
+  useDeleteProductMutation
 } from '@/lib/api/adminApi';
 import AdminCategoryListItem from '@/components/AdminCategoryListItem';
 import Link from 'next/link';
 import { Category, Product } from '@/lib/api/adminApi';
 import CategoryListItemSkeleton from '@/components/CategoryListItemSkeleton';
 import ProductListItemSkeleton from '@/components/ProductListItemSkeleton';
+import toast from 'react-hot-toast';
 
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'category' | 'product'; slug: string } | null>(null);
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
@@ -28,17 +30,33 @@ export default function ProductManagement() {
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useGetAllProductsQuery({});
   const products = productsData?.data || [];
 
-  // Delete category mutation
+  // Mutations
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
+  const [deleteProduct, { isLoading: isDeletingProduct }] = useDeleteProductMutation();
+
+  const isDeleting = isDeletingCategory || isDeletingProduct;
 
   const handleDeleteCategory = async (categorySlug: string) => {
     try {
       await deleteCategory(categorySlug).unwrap();
-      refetchCategories(); // Refresh categories after deletion
+      refetchCategories();
+      toast.success('Category deleted successfully');
       setShowDeleteConfirm(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete category:', err);
-      // Handle error, maybe show a toast notification
+      toast.error(err?.data?.message || 'Failed to delete category');
+    }
+  };
+
+  const handleDeleteProduct = async (productSlug: string) => {
+    try {
+      const result = await deleteProduct(productSlug).unwrap();
+      refetchProducts();
+      toast.success(`Product "${result.data?.name || 'Unknown'}" deleted successfully`);
+      setShowDeleteConfirm(null);
+    } catch (err: any) {
+      console.error('Failed to delete product:', err);
+      toast.error(err?.data?.message || 'Failed to delete product');
     }
   };
 
@@ -100,7 +118,7 @@ export default function ProductManagement() {
                       productCount={category.product_count || 0}
                       totalSales={parseFloat(category.total_sales || '0')}
                       onEdit={() => handleEditCategory(category.slug)}
-                      onDelete={() => setShowDeleteConfirm(category.slug)}
+                      onDelete={() => setShowDeleteConfirm({ type: 'category', slug: category.slug })}
                     />
                   ))}
                 </div>
@@ -108,7 +126,7 @@ export default function ProductManagement() {
 
                         <Link
                           href="/admin/product/category/new/edit"
-                          className="bg-[#f5f7fa] flex items-center justify-center gap-4 p-5 rounded-lg cursor-pointer w-full max-w-[370px] h-[101px] mx-auto shadow-sm hover:shadow-md transition-shadow text-system-blue-light font-semibold text-2xl"
+                          className="bg-[#f5f7fa] flex items-center justify-center gap-4 p-5 rounded-lg cursor-pointer w-full max-w-[370px] h-[101px] mx-auto shadow-sm hover:shadow-md transition-shadow text-system-blue-light font-semibold text-2xl mt-4"
                         >                <Plus className="w-8 h-8" />
                 Add New Category
               </Link>
@@ -162,45 +180,58 @@ export default function ProductManagement() {
               ) : (
                 <div className="space-y-3">
                   {products.map((product: Product) => (
-                    <button
+                    <div
                       key={product.slug}
-                      onClick={() => router.push(`/admin/product/${product.slug}`)}
-                      className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
+                      className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-start gap-3"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">{product.name}</p>
-                          <p className="text-xs text-gray-600">{product.vendor?.store_name || 'N/A'}</p>
-                          <p className="text-xs text-gray-600">{product.category}</p>
+                      <button 
+                        onClick={() => router.push(`/admin/product/${product.slug}`)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">{product.name}</p>
+                            <p className="text-xs text-gray-600">{product.vendor?.store_name || 'N/A'}</p>
+                            <p className="text-xs text-gray-600">{product.category}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                              <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                  product.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
+                                  product.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 
+                                  'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                  {product.status}
+                              </span>
+                              {(product.discount ?? 0) > 0 && (
+                                  <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded font-bold">
+                                      -{product.discount}%
+                                  </span>
+                              )}
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                            <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                product.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
-                                product.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 
-                                'bg-yellow-100 text-yellow-700'
-                            }`}>
-                                {product.status}
-                            </span>
-                            {(product.discount ?? 0) > 0 && (
-                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded font-bold">
-                                    -{product.discount}%
-                                </span>
-                            )}
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-bold text-gray-900 text-left">
+                              {(product.discount ?? 0) > 0 ? (
+                                  `₦${(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString()}`
+                              ) : (
+                                  `₦${parseFloat(product.price).toLocaleString()}`
+                              )}
+                          </p>
+                          {(product.discount ?? 0) > 0 && (
+                              <p className="text-xs text-gray-400 line-through">₦{parseFloat(product.price).toLocaleString()}</p>
+                          )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-bold text-gray-900 text-left">
-                            {(product.discount ?? 0) > 0 ? (
-                                `₦${(parseFloat(product.price) * (1 - (product.discount ?? 0) / 100)).toLocaleString()}`
-                            ) : (
-                                `₦${parseFloat(product.price).toLocaleString()}`
-                            )}
-                        </p>
-                        {(product.discount ?? 0) > 0 && (
-                            <p className="text-xs text-gray-400 line-through">₦{parseFloat(product.price).toLocaleString()}</p>
-                        )}
-                      </div>
-                    </button>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteConfirm({ type: 'product', slug: product.slug });
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -212,27 +243,35 @@ export default function ProductManagement() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Product?</h2>
-              <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this category? This action cannot be undone.</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(null)}
-                  className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
-                  disabled={isDeletingCategory}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(showDeleteConfirm)}
-                  className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-                  disabled={isDeletingCategory}
-                >
-                  {isDeletingCategory ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete {showDeleteConfirm.type === 'category' ? 'Category' : 'Product'}?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this {showDeleteConfirm.type}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => 
+                  showDeleteConfirm.type === 'category' 
+                    ? handleDeleteCategory(showDeleteConfirm.slug) 
+                    : handleDeleteProduct(showDeleteConfirm.slug)
+                }
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
       </div>
     </AppLayout>
   );
