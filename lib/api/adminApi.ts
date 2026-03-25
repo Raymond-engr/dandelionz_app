@@ -749,11 +749,11 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     deleteProduct: builder.mutation<
-      { success: boolean; message: string },
+      { status: string; message: string; data: any },
       string
     >({
       query: (slug) => ({
-        url: `/user/admin/products/${slug}/delete/`,
+        url: `/store/products/${slug}/delete/`,
         method: "DELETE",
       }),
       invalidatesTags: ["Product"],

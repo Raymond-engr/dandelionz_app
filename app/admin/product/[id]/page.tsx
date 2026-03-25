@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState, use, useEffect } from 'react';
-import { ChevronLeft, Send, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout'; // Assuming AppLayout is the main layout component
 import Image from 'next/image';
 import {
   useGetAdminProductDetailsQuery,
   useApproveProductAdminMutation,
-  useRejectProductAdminMutation
+  useRejectProductAdminMutation,
+  useDeleteProductMutation
 } from '@/lib/api/adminApi';
+import toast from 'react-hot-toast';
 
 interface ProductDetailsProps {
   params: Promise<{ id: string }>;
@@ -24,6 +26,7 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
   const [reason, setReason] = useState('');
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Fetch product details
   const { data: productData, isLoading: isLoadingProduct, error: productError, refetch: refetchProduct } =
@@ -34,7 +37,19 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
   const [approveProductAdmin, { isLoading: isApprovingProduct }] = useApproveProductAdminMutation();
   // Reject product mutation
   const [rejectProductAdmin, { isLoading: isRejectingProduct }] = useRejectProductAdminMutation();
+  // Delete product mutation
+  const [deleteProduct, { isLoading: isDeletingProduct }] = useDeleteProductMutation();
 
+  const handleDeleteProduct = async () => {
+    try {
+      const result = await deleteProduct(productId).unwrap();
+      toast.success(`Product "${result.data?.name || 'Unknown'}" deleted successfully`);
+      router.push('/admin/product');
+    } catch (err: any) {
+      console.error('Failed to delete product:', err);
+      toast.error(err?.data?.message || 'Failed to delete product');
+    }
+  };
 
   const handleConfirmAction = async () => {
     setSubmissionError(null);
@@ -102,11 +117,18 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
       <div className="min-h-screen bg-white">
         <div className="mx-auto max-w-[600px] bg-white relative">
           <div className="min-h-screen bg-white pb-6">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-center relative">
-              <button onClick={() => router.back()} className="absolute left-4">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between relative">
+              <button onClick={() => router.back()} className="p-2">
                 <ChevronLeft className="w-6 h-6 text-gray-900" />
               </button>
               <h1 className="text-lg font-semibold text-system-blue-light">Product Details</h1>
+              <button 
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                disabled={isDeletingProduct}
+              >
+                <Trash2 className="w-6 h-6" />
+              </button>
             </div>
 
             <div className="p-4">
@@ -258,6 +280,34 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Product?</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this product? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isDeletingProduct}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                disabled={isDeletingProduct}
+              >
+                {isDeletingProduct ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
