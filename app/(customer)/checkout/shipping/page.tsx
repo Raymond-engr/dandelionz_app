@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 
 import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
@@ -12,13 +12,25 @@ type ShippingMethod = 'home' | 'pickup';
 
 export default function ShippingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const frequency = searchParams.get('frequency') || 'buy-now';
+  
   const [method, setMethod] = useState<ShippingMethod>('home');
   const [pickupLocation, setPickupLocation] = useState('');
   
   const { data: profile } = useGetCustomerProfileQuery();
 
-  const handlePayNow = () => {
-    router.push('/checkout/payment');
+  const handleProceed = () => {
+    if (method === 'home' && !profile?.shipping_address) {
+      alert('Please add a shipping address to proceed.');
+      return;
+    }
+    
+    if (frequency === 'installment') {
+      router.push('/checkout/installments');
+    } else {
+      router.push('/checkout/payment');
+    }
   };
 
   return (
@@ -116,12 +128,12 @@ export default function ShippingPage() {
             */}
           </div>
 
-          {/* Pay Now Button */}
+          {/* Proceed Button */}
           <button
-            onClick={handlePayNow}
+            onClick={handleProceed}
             className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors"
           >
-            Pay Now
+            {frequency === 'installment' ? 'Proceed' : 'Pay Now'}
           </button>
         </div>
       </div>

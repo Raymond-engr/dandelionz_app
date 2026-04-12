@@ -3,24 +3,46 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useAdminRequestWithdrawalMutation } from '@/lib/api/adminApi';
+import { useAdminRequestWithdrawalMutation, useGetWalletStatsQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { formatCurrency } from '@/lib/utils';
 
 export default function WithdrawPage() {
   const router = useRouter();
   const [amount, setAmount] = useState('');
-  const [pin, setPin] = useState('');
+  const [pin, setPin] = useState(['', '', '', '']);
+  const { data: statsResponse } = useGetWalletStatsQuery();
   const [requestWithdrawal, { isLoading }] = useAdminRequestWithdrawalMutation();
 
+  const walletStats = statsResponse?.data;
+
+  const handlePinInput = (index: number, value: string) => {
+    if (value.length <= 1 && /^\d*$/.test(value)) {
+      const newPin = [...pin];
+      newPin[index] = value;
+      setPin(newPin);
+      if (value && index < 3) {
+        document.getElementById(`pin-${index + 1}`)?.focus();
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !pin[index] && index > 0) {
+      document.getElementById(`pin-${index - 1}`)?.focus();
+    }
+  };
+
   const handleWithdraw = async () => {
-    if (!amount || !pin) {
-      toast.error("Please enter amount and PIN");
+    const pinStr = pin.join('');
+    if (!amount || pinStr.length < 4) {
+      toast.error("Please enter amount and 4-digit PIN");
       return;
     }
     
     try {
-      await requestWithdrawal({ amount, pin }).unwrap();
+      await requestWithdrawal({ amount, pin: pinStr }).unwrap();
       toast.success("Withdrawal initiated successfully!");
       router.push('/admin/account/withdrawal');
     } catch (err: any) {
@@ -41,6 +63,11 @@ export default function WithdrawPage() {
         </div>
 
         <div className="p-6">
+          <div className="bg-system-blue-light text-white rounded-xl p-6 mb-8 shadow-lg shadow-blue-900/20">
+            <p className="text-xs font-medium uppercase tracking-wider opacity-80 mb-1">Available Balance</p>
+            <p className="text-3xl font-bold">₦{formatCurrency(walletStats?.withdrawable_balance)}</p>
+          </div>
+
           <div className="mb-6">
             <label className="text-sm font-medium text-gray-700 block mb-2">Amount to Withdraw (₦)</label>
             <input
@@ -52,22 +79,28 @@ export default function WithdrawPage() {
             />
           </div>
 
-          <div className="mb-8">
-            <label className="text-sm font-medium text-gray-700 block mb-2">Payment PIN</label>
-            <input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              maxLength={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light"
-              placeholder="Enter 4-digit PIN"
-            />
+          <div className="mb-10">
+            <label className="text-sm font-medium text-gray-700 block mb-4 text-center">Enter Payment PIN</label>
+            <div className="flex gap-4 justify-center">
+              {pin.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`pin-${index}`}
+                  type="password"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handlePinInput(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="w-14 h-14 border-2 border-gray-300 rounded-lg text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-system-blue-light"
+                />
+              ))}
+            </div>
           </div>
 
           <button
             onClick={handleWithdraw}
             disabled={isLoading}
-            className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+            className="w-full py-4 bg-system-blue-light text-white rounded-lg font-semibold hover:bg-[#020360] transition-colors disabled:opacity-50"
           >
             {isLoading ? <LoadingSpinner size="sm" /> : 'Confirm Withdrawal'}
           </button>

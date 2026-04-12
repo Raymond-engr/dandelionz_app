@@ -56,7 +56,7 @@ export default function InstallmentsPage() {
         </div>
 
         {/* Progress Indicator */}
-        <CheckoutProgress currentStep={1} />
+        <CheckoutProgress currentStep={3} />
 
         <div className="p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">

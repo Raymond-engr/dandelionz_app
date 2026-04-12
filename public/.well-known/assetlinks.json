@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dandelionz",
+      "sha256_cert_fingerprints": [
+        "14:D1:57:AD:E9:DC:A1:B0:E5:B6:02:89:F6:B5:D1:EE:68:BD:AD:02:07:F2:42:8E:58:B5:D0:6F:81:71:95:1D"
+      ]
+    }
+  }
+]

@@ -119,7 +119,7 @@ function CheckoutStatus() {
         </button>
         {!planId && (
             <button
-                onClick={() => router.push('/receipt')}
+                onClick={() => router.push(`/receipt?id=${verifyData?.data?.order_id}`)}
                 className="w-full py-3.5 bg-white text-system-blue-light border border-system-blue-light rounded-lg font-medium hover:bg-gray-50 transition-colors"
             >
                 View E-Reciept

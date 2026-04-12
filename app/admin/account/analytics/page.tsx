@@ -47,11 +47,13 @@ export default function AdminAnalyticsPage() {
   const maxValue = salesData.length > 0 ? Math.max(...salesData.map(d => parseFloat(d.sales || '0'))) : 0;
 
   const orderStats = analytics?.data?.order_stats ? [
-    { label: 'Completed', value: analytics.data.order_stats.completed, color: 'bg-[#030482]' },
-    { label: 'Pending', value: analytics.data.order_stats.pending, color: 'bg-purple-500' },
-    { label: 'Cancelled', value: analytics.data.order_stats.cancelled, color: 'bg-purple-400' },
-    { label: 'Returned', value: analytics.data.order_stats.returned, color: 'bg-gray-300' },
+    { label: 'Completed', value: analytics.data.order_stats.completed, color: '#030482', class: 'bg-[#030482]' },
+    { label: 'Pending', value: analytics.data.order_stats.pending, color: '#8b5cf6', class: 'bg-purple-500' },
+    { label: 'Cancelled', value: analytics.data.order_stats.cancelled, color: '#a78bfa', class: 'bg-purple-400' },
+    { label: 'Returned', value: analytics.data.order_stats.returned, color: '#d1d5db', class: 'bg-gray-300' },
   ] : [];
+
+  const totalOrders = orderStats.reduce((acc, curr) => acc + (curr.value || 0), 0);
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -237,57 +239,41 @@ export default function AdminAnalyticsPage() {
                 {/* Background circles */}
                 <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" strokeWidth="30" />
                 
-                {/* Segments */}
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="80"
-                  fill="none"
-                  stroke="#030482"
-                  strokeWidth="30"
-                  strokeDasharray="226 503"
-                  strokeDashoffset="0"
-                  transform="rotate(-90 100 100)"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="80"
-                  fill="none"
-                  stroke="#8b5cf6"
-                  strokeWidth="30"
-                  strokeDasharray="55 503"
-                  strokeDashoffset="-226"
-                  transform="rotate(-90 100 100)"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="80"
-                  fill="none"
-                  stroke="#a78bfa"
-                  strokeWidth="30"
-                  strokeDasharray="121 503"
-                  strokeDashoffset="-281"
-                  transform="rotate(-90 100 100)"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="80"
-                  fill="none"
-                  stroke="#d1d5db"
-                  strokeWidth="30"
-                  strokeDasharray="141 503"
-                  strokeDashoffset="-402"
-                  transform="rotate(-90 100 100)"
-                />
+                {/* Dynamic Segments */}
+                {(() => {
+                  if (totalOrders === 0) return null;
+                  const circumference = 2 * Math.PI * 80;
+                  let currentOffset = 0;
+
+                  return orderStats.map((stat, i) => {
+                    const percentage = (stat.value || 0) / totalOrders;
+                    const strokeDasharray = `${percentage * circumference} ${circumference}`;
+                    const strokeDashoffset = -currentOffset;
+                    currentOffset += percentage * circumference;
+
+                    return (
+                      <circle
+                        key={i}
+                        cx="100"
+                        cy="100"
+                        r="80"
+                        fill="none"
+                        stroke={stat.color}
+                        strokeWidth="30"
+                        strokeDasharray={strokeDasharray}
+                        strokeDashoffset={strokeDashoffset}
+                        transform="rotate(-90 100 100)"
+                        className="transition-all duration-500"
+                      />
+                    );
+                  });
+                })()}
               </svg>
 
               {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-2xl font-bold text-gray-900">1.05</p>
-                <p className="text-xs text-gray-600">Average range</p>
+                <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>
+                <p className="text-xs text-gray-600">Total Orders</p>
               </div>
             </div>
 
@@ -296,7 +282,7 @@ export default function AdminAnalyticsPage() {
               {orderStats.map((stat, idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${stat.color}`}></div>
+                    <div className={`w-3 h-3 rounded-full ${stat.class}`}></div>
                     <span className="text-sm text-gray-700">{stat.label}</span>
                   </div>
                   <span className="text-sm font-medium text-gray-600">{stat.value}</span>
