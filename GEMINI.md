@@ -7,3 +7,9 @@
 - Always generate commit messages at the end of a task.
 - Always create a todo list for tasks after formulating a plan and keep it updated when adjustments are made.
 - For tasks involving complex refactoring, codebase exploration, or system-wide analysis, the `codebase_investigator` tool should be the first and primary tool used to build a comprehensive understanding.
+
+## April 8, 2026 - Checkout Flow Alignment (Web & Mobile)
+- Synchronized checkout flow across web and mobile: Cart -> Frequency -> Shipping -> Payment/Installment.
+- Fixed an issue where the shipping address step was skipped in the installment flow.
+- Added address validation to the Shipping step to ensure users provide a delivery address before proceeding.
+- Aligned progress indicator steps, button labels, and frequency options with the updated flow.

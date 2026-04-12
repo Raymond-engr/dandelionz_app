@@ -12,11 +12,7 @@ export default function CheckoutPage() {
   const [frequency, setFrequency] = useState<PaymentFrequency>('buy-now');
 
   const handleProceed = () => {
-    if (frequency === 'buy-now') {
-      router.push('/checkout/shipping');
-    } else {
-      router.push('/checkout/installments');
-    }
+    router.push(`/checkout/shipping?frequency=${frequency}`);
   };
 
   return (
