@@ -147,7 +147,7 @@ export default function ChangePINPage() {
               disabled={isLoading}
               className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
             >
-              {isLoading ? 'Changing...' : 'Change PIN'}
+              {isLoading ? 'Processing...' : hasPin ? 'Change PIN' : 'Set PIN'}
             </button>
           </div>
         )}
@@ -161,7 +161,7 @@ export default function ChangePINPage() {
             </div>
 
             <h2 className="text-xl font-semibold text-system-blue-light text-center mb-12">
-              PIN has been successfully<br />changed
+              PIN has been successfully<br />{hasPin ? 'changed' : 'set'}
             </h2>
 
             <button
