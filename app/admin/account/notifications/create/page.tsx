@@ -204,9 +204,9 @@ export default function CreateNotification() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
                     disabled={isLoading}
                   >
-                    <option>Users</option>
-                    <option>Vendors</option>
-                    <option>All</option>
+                    <option value="customer">Customers Only</option>
+                    <option value="vendor">Vendors Only</option>
+                    <option value="all">Everyone (Broadcast)</option>
                   </select>
                 </div>
               </div>
