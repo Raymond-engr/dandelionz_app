@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useChangePaymentPinMutation } from '@/lib/api/adminApi';
+import { useChangePaymentPinMutation, useGetAdminPaymentSettingsQuery } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
 
 type PinStep = 'enter' | 'confirm' | 'success';
@@ -15,7 +15,16 @@ export default function ChangePINPage() {
   const [newPin, setNewPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
   
+  const { data: settingsData } = useGetAdminPaymentSettingsQuery();
   const [changePin, { isLoading }] = useChangePaymentPinMutation();
+
+  const hasPin = settingsData?.data?.has_pin ?? true;
+
+  useEffect(() => {
+    if (settingsData && !hasPin && currentStep === 'enter') {
+      setCurrentStep('confirm');
+    }
+  }, [settingsData, hasPin, currentStep]);
 
   const handlePinInput = (index: number, value: string, setter: React.Dispatch<React.SetStateAction<string[]>>, pinArray: string[], nextId?: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
@@ -48,7 +57,7 @@ export default function ChangePINPage() {
 
     try {
       await changePin({
-        current_pin: currentPinStr,
+        current_pin: hasPin ? currentPinStr : undefined,
         new_pin: newPinStr,
         confirm_pin: confirmPinStr
       }).unwrap();
@@ -72,11 +81,11 @@ export default function ChangePINPage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-system-blue-light">
-            {currentStep === 'success' ? 'Confirmation' : currentStep === 'enter' ? 'Change Payment PIN' : 'Confirm PIN Change'}
+            {currentStep === 'success' ? 'Confirmation' : !hasPin ? 'Setup Payment PIN' : currentStep === 'enter' ? 'Change Payment PIN' : 'Confirm PIN Change'}
           </h1>
         </div>
 
-        {currentStep === 'enter' && (
+        {currentStep === 'enter' && hasPin && (
           <div className="p-6">
             <div className="mb-12">
               <label className="text-sm font-medium text-gray-900 mb-4 block">Enter Current PIN</label>
