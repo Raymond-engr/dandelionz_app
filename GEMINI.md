@@ -13,3 +13,6 @@
 - Fixed an issue where the shipping address step was skipped in the installment flow.
 - Added address validation to the Shipping step to ensure users provide a delivery address before proceeding.
 - Aligned progress indicator steps, button labels, and frequency options with the updated flow.
+
+## June 22, 2026 - Remove Bank Account Editing from Vendor Profile
+- Removed the bank name and account number fields from the Vendor Profile page to prevent editing of bank details from the profile section.

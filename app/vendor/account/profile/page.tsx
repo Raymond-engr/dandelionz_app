@@ -436,30 +436,7 @@ export default function VendorProfilePage() {
               )}
             </div>
 
-            {/* Bank Name */}
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Bank Name</label>
-              <input
-                type="text"
-                value={formData.bank_name}
-                onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
-                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
-                disabled={!isEditing}
-              />
-            </div>
 
-            {/* Account Number */}
-            <div>
-              <label className="text-xs text-gray-600 mb-2 block">Account Number</label>
-              <input
-                type="tel" 
-                value={formData.account_number}
-                onChange={(e) => setFormData({...formData, account_number: e.target.value})}
-                className="w-full px-0 py-2 bg-transparent text-sm text-gray-900 border-b border-gray-300 focus:outline-none focus:border-system-blue-light"
-                disabled={!isEditing}
-                maxLength={10}
-              />
-            </div>
 
             {/* Password */}
             <div>
