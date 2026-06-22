@@ -134,7 +134,7 @@ export const authApi = baseApi.injectEndpoints({
       { email: string }
     >({
       query: (body) => ({
-        url: "/auth/send-verification-email/",
+        url: "/auth/send-verification/",
         method: "POST",
         body,
       }),

@@ -64,7 +64,13 @@ export function resolveNotificationUrl(url: string | null | undefined, role: str
 
   // Logic for Customer
   if (role === 'customer') {
-    // If backend sends payment or transaction links, redirect to orders list as we can't reliably resolve transaction ID to order ID on frontend
+    // Orders: /orders/123 is valid
+    // Receipt: /receipt?id=123 is valid
+    if (path.includes('/receipt')) {
+        return path;
+    }
+
+    // If backend sends payment or transaction links (other than receipt), redirect to orders list
     if (path.includes('/transactions/') || path.includes('/payment/')) {
         return '/orders';
     }

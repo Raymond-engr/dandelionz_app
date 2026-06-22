@@ -18,6 +18,8 @@ export default function WithdrawPage() {
   const [accountName, setAccountName] = useState<string>('');
   const [localError, setLocalError] = useState<string>('');
 
+  const MIN_WITHDRAWAL = 1000;
+
   useEffect(() => {
     if (walletData?.data?.withdrawable_balance !== undefined) {
       setWithdrawAmount(walletData.data.withdrawable_balance.toFixed(2));
@@ -34,6 +36,10 @@ export default function WithdrawPage() {
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
       setLocalError('Please enter a valid amount.');
+      return;
+    }
+    if (amount < MIN_WITHDRAWAL) {
+      setLocalError(`Minimum withdrawal amount is ₦${MIN_WITHDRAWAL.toLocaleString()}.`);
       return;
     }
     if (!bankName || !accountNumber || !accountName) {
@@ -102,6 +108,7 @@ export default function WithdrawPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-400 mt-2">Minimum withdrawal: ₦{MIN_WITHDRAWAL.toLocaleString()}</p>
           </div>
 
           <div>
