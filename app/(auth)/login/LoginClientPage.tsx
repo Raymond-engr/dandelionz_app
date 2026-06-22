@@ -83,6 +83,12 @@ export default function LoginClientPage() {
       }
     } catch (err: any) {
       console.error('Login failed:', err);
+      // Handle unverified email error from backend (403 Forbidden)
+      if (err?.status === 403 && err?.data?.email_not_verified) {
+        // Pass email as query param so verify-notice can use it
+        router.push(`/verify-notice?email=${encodeURIComponent(formData.email)}`);
+        return;
+      }
       setValidationError(err?.data?.error || 'Invalid email or password');
     }
   };

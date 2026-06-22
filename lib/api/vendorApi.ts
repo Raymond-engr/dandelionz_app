@@ -129,6 +129,7 @@ interface PaginatedTransactionsResponse {
 
 interface PaymentSettings {
   bank_name: string;
+  bank_code: string;
   account_number: string;
   account_name: string;
   recipient_code: string;
@@ -175,6 +176,21 @@ interface OrderSummary {
   shipped: number;
   delivered: number;
   canceled: number;
+}
+
+export interface Bank {
+  name: string;
+  code: string;
+  active: boolean;
+}
+
+export interface BankVerificationResponse {
+  success: boolean;
+  data: {
+    account_name: string;
+    account_number: string;
+    bank_id: string;
+  };
 }
 
 export const vendorApi = baseApi.injectEndpoints({
@@ -570,6 +586,18 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
 
+    getBanks: builder.query<{ success: boolean; data: Bank[] }, void>({
+      query: () => "/user/utility/banks/",
+    }),
+
+    verifyBankAccount: builder.mutation<BankVerificationResponse, { account_number: string; bank_code: string }>({
+      query: (body) => ({
+        url: "/user/utility/verify-account/",
+        method: "POST",
+        body,
+      }),
+    }),
+
     // Account Management
     deleteAccount: builder.mutation<void, { password: string }>({
       query: (body) => ({
@@ -620,5 +648,7 @@ export const {
   useVendorArchiveNotificationMutation,
   useVendorGetNotificationStatsQuery,
   useVendorBulkDeleteNotificationsMutation,
+  useGetBanksQuery,
+  useVerifyBankAccountMutation,
   useDeleteAccountMutation,
 } = vendorApi;

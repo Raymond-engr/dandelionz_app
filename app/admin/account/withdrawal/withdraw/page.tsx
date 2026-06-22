@@ -34,17 +34,37 @@ export default function WithdrawPage() {
     }
   };
 
+  const MIN_WITHDRAWAL = 1000;
+
   const handleWithdraw = async () => {
     const pinStr = pin.join('');
-    if (!amount || pinStr.length < 4) {
-      toast.error("Please enter amount and 4-digit PIN");
+    const withdrawAmount = parseFloat(amount);
+    const availableBalance = parseFloat(walletStats?.withdrawable_balance?.toString() || "0");
+
+    if (!amount || isNaN(withdrawAmount)) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (withdrawAmount < MIN_WITHDRAWAL) {
+      toast.error(`Minimum withdrawal amount is ₦${formatCurrency(MIN_WITHDRAWAL)}`);
+      return;
+    }
+
+    if (withdrawAmount > availableBalance) {
+      toast.error("Insufficient withdrawable balance.");
+      return;
+    }
+
+    if (pinStr.length < 4) {
+      toast.error("Please enter your 4-digit PIN");
       return;
     }
     
     try {
       await requestWithdrawal({ amount, pin: pinStr }).unwrap();
       toast.success("Withdrawal initiated successfully!");
-      router.push('/admin/account/withdrawal');
+      router.push('/admin/account/withdrawal/success');
     } catch (err: any) {
       toast.error(err.data?.message || "Failed to request withdrawal");
     }
@@ -77,6 +97,7 @@ export default function WithdrawPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-system-blue-light"
               placeholder="0.00"
             />
+            <p className="text-xs text-gray-400 mt-2">Minimum withdrawal: ₦{formatCurrency(MIN_WITHDRAWAL)}</p>
           </div>
 
           <div className="mb-10">
