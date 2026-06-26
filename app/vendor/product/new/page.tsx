@@ -155,6 +155,7 @@ export default function AddNewProductPage() {
     productData.append('category', formData.category);
     productData.append('price', formData.price.toString());
     productData.append('stock', formData.stock.toString());
+    productData.append('publish_status', 'draft');
     
     // Images
     formData.images.forEach((img, index) => {

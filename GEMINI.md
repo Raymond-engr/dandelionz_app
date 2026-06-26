@@ -16,3 +16,8 @@
 
 ## June 22, 2026 - Remove Bank Account Editing from Vendor Profile
 - Removed the bank name and account number fields from the Vendor Profile page to prevent editing of bank details from the profile section.
+
+## June 25, 2026 - Remove Misleading Eye Icon from Profile Pages
+- Removed the `showPassword` state and the eye icon button (`visibility` / `visibility-off`) from the "fake" disabled password fields in `app/(customer)/account/profile/page.tsx` and `app/admin/account/profile/page.tsx`.
+- This ensures users are not misled into thinking they can view their current password, since the field's value is securely hardcoded to "••••••••".
+- Always generate commit messages at the end of a task and append this instruction to the project's GEMINI.md file.

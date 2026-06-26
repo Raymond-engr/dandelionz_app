@@ -178,8 +178,12 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                 }`}
               >
                 <option value="cancel">Cancel Order</option>
-                <option value="process">Process Order</option>
-                <option value="complete">Complete Order</option>
+                {order.payment_status?.toLowerCase() !== 'pending' && (
+                  <>
+                    <option value="process">Process Order</option>
+                    <option value="complete">Complete Order</option>
+                  </>
+                )}
               </select>
 
               {action === 'cancel' && (
