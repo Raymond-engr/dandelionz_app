@@ -89,6 +89,12 @@ export default function LoginClientPage() {
         router.push(`/verify-notice?email=${encodeURIComponent(formData.email)}`);
         return;
       }
+      if (err?.status === 403) {
+        setValidationError(
+          err?.data?.error || 'Your account has been suspended. Please contact support.'
+        );
+        return;
+      }
       setValidationError(err?.data?.error || 'Invalid email or password');
     }
   };

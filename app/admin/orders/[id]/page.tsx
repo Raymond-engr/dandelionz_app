@@ -3,7 +3,7 @@
 import React, { useState, use } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetAdminOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation } from '@/lib/api/adminApi';
+import { useGetAdminOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation, useGetAdminRefundsQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { OrderItem } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
@@ -20,7 +20,20 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
 
   const orderId = params.id;
   
-  const { data: order, isLoading, error, refetch } = useGetAdminOrderDetailsQuery(orderId);
+  const { data: orderResponse, isLoading, error, refetch } = useGetAdminOrderDetailsQuery(orderId);
+  let order = orderResponse;
+  
+  const { data: refundsData } = useGetAdminRefundsQuery(undefined, {
+    skip: !order || !['CANCELED', 'CANCELLED'].includes(order.current_status || order.status || ''),
+  });
+  
+  if (order && refundsData?.data) {
+    const orderRefund = refundsData.data.find((r: any) => r.order_id === order?.order_id);
+    if (orderRefund) {
+      order = { ...order, refund_request: orderRefund };
+    }
+  }
+
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
 
@@ -167,6 +180,37 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               </div>
             </div>
 
+            {order.refund_request && (
+              <div className="mb-6">
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Refund Status</h2>
+                <div className={`p-4 rounded-xl border ${
+                  order.refund_request.status === 'APPROVED' ? 'bg-emerald-50 border-emerald-200' :
+                  order.refund_request.status === 'REJECTED' ? 'bg-red-50 border-red-200' :
+                  'bg-amber-50 border-amber-200'
+                }`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-gray-900">
+                      ₦{Number(order.refund_request.refunded_amount || order.refund_request.amount).toLocaleString()}
+                    </span>
+                    <span className={`font-bold text-xs ${
+                      order.refund_request.status === 'APPROVED' ? 'text-emerald-600' :
+                      order.refund_request.status === 'REJECTED' ? 'text-red-600' :
+                      'text-amber-600'
+                    }`}>
+                      {order.refund_request.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {order.refund_request.status === 'PENDING'
+                      ? 'Refund requested. Go to Refund Requests to process.'
+                      : order.refund_request.status === 'APPROVED'
+                      ? 'Refund approved — customer wallet credited.'
+                      : `Rejected: ${order.refund_request.rejection_reason || order.refund_request.reason || 'No reason provided'}`}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <select
                 value={action}
@@ -178,8 +222,12 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                 }`}
               >
                 <option value="cancel">Cancel Order</option>
-                <option value="process">Process Order</option>
-                <option value="complete">Complete Order</option>
+                {order.payment_status?.toLowerCase() !== 'pending' && (
+                  <>
+                    <option value="process">Process Order</option>
+                    <option value="complete">Complete Order</option>
+                  </>
+                )}
               </select>
 
               {action === 'cancel' && (
@@ -205,6 +253,15 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
               >
                 Discard
               </button>
+
+              {order.status === 'CANCELED' && (order.payment_status === 'PAID' || order.current_status === 'PAID') && (
+                <button
+                  onClick={() => router.push('/admin/refunds')}
+                  className="w-full py-3 mt-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-bold transition-colors"
+                >
+                  Manage Refund Request
+                </button>
+              )}
             </div>
           </div>
         </div>

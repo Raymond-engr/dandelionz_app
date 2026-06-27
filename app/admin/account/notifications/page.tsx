@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/adminApi';
 import { useAppSelector } from '@/lib/hooks';
 import { format } from 'date-fns';
+import { isSystemNotification } from '@/lib/utils';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -354,13 +355,15 @@ export default function NotificationManagement() {
                       </div>
 
                       {/* Delete Button */}
-                      <button 
-                        onClick={(e) => handleDeleteInbox(e, notif.id)}
-                        className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!isSystemNotification(notif) && (
+                        <button 
+                          onClick={(e) => handleDeleteInbox(e, notif.id)}
+                          className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

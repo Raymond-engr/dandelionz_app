@@ -14,7 +14,7 @@ import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
-import { resolveNotificationUrl } from '@/lib/utils';
+import { resolveNotificationUrl, isSystemNotification } from '@/lib/utils';
 import Modal from '@/components/Modal';
 
 export default function VendorNotificationsPage() {
@@ -204,7 +204,7 @@ export default function VendorNotificationsPage() {
                         {notification.message}
                     </p>
                     
-                    {notification.action_url && (
+                    {notification.action_url && notification.category !== 'product_rejection' && (
                         <Link 
                             href={resolveNotificationUrl(notification.action_url, 'vendor')}
                             onClick={(e) => e.stopPropagation()} 
@@ -217,13 +217,15 @@ export default function VendorNotificationsPage() {
                 </div>
 
                 {/* Delete Button */}
-                <button 
-                    onClick={(e) => handleDeleteClick(e, notification.id)}
-                    className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-opacity md:opacity-0 md:group-hover:opacity-100"
-                    title="Delete Notification"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                {!isSystemNotification(notification) && (
+                  <button 
+                      onClick={(e) => handleDeleteClick(e, notification.id)}
+                      className="absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                      title="Delete Notification"
+                  >
+                      <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))
           )}

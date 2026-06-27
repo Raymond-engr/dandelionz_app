@@ -3,7 +3,7 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams } from 'next/navigation';
-import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation } from '@/lib/api/publicApi';
+import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation, useCancelOrderMutation } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -17,8 +17,27 @@ export default function OrderDetailsPage() {
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
   
   const [initNextInstallment, { isLoading: isPaying }] = useInitializeNextInstallmentMutation();
+  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
 
   const order = response;
+  const canCancel = order && ['PENDING', 'PAID'].includes(order.status) && order.status !== 'CANCELLED';
+
+  const handleCancelOrder = async () => {
+    if (!window.confirm(
+      order?.status === 'PAID'
+        ? 'This order has been paid. Cancelling will initiate a refund (3–5 business days). Are you sure?'
+        : 'Are you sure you want to cancel this order?'
+    )) return;
+
+    try {
+      const res = await cancelOrder(order!.order_id).unwrap();
+      toast.success(res.message || 'Order cancelled successfully.');
+      router.back();
+    } catch (err: any) {
+      toast.error(err?.data?.error || 'Could not cancel order.');
+    }
+  };
+
   const installmentPlans = plansResponse?.data || [];
   
   // Find the plan linked to this order
@@ -179,6 +198,24 @@ export default function OrderDetailsPage() {
                 <p className="text-sm text-gray-500 text-center">No tracking information available.</p>
             )}
           </div>
+
+          {/* Cancel Order Section */}
+          {canCancel && (
+            <div className="mt-8">
+              <button
+                onClick={handleCancelOrder}
+                disabled={isCancelling}
+                className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
+              </button>
+              {order?.status === 'PAID' && (
+                <p className="text-xs text-red-500 text-center mt-2">
+                  Refund will be processed in 3–5 business days
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>
