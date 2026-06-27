@@ -21,3 +21,22 @@
 - Removed the `showPassword` state and the eye icon button (`visibility` / `visibility-off`) from the "fake" disabled password fields in `app/(customer)/account/profile/page.tsx` and `app/admin/account/profile/page.tsx`.
 - This ensures users are not misled into thinking they can view their current password, since the field's value is securely hardcoded to "••••••••".
 - Always generate commit messages at the end of a task and append this instruction to the project's GEMINI.md file.
+
+## June 26, 2026 - Notification & Admin Order Fixes
+- Fixed a navigation error where clicking system notifications resulted in a 404 page by adding an \isSystemNotification\ utility and removing the anchor tags/links for them.
+- Disabled manual processing/completing of orders for admins if the payment status is still 'pending' to avoid manual force overrides.
+- Verified that 'Save as Draft' for Admin Notifications works end-to-end (backend stores \is_draft=True\, frontend correctly sends it).
+
+## June 26, 2026 - Customer Order Cancellation & Refund Flow
+- Added 'Cancel Order' button to order tracking UI for both Mobile and Web.
+- Connected cancellation requests to the backend cancel-order endpoint, which cancels pending/paid orders and generates Refund records for paid orders.
+- Created disputes.tsx and efunds/page.tsx for Admins in Mobile and Web to list, approve, and reject refund requests.
+- Added useGetAdminRefundsQuery and useProcessAdminRefundMutation in dminApi.ts for Admin platforms.
+- Linked the 'Manage Refund Request' button on the Admin Order Details page when a cancelled order requires a refund.
+- Configured notifications via send_user_notification to alert customers and vendors on cancellation, and customers upon refund approval/rejection.
+
+## June 27, 2026 - Fix Build Errors
+- Exported missing hooks useGetAdminRefundsQuery and useProcessAdminRefundMutation from dminApi.ts.
+- Added missing efund_request property to Order interface in dminApi.ts.
+- Fixed possibly undefined order.order_id in pp/admin/orders/[id]/page.tsx.
+- Added missing Refunds tag type to aseApi.ts to fix RTK Query type error.

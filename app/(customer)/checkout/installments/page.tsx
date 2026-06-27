@@ -7,7 +7,7 @@ import CheckoutProgress from '@/components/CheckoutProgress';
 import { useInitializeInstallmentCheckoutMutation } from '@/lib/api/publicApi';
 import toast from 'react-hot-toast';
 
-type InstallmentDuration = '1_month' | '3_months' | '6_months' | '1_year';
+type InstallmentDuration = '1_month' | '3_months' | '6_months' | '8_months';
 
 export default function InstallmentsPage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function InstallmentsPage() {
       { value: '1_month', label: '1 Month Plan', description: 'Split payment over 1 month' },
       { value: '3_months', label: '3 Months Plan', description: 'Split payment over 3 months' },
       { value: '6_months', label: '6 Months Plan', description: 'Split payment over 6 months' },
-      { value: '1_year', label: '1 Year Plan', description: 'Split payment over 12 months' },
+      { value: '8_months', label: '8 Months Plan', description: 'Split payment over 8 months' },
   ];
 
   return (
