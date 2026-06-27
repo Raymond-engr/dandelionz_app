@@ -136,6 +136,7 @@ export const baseApi = createApi({
     "Admin",
     "Vendor",
     "Customer",
+    "CustomerWallet",
     "Product",
     "Order",
     "Category",
@@ -148,6 +149,7 @@ export const baseApi = createApi({
     "Draft",
     "Wallet",
     "AdminPaymentSettings",
+    "Refunds",
   ],
   endpoints: () => ({}),
 });

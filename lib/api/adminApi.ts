@@ -129,6 +129,7 @@ export interface Order {
     timestamp: string | null;
     completed: boolean;
   }[];
+  refund_request?: any;
 }
 
 export interface Product {
@@ -349,6 +350,19 @@ export interface WithdrawalDetail extends Withdrawal {
   recipient_code?: string;
 }
 
+export interface RefundRequest {
+  id: number;
+  order_id: string;
+  customer_name: string;
+  customer_email: string;
+  amount: string;
+  status: string;
+  reason: string;
+  created_at: string;
+  processed_at: string | null;
+  payment_reference: string;
+}
+
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -475,6 +489,24 @@ export const adminApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Settlement"],
+    }),
+
+    // Refunds
+    getAdminRefunds: builder.query<{ success: boolean; data: RefundRequest[]; count: number; pending_count: number }, { status?: string } | void>({
+      query: (params) => ({
+        url: "/user/admin/finance/refunds/",
+        params: params || undefined,
+      }),
+      providesTags: ["Refunds"],
+    }),
+
+    processAdminRefund: builder.mutation<{ success: boolean; message: string }, { refund_id: number; action: "APPROVE" | "REJECT"; rejection_reason?: string }>({
+      query: (body) => ({
+        url: "/user/admin/finance/refunds/process/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Refunds", "Order", "Wallet"],
     }),
 
     // Analytics
@@ -1117,4 +1149,6 @@ export const {
   useGetSettlementSummaryQuery,
   useGetBanksQuery,
   useVerifyBankAccountMutation,
+  useGetAdminRefundsQuery,
+  useProcessAdminRefundMutation,
 } = adminApi;
