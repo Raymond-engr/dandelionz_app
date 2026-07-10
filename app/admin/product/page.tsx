@@ -10,6 +10,7 @@ import {
   useDeleteCategoryMutation,
   useDeleteProductMutation
 } from '@/lib/api/adminApi';
+import { useGetDraftsQuery, useSubmitDraftMutation, useDeleteDraftMutation } from '@/lib/api/vendorApi';
 import AdminCategoryListItem from '@/components/AdminCategoryListItem';
 import Link from 'next/link';
 import { Category, Product } from '@/lib/api/adminApi';
@@ -20,7 +21,7 @@ import toast from 'react-hot-toast';
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'category' | 'product'; slug: string } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'category' | 'product' | 'draft'; slug: string } | null>(null);
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
@@ -33,8 +34,14 @@ export default function ProductManagement() {
   // Mutations
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
   const [deleteProduct, { isLoading: isDeletingProduct }] = useDeleteProductMutation();
+  const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
+  const [deleteDraft, { isLoading: isDeletingDraft }] = useDeleteDraftMutation();
 
-  const isDeleting = isDeletingCategory || isDeletingProduct;
+  const isDeleting = isDeletingCategory || isDeletingProduct || isDeletingDraft;
+
+  // Fetch drafts
+  const { data: draftsData, isLoading: isLoadingDrafts } = useGetDraftsQuery();
+  const draftProducts = draftsData?.data || [];
 
   const handleDeleteCategory = async (categorySlug: string) => {
     try {
@@ -62,6 +69,26 @@ export default function ProductManagement() {
 
   const handleEditCategory = (categorySlug: string) => {
     router.push(`/admin/product/category/${categorySlug}/edit`);
+  };
+
+  const handleSubmitDraft = async (slug: string) => {
+    try {
+      await submitDraft(slug).unwrap();
+      toast.success('Draft submitted successfully');
+      refetchProducts();
+    } catch (err: any) {
+      toast.error(err?.data?.error || 'Failed to submit draft');
+    }
+  };
+
+  const handleDeleteDraft = async (slug: string) => {
+    try {
+      await deleteDraft(slug).unwrap();
+      toast.success('Draft deleted successfully');
+      setShowDeleteConfirm(null);
+    } catch (err: any) {
+      toast.error(err?.data?.error || 'Failed to delete draft');
+    }
   };
 
   return (
@@ -145,17 +172,17 @@ export default function ProductManagement() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[rgba(77,255,151,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Approved Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Approved').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'APPROVED').length}</p>
                   </div>
                   <div className="bg-[rgba(255,77,77,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Rejected Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Rejected').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'REJECTED').length}</p>
                   </div>
                 </div>
 
                 <div className="bg-[rgba(255,212,59,0.5)] rounded-lg p-3">
                   <p className="text-xs text-gray-700 mb-1">Pending Products</p>
-                  <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'Pending').length}</p>
+                  <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'PENDING').length}</p>
                   </div>
                 </div>
 
@@ -235,6 +262,59 @@ export default function ProductManagement() {
                   ))}
                 </div>
               )}
+              
+              {/* Draft Products */}
+              {draftProducts.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-base font-semibold text-gray-900 mb-3">Draft Products</h2>
+                  <div className="space-y-3">
+                    {draftProducts.map((product: any) => (
+                      <div key={product.slug} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                              {product.name}
+                            </h3>
+                            <p className="text-xs text-gray-600 mb-1">
+                              Stock: {product.stock} units
+                            </p>
+                            <p className="text-xs text-gray-600 mb-2">
+                              {product.category}
+                            </p>
+                            <p className="text-lg font-bold text-gray-900">
+                              ₦{parseFloat(product.price).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/admin/product/${product.slug}/edit?type=draft`}
+                              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                              <Edit2 className="w-5 h-5 text-system-blue-light" />
+                            </Link>
+                            <button
+                              onClick={() => handleSubmitDraft(product.slug)}
+                              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                              disabled={isSubmitting}
+                            >
+                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm({ slug: product.slug, type: 'draft' })}
+                              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="w-5 h-5 text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -258,11 +338,15 @@ export default function ProductManagement() {
                 Cancel
               </button>
               <button
-                onClick={() => 
-                  showDeleteConfirm.type === 'category' 
-                    ? handleDeleteCategory(showDeleteConfirm.slug) 
-                    : handleDeleteProduct(showDeleteConfirm.slug)
-                }
+                onClick={() => {
+                  if (showDeleteConfirm.type === 'category') {
+                    handleDeleteCategory(showDeleteConfirm.slug);
+                  } else if (showDeleteConfirm.type === 'draft') {
+                    handleDeleteDraft(showDeleteConfirm.slug);
+                  } else {
+                    handleDeleteProduct(showDeleteConfirm.slug);
+                  }
+                }}
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
                 disabled={isDeleting}
               >
