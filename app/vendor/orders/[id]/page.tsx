@@ -5,7 +5,8 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetVendorOrderDetailsQuery } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface VendorOrderDetailsProps {
   params: Promise<{ id: string }>;
@@ -65,7 +66,19 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
           <div className="mb-6">
             <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-sm text-gray-600 mb-1 truncate">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm text-gray-600 truncate">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(order.order_id);
+                          toast.success('Order ID copied to clipboard');
+                        }}
+                        className="text-gray-500 hover:text-system-blue-light transition-colors"
+                        title="Copy Order ID"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-600">Date: <span className="font-medium text-gray-900">{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span></p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${
