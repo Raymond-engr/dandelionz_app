@@ -139,7 +139,7 @@ function EditProductComponent() {
         stock: productData.stock || 0,
         price: parseFloat(productData.price) || 0,
         discount: (productData as any).discount || 0, // Assuming backend sends 'discount' now, fallback to 0
-        images: [], // New files are empty initially
+        images: existingImages.map(url => ({ file: url, color: '' })), // Fix crash by aligning with previewUrls
         mainImageIndex: mainIndex,
         variants: {
           colors: parsedVariants.colors || [],
