@@ -40,3 +40,23 @@
 - Added missing efund_request property to Order interface in dminApi.ts.
 - Fixed possibly undefined order.order_id in pp/admin/orders/[id]/page.tsx.
 - Added missing Refunds tag type to aseApi.ts to fix RTK Query type error.
+
+## July 10, 2026 - Admin Product Status Formatting Fix
+- Updated backend AdminProductListSerializer and AdminProductDetailSerializer to compute and return a dedicated `status` field mapped to 'APPROVED', 'REJECTED', 'PENDING', or 'DRAFT' based on approval and publish status.
+- Standardized web app admin products dashboard to filter count badges by uppercase status strings instead of Title Case.
+
+## July 10, 2026 - Admin Drafts Management
+- Fixed a backend permission issue in VendorDraftProductsView, UpdateDraftProductView, and DeleteDraftProductView to allow Admins to manage drafts using IsAdminOrVendor.
+- Added Draft Products section to the Web Admin products page for viewing, editing, submitting, and deleting drafts.
+- Integrated Drafts tab and rendering logic into Mobile Admin products page.
+
+## July 12, 2026 - Admin Order Processing Restriction
+- Updated the condition for processing and completing orders in the Admin panel to strictly require the payment status to be 'PAID', replacing the previous 'not pending' check to prevent failed payments from being processed.
+
+## July 12, 2026 - Admin Dynamic Order Actions
+- Updated the 'Process Order' action to set the order status to 'SHIPPED' instead of 'PROCESSING'.
+- Conditionally filtered available admin actions based on the order's current status (e.g., hiding all actions for 'DELIVERED' or 'CANCELED' orders, and hiding 'Process Order' for 'SHIPPED' orders).
+
+## July 12, 2026 - Admin Product Search Implementation
+- Integrated the existing 'SearchBar' component into the web Admin Products page.
+- Implemented fast, client-side filtering for Categories, Products, and Drafts without modifying any backend queries, ensuring parity with the mobile app.
