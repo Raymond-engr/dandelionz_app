@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Plus, Trash2, Send } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, Send, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
   useAdminGetAllNotificationsQuery, 
@@ -23,6 +23,8 @@ export default function NotificationManagement() {
   const token = useAppSelector((state) => state.auth.accessToken);
   const [activeTab, setActiveTab] = useState('general');
   const [systemFilter, setSystemFilter] = useState<'all' | 'sent' | 'draft'>('all');
+  const [deleteModal, setDeleteModal] = useState<{ id: string, type: 'inbox' | 'system' } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Inbox Query
   const { 
@@ -106,27 +108,34 @@ export default function NotificationManagement() {
     }
   };
 
-  const handleDeleteInbox = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteInbox = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Delete this notification from your inbox?')) return;
-    try {
-        await deleteInboxNotification(id).unwrap();
-        toast.success('Deleted');
-        refetchInbox();
-    } catch (err) {
-        toast.error('Failed to delete');
-    }
+    setDeleteModal({ id, type: 'inbox' });
   };
 
-  const handleDeleteSystem = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteSystem = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Delete this system notification? This cannot be undone.')) return;
+    setDeleteModal({ id, type: 'system' });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal) return;
+    setIsDeleting(true);
     try {
-        await deleteSystemNotification(id).unwrap();
+      if (deleteModal.type === 'inbox') {
+        await deleteInboxNotification(deleteModal.id).unwrap();
+        toast.success('Deleted');
+        refetchInbox();
+      } else {
+        await deleteSystemNotification(deleteModal.id).unwrap();
         toast.success('System notification deleted');
         refetchSystem();
+      }
+      setDeleteModal(null);
     } catch (err) {
-        toast.error('Failed to delete');
+      toast.error('Failed to delete');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -380,6 +389,34 @@ export default function NotificationManagement() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Notification?</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this notification? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
