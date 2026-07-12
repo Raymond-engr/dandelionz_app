@@ -17,19 +17,23 @@ import { Category, Product } from '@/lib/api/adminApi';
 import CategoryListItemSkeleton from '@/components/CategoryListItemSkeleton';
 import ProductListItemSkeleton from '@/components/ProductListItemSkeleton';
 import toast from 'react-hot-toast';
+import SearchBar from '@/components/SearchBar';
 
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'category' | 'product' | 'draft'; slug: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError, refetch: refetchCategories } = useGetAllCategoriesQuery();
   const categories = categoriesData || [];
+  const filteredCategories = categories.filter((c: Category) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   // Fetch products
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useGetAllProductsQuery({});
   const products = productsData?.data || [];
+  const filteredProducts = products.filter((p: Product) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   // Mutations
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
@@ -42,6 +46,7 @@ export default function ProductManagement() {
   // Fetch drafts
   const { data: draftsData, isLoading: isLoadingDrafts } = useGetDraftsQuery();
   const draftProducts = draftsData?.data || [];
+  const filteredDrafts = draftProducts.filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleDeleteCategory = async (categorySlug: string) => {
     try {
@@ -101,6 +106,14 @@ export default function ProductManagement() {
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4">Manage your categories and products</p>
 
+          <div className="mb-4">
+            <SearchBar 
+              value={searchQuery} 
+              onChange={setSearchQuery} 
+              placeholder={activeTab === 'categories' ? "Search categories..." : "Search products..."} 
+            />
+          </div>
+
           <div className="flex gap-4 mb-6 border-b border-gray-200">
             <button
               onClick={() => setActiveTab('categories')}
@@ -137,7 +150,7 @@ export default function ProductManagement() {
                 <div className="text-center text-red-500">Failed to load categories.</div>
               ) : (
                 <div className="space-y-3">
-                  {categories.map((category: Category) => (
+                  {filteredCategories.map((category: Category) => (
                     <AdminCategoryListItem
                       key={category.slug}
                       id={category.id}
@@ -206,7 +219,7 @@ export default function ProductManagement() {
                 <div className="text-center text-red-500">Failed to load products.</div>
               ) : (
                 <div className="space-y-3">
-                  {products.map((product: Product) => (
+                  {filteredProducts.map((product: Product) => (
                     <div
                       key={product.slug}
                       className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-start gap-3"
@@ -268,7 +281,7 @@ export default function ProductManagement() {
                 <div className="mt-8">
                   <h2 className="text-base font-semibold text-gray-900 mb-3">Draft Products</h2>
                   <div className="space-y-3">
-                    {draftProducts.map((product: any) => (
+                    {filteredDrafts.map((product: any) => (
                       <div key={product.slug} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">

@@ -48,7 +48,7 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
         }
         await cancelOrder({ order_id: order.order_id, reason }).unwrap();
       } else if (action === 'process') {
-        await updateOrderStatus({ order_id: order.order_id, status: 'PROCESSING' }).unwrap();
+        await updateOrderStatus({ order_id: order.order_id, status: 'SHIPPED' }).unwrap();
       } else if (action === 'complete') {
         await updateOrderStatus({ order_id: order.order_id, status: 'DELIVERED' }).unwrap();
       }
@@ -212,47 +212,59 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
             )}
 
             <div className="space-y-3">
-              <select
-                value={action}
-                onChange={(e) => setAction(e.target.value as 'cancel' | 'process' | 'complete')}
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
-                  action === 'cancel'
-                    ? 'border-system-red focus:ring-system-red text-system-red'
-                    : 'border-gray-300 focus:ring-system-blue-light'
-                }`}
-              >
-                <option value="cancel">Cancel Order</option>
-                {order.payment_status?.toLowerCase() !== 'pending' && (
+              {(() => {
+                const status = (order.status || order.current_status || '').toUpperCase();
+                const isTerminal = status === 'DELIVERED' || status === 'CANCELED' || status === 'CANCELLED';
+                const isPaid = order.payment_status?.toUpperCase() === 'PAID';
+                
+                if (isTerminal) return null;
+
+                return (
                   <>
-                    <option value="process">Process Order</option>
-                    <option value="complete">Complete Order</option>
+                    <select
+                      value={action}
+                      onChange={(e) => setAction(e.target.value as 'cancel' | 'process' | 'complete')}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                        action === 'cancel'
+                          ? 'border-system-red focus:ring-system-red text-system-red'
+                          : 'border-gray-300 focus:ring-system-blue-light'
+                      }`}
+                    >
+                      <option value="cancel">Cancel Order</option>
+                      {isPaid && status !== 'SHIPPED' && (
+                        <option value="process">Process Order</option>
+                      )}
+                      {isPaid && (
+                        <option value="complete">Complete Order</option>
+                      )}
+                    </select>
+
+                    {action === 'cancel' && (
+                      <textarea
+                        placeholder="Reason for action..."
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[80px] resize-none"
+                      />
+                    )}
+
+                    <button 
+                      onClick={handleAction}
+                      className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:bg-gray-400"
+                      disabled={isCancelling || isUpdating || (action === 'cancel' && !reason)}
+                    >
+                      {isCancelling || isUpdating ? <LoadingSpinner /> : 'Confirm Action'}
+                    </button>
+
+                    <button
+                      onClick={() => router.back()}
+                      className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                      Discard
+                    </button>
                   </>
-                )}
-              </select>
-
-              {action === 'cancel' && (
-                <textarea
-                  placeholder="Reason for action..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light min-h-[80px] resize-none"
-                />
-              )}
-
-              <button 
-                onClick={handleAction}
-                className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:bg-gray-400"
-                disabled={isCancelling || isUpdating || (action === 'cancel' && !reason)}
-              >
-                {isCancelling || isUpdating ? <LoadingSpinner /> : 'Confirm Action'}
-              </button>
-
-              <button
-                onClick={() => router.back()}
-                className="w-full py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
-              >
-                Discard
-              </button>
+                );
+              })()}
 
               {order.status === 'CANCELED' && (order.payment_status === 'PAID' || order.current_status === 'PAID') && (
                 <button
