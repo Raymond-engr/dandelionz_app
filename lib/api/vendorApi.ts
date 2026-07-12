@@ -398,7 +398,7 @@ export const vendorApi = baseApi.injectEndpoints({
       { success: boolean; data: Order },
       string
     >({
-      query: (uuid) => `/transactions/orders/${uuid}/`,
+      query: (uuid) => `/user/vendor/orders/${uuid}/`,
       providesTags: ["Order"],
     }),
 

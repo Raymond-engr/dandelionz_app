@@ -64,11 +64,11 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
           {/* Order Info */}
           <div className="mb-6">
             <div className="flex justify-between items-start mb-2">
-                <div>
-                    <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
+                <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-sm text-gray-600 mb-1 truncate">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
                     <p className="text-sm text-gray-600">Date: <span className="font-medium text-gray-900">{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span></p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ml-2 ${
+                <span className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${
                     order.status === 'PAID' ? 'bg-green-100 text-green-700' :
                     order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-gray-100 text-gray-700'
