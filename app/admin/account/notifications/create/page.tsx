@@ -119,12 +119,14 @@ export default function CreateNotification() {
     if (recipient === 'All') {
       await createNotification({
         ...commonBody,
+        recipient_type: 'ALL',
         recipient_group: 'all',
       });
     } else {
       await createNotification({
         ...commonBody,
-        recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS",
+        recipient_type: recipient === 'Users' ? 'USERS' : 'VENDORS',
+        recipient_group: recipient === 'Users' ? 'customer' : 'vendor',
       });
     }
   };
@@ -149,12 +151,14 @@ export default function CreateNotification() {
     if (recipient === 'All') {
       await createNotification({
         ...commonBody,
+        recipient_type: 'ALL',
         recipient_group: 'all',
       });
     } else {
       await createNotification({
         ...commonBody,
-        recipient_type: recipient.toUpperCase() as "USERS" | "VENDORS",
+        recipient_type: recipient === 'Users' ? 'USERS' : 'VENDORS',
+        recipient_group: recipient === 'Users' ? 'customer' : 'vendor',
       });
     }
   };
