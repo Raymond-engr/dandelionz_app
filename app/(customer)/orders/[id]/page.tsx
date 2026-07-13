@@ -25,7 +25,7 @@ export default function OrderDetailsPage() {
   const handleCancelOrder = async () => {
     if (!window.confirm(
       order?.status === 'PAID'
-        ? 'This order has been paid. Cancelling will initiate a refund (3–5 business days). Are you sure?'
+        ? 'This order has been paid. Cancelling will initiate a refund (1–3 business days). Are you sure?'
         : 'Are you sure you want to cancel this order?'
     )) return;
 
@@ -120,19 +120,55 @@ export default function OrderDetailsPage() {
                   </span>
                 </h3>
                 
-                {/* Next Payment Logic */}
+                {/* Per-installment breakdown with due date + overdue state */}
                 {!plan.is_fully_paid && (
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-700 mb-2">
-                      Next Due: <span className="font-semibold">₦{parseFloat(plan.installment_amount).toLocaleString()}</span>
-                    </p>
-                    <button
-                      onClick={() => handlePayNextInstallment(plan.id, plan.paid_installments_count + 1)}
-                      disabled={isPaying}
-                      className="w-full py-2.5 bg-system-blue-light text-white text-sm rounded-md font-medium hover:bg-[#020360] transition-colors disabled:opacity-50 shadow-sm"
-                    >
-                      {isPaying ? 'Processing...' : `Pay Installment ${plan.paid_installments_count + 1}`}
-                    </button>
+                  <div className="mt-3 space-y-2">
+                    {plan.installments?.map((inst: any) => {
+                      const isPaid = inst.status === 'PAID';
+                      const isOverdue = !isPaid && (inst.is_overdue ?? new Date(inst.due_date) < new Date());
+                      const isNext = !isPaid && plan.installments!.filter((i: any) => i.status !== 'PAID').indexOf(inst) === 0;
+
+                      return (
+                        <div
+                          key={inst.payment_number}
+                          className={`flex items-center justify-between p-3 rounded-md border ${
+                            isPaid ? 'border-green-100 bg-green-50'
+                            : isOverdue ? 'border-red-100 bg-red-50'
+                            : isNext ? 'border-blue-200 bg-white'
+                            : 'border-gray-100 bg-gray-50'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">
+                              Installment #{inst.payment_number} — ₦{parseFloat(inst.amount).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              Due {new Date(inst.due_date).toLocaleDateString('en-NG', {
+                                day: 'numeric', month: 'short', year: 'numeric',
+                              })}
+                            </p>
+                          </div>
+
+                          {isPaid ? (
+                            <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Paid</span>
+                          ) : isNext ? (
+                            <button
+                              onClick={() => handlePayNextInstallment(plan.id, inst.payment_number)}
+                              disabled={isPaying}
+                              className="py-1.5 px-3 bg-system-blue-light text-white text-xs rounded-md font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                            >
+                              {isPaying ? 'Processing...' : 'Pay Now'}
+                            </button>
+                          ) : (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                              isOverdue ? 'text-red-600 bg-red-100' : 'text-gray-500 bg-gray-100'
+                            }`}>
+                              {isOverdue ? 'Overdue' : 'Upcoming'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 
@@ -211,7 +247,7 @@ export default function OrderDetailsPage() {
               </button>
               {order?.status === 'PAID' && (
                 <p className="text-xs text-red-500 text-center mt-2">
-                  Refund will be processed in 3–5 business days
+                  Refund will be processed in 1–3 business days
                 </p>
               )}
             </div>
