@@ -110,8 +110,6 @@ export default function CreateNotification() {
       title,
       message: description,
       priority: 'normal',
-      action_url: null,
-      action_text: null,
       is_draft: false,
       scheduled_for: scheduledFor,
     };
@@ -142,8 +140,6 @@ export default function CreateNotification() {
       title,
       message: description,
       priority: 'normal',
-      action_url: null,
-      action_text: null,
       is_draft: true,
       scheduled_for: scheduledFor,
     };
