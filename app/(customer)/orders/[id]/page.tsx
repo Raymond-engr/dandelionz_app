@@ -102,9 +102,24 @@ export default function OrderDetailsPage() {
 
         <div className="p-6">
           {/* Order Info */}
+          <div className="mb-6 border border-gray-100 p-4 rounded-lg bg-gray-50 flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
+              <p className="text-sm text-gray-600">Order Date: <span className="font-medium text-gray-900">{order.ordered_at ? new Date(order.ordered_at).toLocaleDateString() : 'N/A'}</span></p>
+            </div>
+            <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+              order.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+              order.status === 'PAID' ? 'bg-blue-100 text-blue-700' :
+              order.status === 'SHIPPED' ? 'bg-purple-100 text-purple-700' :
+              order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+              (order.status === 'CANCELED' || order.status === 'CANCELLED') ? 'bg-red-100 text-red-700' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {order.status === 'CANCELED' ? 'CANCELLED' : order.status}
+            </span>
+          </div>
+
           <div className="mb-6">
-            <p className="text-sm text-gray-600 mb-1">Order ID: <span className="font-medium text-gray-900">{order.order_id}</span></p>
-            <p className="text-sm text-gray-600 mb-3">Order Date: <span className="font-medium text-gray-900">{order.ordered_at ? new Date(order.ordered_at).toLocaleDateString() : 'N/A'}</span></p>
 
             {/* Installment Plan Section */}
             {plan && (
