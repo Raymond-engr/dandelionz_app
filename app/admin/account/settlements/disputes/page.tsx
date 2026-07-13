@@ -13,17 +13,23 @@ export default function DisputesRefundsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const { data, isLoading } = useGetAllDisputesQuery({ status: activeTab.toUpperCase() });
-  const [resolveDispute] = useResolveDisputeMutation();
+  const [resolveDispute, { isLoading: isResolving }] = useResolveDisputeMutation();
+  const [disputeModal, setDisputeModal] = useState<{ id: string, action: 'APPROVE' | 'REJECT' } | null>(null);
 
   const disputes = data?.data || [];
 
-  const handleResolve = async (id: string, action: 'APPROVE' | 'REJECT') => {
-    if (confirm(`Are you sure you want to ${action.toLowerCase()} this dispute?`)) {
-       try {
-         await resolveDispute({ id, action, admin_note: `Admin ${action.toLowerCase()}d this dispute.` }).unwrap();
-       } catch (error) {
-         toast.error('Failed to update dispute status.');
-       }
+  const confirmResolve = async () => {
+    if (!disputeModal) return;
+    try {
+      await resolveDispute({ 
+        id: disputeModal.id, 
+        action: disputeModal.action, 
+        admin_note: `Admin ${disputeModal.action.toLowerCase()}d this dispute.` 
+      }).unwrap();
+      toast.success(`Dispute ${disputeModal.action.toLowerCase()}d successfully.`);
+      setDisputeModal(null);
+    } catch (error) {
+      toast.error('Failed to update dispute status.');
     }
   };
 
@@ -103,8 +109,8 @@ export default function DisputesRefundsPage() {
                     
                     {activeTab === 'pending' && (
                         <div className="flex gap-2 mt-2">
-                           <button onClick={() => handleResolve(dispute.id, 'APPROVE')} className="flex-1 py-2 bg-green-600 text-white text-xs rounded-lg font-medium">Approve</button>
-                           <button onClick={() => handleResolve(dispute.id, 'REJECT')} className="flex-1 py-2 bg-red-600 text-white text-xs rounded-lg font-medium">Reject</button>
+                           <button onClick={() => setDisputeModal({ id: dispute.id, action: 'APPROVE' })} className="flex-1 py-2 bg-green-600 text-white text-xs rounded-lg font-medium">Approve</button>
+                           <button onClick={() => setDisputeModal({ id: dispute.id, action: 'REJECT' })} className="flex-1 py-2 bg-red-600 text-white text-xs rounded-lg font-medium">Reject</button>
                         </div>
                     )}
                   </div>
@@ -113,6 +119,38 @@ export default function DisputesRefundsPage() {
           </div>
         </div>
       </div>
+
+      {/* Dispute Confirmation Modal */}
+      {disputeModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 w-full">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              {disputeModal.action === 'APPROVE' ? 'Approve' : 'Reject'} Dispute?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to {disputeModal.action.toLowerCase()} this dispute? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDisputeModal(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isResolving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmResolve}
+                className={`flex-1 py-2 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
+                  disputeModal.action === 'APPROVE' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                }`}
+                disabled={isResolving}
+              >
+                {isResolving ? 'Processing...' : `Yes, ${disputeModal.action === 'APPROVE' ? 'Approve' : 'Reject'}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
