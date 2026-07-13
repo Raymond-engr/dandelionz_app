@@ -27,7 +27,7 @@ export default function OrdersPage() {
     if (activeTab === 'ongoing') {
       return ['PENDING', 'PAID', 'SHIPPED'].includes(status);
     } else if (activeTab === 'completed') {
-      return ['DELIVERED', 'CANCELED'].includes(status);
+      return ['DELIVERED', 'CANCELED', 'CANCELLED'].includes(status);
     } else if (activeTab === 'returned') {
       return status === 'RETURNED';
     }
@@ -131,11 +131,16 @@ export default function OrdersPage() {
                       </span>
                     )}
                   </div>
-                  {activeTab === 'ongoing' && (
-                    <span className="px-3 py-1 bg-yellow-400 text-gray-900 rounded-md text-xs font-medium">
-                      {order.status}
-                    </span>
-                  )}
+                  <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                    order.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                    order.status === 'PAID' ? 'bg-blue-100 text-blue-700' :
+                    order.status === 'SHIPPED' ? 'bg-purple-100 text-purple-700' :
+                    order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+                    (order.status === 'CANCELED' || order.status === 'CANCELLED') ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {order.status === 'CANCELED' ? 'CANCELLED' : order.status}
+                  </span>
                 </div>
               </Link>
             )})}
