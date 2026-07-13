@@ -18,20 +18,16 @@ export default function OrderDetailsPage() {
   
   const [initNextInstallment, { isLoading: isPaying }] = useInitializeNextInstallmentMutation();
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const [cancelModal, setCancelModal] = React.useState(false);
 
   const order = response;
   const canCancel = order && ['PENDING', 'PAID'].includes(order.status) && order.status !== 'CANCELLED';
 
-  const handleCancelOrder = async () => {
-    if (!window.confirm(
-      order?.status === 'PAID'
-        ? 'This order has been paid. Cancelling will initiate a refund (1–3 business days). Are you sure?'
-        : 'Are you sure you want to cancel this order?'
-    )) return;
-
+  const confirmCancelOrder = async () => {
     try {
       const res = await cancelOrder(order!.order_id).unwrap();
       toast.success(res.message || 'Order cancelled successfully.');
+      setCancelModal(false);
       router.back();
     } catch (err: any) {
       toast.error(err?.data?.error || 'Could not cancel order.');
@@ -239,7 +235,7 @@ export default function OrderDetailsPage() {
           {canCancel && (
             <div className="mt-8">
               <button
-                onClick={handleCancelOrder}
+                onClick={() => setCancelModal(true)}
                 disabled={isCancelling}
                 className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
               >
@@ -254,6 +250,36 @@ export default function OrderDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {cancelModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 w-full">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Cancel Order?</h2>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              {order?.status === 'PAID'
+                ? 'This order has been paid. Cancelling will initiate a refund to your wallet. Are you sure you want to cancel?'
+                : 'Are you sure you want to cancel this order? This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelModal(false)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isCancelling}
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

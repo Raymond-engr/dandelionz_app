@@ -16,6 +16,7 @@ export default function AdminRefundsPage() {
   const [filter, setFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | ''>('PENDING');
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [approveModal, setApproveModal] = useState<{ id: number, customerName: string, amount: string } | null>(null);
 
   const { data, isLoading, refetch } = useGetAdminRefundsQuery(
     filter ? { status: filter } : undefined
@@ -23,11 +24,12 @@ export default function AdminRefundsPage() {
   const [processRefund, { isLoading: isProcessing }] = useProcessAdminRefundMutation();
   const refunds = data?.data || [];
 
-  const handleApprove = async (id: number, customerName: string, amount: string) => {
-    if (!window.confirm(`Approve refund of ₦${parseFloat(amount).toLocaleString()} for ${customerName}? This will credit their in-app wallet.`)) return;
+  const confirmApprove = async () => {
+    if (!approveModal) return;
     try {
-      await processRefund({ refund_id: id, action: 'APPROVE' }).unwrap();
+      await processRefund({ refund_id: approveModal.id, action: 'APPROVE' }).unwrap();
       toast.success('Refund approved — customer wallet credited.');
+      setApproveModal(null);
       refetch();
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to approve refund.');
@@ -114,8 +116,14 @@ export default function AdminRefundsPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2 mt-2">
-                        <button onClick={() => handleApprove(item.id, item.customer_name, item.amount)} disabled={isProcessing} className="flex-1 py-2 text-sm text-white bg-system-blue-light rounded font-medium">Approve</button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setApproveModal({ id: item.id, customerName: item.customer_name, amount: item.amount })}
+                          disabled={isProcessing}
+                          className="flex-1 py-2 bg-green-50 text-green-600 rounded text-sm font-medium hover:bg-green-100 disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
                         <button onClick={() => setRejectingId(item.id)} className="flex-1 py-2 text-sm text-red-600 border border-red-200 bg-red-50 rounded font-medium">Reject</button>
                       </div>
                     )
@@ -126,6 +134,34 @@ export default function AdminRefundsPage() {
           </div>
         )}
       </div>
+
+      {/* Approve Confirmation Modal */}
+      {approveModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 w-full">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Approve Refund?</h2>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to approve the refund of <span className="font-semibold">₦{parseFloat(approveModal.amount).toLocaleString()}</span> for {approveModal.customerName}? This will credit their in-app wallet immediately.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setApproveModal(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmApprove}
+                className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Yes, Approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

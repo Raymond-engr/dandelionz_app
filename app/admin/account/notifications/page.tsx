@@ -25,6 +25,8 @@ export default function NotificationManagement() {
   const [systemFilter, setSystemFilter] = useState<'all' | 'sent' | 'draft'>('all');
   const [deleteModal, setDeleteModal] = useState<{ id: string, type: 'inbox' | 'system' } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [publishModal, setPublishModal] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Inbox Query
   const { 
@@ -139,15 +141,18 @@ export default function NotificationManagement() {
     }
   };
 
-  const handlePublish = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm('Publish this draft notification? It will be sent immediately.')) return;
+  const confirmPublish = async () => {
+    if (!publishModal) return;
+    setIsPublishing(true);
     try {
-        await publishNotification(id).unwrap();
+        await publishNotification(publishModal).unwrap();
         toast.success('Notification published');
         refetchSystem();
+        setPublishModal(null);
     } catch (err) {
         toast.error('Failed to publish');
+    } finally {
+        setIsPublishing(false);
     }
   };
 
@@ -281,8 +286,8 @@ export default function NotificationManagement() {
                             <div className="flex items-center gap-3 mt-3">
                               {notif.is_draft && (
                                 <button 
-                                  onClick={(e) => handlePublish(e, notif.id)}
-                                  className="text-xs bg-green-50 text-green-600 px-3 py-1.5 rounded-md font-medium hover:bg-green-100 flex items-center gap-1"
+                                  onClick={(e) => { e.stopPropagation(); setPublishModal(notif.id); }}
+                                  className="px-3 py-1.5 bg-system-blue-light text-white text-xs font-medium rounded hover:bg-blue-600 transition-colors flex items-center gap-1"
                                 >
                                   <Send className="w-3 h-3" /> Publish
                                 </button>
@@ -412,6 +417,34 @@ export default function NotificationManagement() {
                 disabled={isDeleting}
               >
                 {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Confirmation Modal */}
+      {publishModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Publish Notification?</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              This draft will be sent immediately to all targeted recipients.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPublishModal(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                disabled={isPublishing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPublish}
+                className="flex-1 py-2 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center"
+                disabled={isPublishing}
+              >
+                {isPublishing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Publish'}
               </button>
             </div>
           </div>
