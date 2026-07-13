@@ -125,23 +125,23 @@ export default function CustomerWalletPage() {
                 {transactions.map((tx: any) => (
                   <div key={tx.id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.transaction_type === 'CREDIT' ? 'bg-green-100' : 'bg-red-100'}`}>
-                        {tx.transaction_type === 'CREDIT' ? (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'CREDIT' ? 'bg-green-100' : 'bg-red-100'}`}>
+                        {tx.type === 'CREDIT' ? (
                           <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16s-1 0-1-1V5.5C2 4.12 3.12 3 4.5 3h15C20.88 3 22 4.12 22 5.5v9c0 1.1-.9 2-2 2h-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         ) : (
                           <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16s-1 0-1-1V5.5C2 4.12 3.12 3 4.5 3h15C20.88 3 22 4.12 22 5.5v9c0 1.1-.9 2-2 2h-1m-4-8l4 4m0 0l-4 4m4-4H8" /></svg>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{tx.source || (tx.transaction_type === 'CREDIT' ? 'Refund Credit' : 'Withdrawal')}</p>
+                        <p className="text-sm font-semibold text-gray-900">{tx.description || (tx.type === 'CREDIT' ? 'Refund Credit' : 'Withdrawal')}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
                           {format(new Date(tx.created_at), 'MMM d, yyyy • h:mm a')}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-bold ${tx.transaction_type === 'CREDIT' ? 'text-green-600' : 'text-gray-900'}`}>
-                        {tx.transaction_type === 'CREDIT' ? '+' : '-'}₦{Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      <p className={`text-sm font-bold ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-gray-900'}`}>
+                        {tx.type === 'CREDIT' ? '+' : '-'}₦{Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
