@@ -114,7 +114,7 @@ export default function CreateNotification() {
       scheduled_for: scheduledFor,
     };
 
-    if (recipient === 'All') {
+    if (recipient === 'all') {
       await createNotification({
         ...commonBody,
         recipient_type: 'ALL',
@@ -123,8 +123,8 @@ export default function CreateNotification() {
     } else {
       await createNotification({
         ...commonBody,
-        recipient_type: recipient === 'Users' ? 'USERS' : 'VENDORS',
-        recipient_group: recipient === 'Users' ? 'customer' : 'vendor',
+        recipient_type: recipient === 'customer' ? 'USERS' : 'VENDORS',
+        recipient_group: recipient === 'customer' ? 'customer' : 'vendor',
       });
     }
   };
@@ -144,7 +144,7 @@ export default function CreateNotification() {
       scheduled_for: scheduledFor,
     };
 
-    if (recipient === 'All') {
+    if (recipient === 'all') {
       await createNotification({
         ...commonBody,
         recipient_type: 'ALL',
@@ -153,8 +153,8 @@ export default function CreateNotification() {
     } else {
       await createNotification({
         ...commonBody,
-        recipient_type: recipient === 'Users' ? 'USERS' : 'VENDORS',
-        recipient_group: recipient === 'Users' ? 'customer' : 'vendor',
+        recipient_type: recipient === 'customer' ? 'USERS' : 'VENDORS',
+        recipient_group: recipient === 'customer' ? 'customer' : 'vendor',
       });
     }
   };
