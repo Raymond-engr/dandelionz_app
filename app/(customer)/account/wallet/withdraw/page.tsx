@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   useGetCustomerWalletQuery, 
   useRequestCustomerWithdrawalMutation 
@@ -232,6 +233,11 @@ export default function CustomerWithdrawalPage() {
                   className="w-full p-3 tracking-widest text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-system-blue focus:border-system-blue text-center"
                   required
                 />
+                <div className="mt-2 text-right">
+                  <Link href="/account/wallet/set-pin" className="text-sm text-system-blue-light hover:underline">
+                    Don&apos;t have a PIN? Set one here &rarr;
+                  </Link>
+                </div>
               </div>
 
               <button
