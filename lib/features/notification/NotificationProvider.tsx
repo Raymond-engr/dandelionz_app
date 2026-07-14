@@ -32,7 +32,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // Using the domain from your backend configuration
-    const wsUrl = `${wsProtocol}//api.dandelionz.com.ng/ws/notifications/token=${accessToken}`;
+    const wsUrl = `${wsProtocol}//api.dandelionz.com.ng/ws/notifications/?token=${accessToken}`;
 
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
