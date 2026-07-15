@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, use, useEffect } from 'react';
-import { ChevronLeft, Send, Loader2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, CheckCircle, XCircle, Trash2, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout'; // Assuming AppLayout is the main layout component
 import Image from 'next/image';
@@ -122,13 +122,21 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
                 <ChevronLeft className="w-6 h-6 text-gray-900" />
               </button>
               <h1 className="text-lg font-semibold text-system-blue-light">Product Details</h1>
-              <button 
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                disabled={isDeletingProduct}
-              >
-                <Trash2 className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => router.push(`/admin/product/${productId}/edit`)}
+                  className="p-2 text-system-blue-light hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  disabled={isDeletingProduct}
+                >
+                  <Trash2 className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             <div className="p-4">

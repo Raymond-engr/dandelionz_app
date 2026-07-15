@@ -19,6 +19,7 @@ export function middleware(request: NextRequest) {
     "/contact",
     "/product",
     "/category",
+    "/checkout/success",
   ];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
