@@ -8,6 +8,8 @@ import CheckoutProgress from '@/components/CheckoutProgress';
 import { useGetCustomerProfileQuery } from '@/lib/api/customerApi';
 import Link from 'next/link';
 
+import toast from 'react-hot-toast';
+
 type ShippingMethod = 'home' | 'pickup';
 
 export default function ShippingPage() {
@@ -22,7 +24,7 @@ export default function ShippingPage() {
 
   const handleProceed = () => {
     if (method === 'home' && !profile?.shipping_address) {
-      alert('Please add a shipping address to proceed.');
+      toast.error('Please add a shipping address to proceed.');
       return;
     }
     
