@@ -318,6 +318,18 @@ export const vendorApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
+    patchProduct: builder.mutation<
+      { success: boolean; data: Product },
+      { slug: string; data: FormData }
+    >({
+      query: ({ slug, data }) => ({
+        url: `/store/products/${slug}/patch/`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Product", "Draft"],
+    }),
+
     // --- Draft Management ---
     getDrafts: builder.query<{ success: boolean; data: Product[] }, void>({
       query: () => "/store/vendor/drafts/",
@@ -622,6 +634,7 @@ export const {
   useUpdateStoreProductMutation,
   usePartialUpdateStoreProductMutation,
   useDeleteStoreProductMutation,
+  usePatchProductMutation,
   useGetDraftsQuery,
   useGetDraftDetailsQuery,
   useCreateDraftMutation,

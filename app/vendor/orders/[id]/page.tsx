@@ -107,6 +107,11 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
                             <div>
                                 <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    {Object.entries(item.selected_variants).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                                  </p>
+                                )}
                             </div>
                             <p className="text-sm font-semibold text-gray-900">
                                 ₦{parseFloat(item.price || item.item_subtotal || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -117,6 +122,11 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
                             <div>
                                 <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    {Object.entries(item.selected_variants).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                                  </p>
+                                )}
                             </div>
                             <p className="text-sm font-semibold text-gray-900">
                                 ₦{parseFloat(item.item_subtotal || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

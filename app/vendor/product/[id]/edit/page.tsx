@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   useGetStoreProductDetailsQuery,
-  useGetDraftDetailsQuery,
-  useUpdateDraftMutation,
-  usePartialUpdateStoreProductMutation,
+  usePatchProductMutation,
   useSubmitDraftMutation,
 } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -57,21 +55,19 @@ interface EditProductFormData {
     colors: string[];
     sizes: string[];
   };
+  variant_stock: {
+    colors: Record<string, number>;
+    sizes: Record<string, number>;
+  };
 }
 
 function EditProductComponent() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const id = getIdFromPath(pathname);
-  const productType = searchParams.get('type') === 'draft' ? 'draft' : 'store';
 
-  // Use the detailed endpoints for both draft and store products
-  const { data: draftData, isLoading: isLoadingDraft, error: draftError } = useGetDraftDetailsQuery(id, { skip: productType !== 'draft' });
-  const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id, { skip: productType !== 'store' });
-  
-  const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
-  const [updateStoreProduct, { isLoading: isUpdatingStore }] = usePartialUpdateStoreProductMutation();
+  const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id);
+  const [patchProduct, { isLoading: isPatching }] = usePatchProductMutation();
   const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
 
   const [formData, setFormData] = useState<EditProductFormData>({
@@ -88,15 +84,19 @@ function EditProductComponent() {
     variants: {
       colors: [],
       sizes: []
+    },
+    variant_stock: {
+      colors: {},
+      sizes: {}
     }
   });
 
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  const isLoading = isLoadingDraft || isLoadingStore;
-  const isUpdating = isUpdatingDraft || isUpdatingStore || isSubmitting;
-  const error = draftError || storeError;
-  const productData = productType === 'draft' ? draftData?.data : storeProductData?.data;
+  const isLoading = isLoadingStore;
+  const isUpdating = isPatching || isSubmitting;
+  const error = storeError;
+  const productData = storeProductData?.data;
 
   useEffect(() => {
     if (productData) {
@@ -130,6 +130,15 @@ function EditProductComponent() {
           existingImages = [productData.image];
       }
 
+      let parsedVariantStock = { colors: {} as Record<string, number>, sizes: {} as Record<string, number> };
+      if ((productData as any).variant_stock) {
+        const vs = (productData as any).variant_stock;
+        parsedVariantStock = {
+          colors: vs.colors || {},
+          sizes: vs.sizes || {}
+        };
+      }
+
       setFormData({
         name: productData.name || '',
         description: productData.description || '',
@@ -138,13 +147,14 @@ function EditProductComponent() {
         tags: Array.isArray(productData.tags) ? productData.tags.join(', ') : (productData.tags || ''),
         stock: productData.stock || 0,
         price: parseFloat(productData.price) || 0,
-        discount: (productData as any).discount || 0, // Assuming backend sends 'discount' now, fallback to 0
-        images: existingImages.map(url => ({ file: url, color: '' })), // Fix crash by aligning with previewUrls
+        discount: (productData as any).discount || 0,
+        images: existingImages.map(url => ({ file: url, color: '' })),
         mainImageIndex: mainIndex,
         variants: {
           colors: parsedVariants.colors || [],
           sizes: parsedVariants.sizes || []
-        }
+        },
+        variant_stock: parsedVariantStock
       });
       
       setPreviewUrls(existingImages);
@@ -192,27 +202,35 @@ function EditProductComponent() {
   };
 
   const toggleColor = (color: string) => {
-    setFormData(prev => ({
-      ...prev,
-      variants: {
-        ...prev.variants,
-        colors: prev.variants.colors.includes(color)
-          ? prev.variants.colors.filter(c => c !== color)
-          : [...prev.variants.colors, color]
-      }
-    }));
+    setFormData(prev => {
+      const isSelected = prev.variants.colors.includes(color);
+      const newColors = isSelected
+        ? prev.variants.colors.filter(c => c !== color)
+        : [...prev.variants.colors, color];
+      const newColorStock = { ...prev.variant_stock.colors };
+      if (isSelected) delete newColorStock[color];
+      return {
+        ...prev,
+        variants: { ...prev.variants, colors: newColors },
+        variant_stock: { ...prev.variant_stock, colors: newColorStock }
+      };
+    });
   };
 
   const toggleSize = (size: string) => {
-    setFormData(prev => ({
-      ...prev,
-      variants: {
-        ...prev.variants,
-        sizes: prev.variants.sizes.includes(size)
-          ? prev.variants.sizes.filter(s => s !== size)
-          : [...prev.variants.sizes, size]
-      }
-    }));
+    setFormData(prev => {
+      const isSelected = prev.variants.sizes.includes(size);
+      const newSizes = isSelected
+        ? prev.variants.sizes.filter(s => s !== size)
+        : [...prev.variants.sizes, size];
+      const newSizeStock = { ...prev.variant_stock.sizes };
+      if (isSelected) delete newSizeStock[size];
+      return {
+        ...prev,
+        variants: { ...prev.variants, sizes: newSizes },
+        variant_stock: { ...prev.variant_stock, sizes: newSizeStock }
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -227,11 +245,19 @@ function EditProductComponent() {
     
     if (formData.brand) changes.append('brand', formData.brand);
     if (formData.tags) changes.append('tags', formData.tags);
-    if (formData.discount > 0) changes.append('discount', formData.discount.toString());
+    changes.append('discount', formData.discount.toString());
     
     // Append variants as JSON string
     if (formData.variants.colors.length > 0 || formData.variants.sizes.length > 0) {
         changes.append('variants', JSON.stringify(formData.variants));
+    }
+
+    // Per-option variant stock
+    const hasVariantStock =
+      Object.keys(formData.variant_stock.colors).length > 0 ||
+      Object.keys(formData.variant_stock.sizes).length > 0;
+    if (hasVariantStock) {
+        changes.append('variant_stock', JSON.stringify(formData.variant_stock));
     }
 
     // Append ONLY NEW images
@@ -245,14 +271,8 @@ function EditProductComponent() {
     });
     
     try {
-      if (productType === 'draft') {
-        await updateDraft({ slug: id, data: changes }).unwrap();
-        toast.success('Draft updated successfully!');
-      } else {
-        // cast to any because updateStoreProduct type def might be strict on the data shape 
-        await updateStoreProduct({ slug: id, data: changes as any }).unwrap();
-        toast.success('Product updated successfully!');
-      }
+      await patchProduct({ slug: id, data: changes }).unwrap();
+      toast.success('Product updated successfully!');
       router.push('/vendor/product');
     } catch (err: any) {
       console.error('Failed to save:', err);
@@ -287,7 +307,7 @@ function EditProductComponent() {
     <div className="p-6 pb-24 space-y-8">
       <div className="flex justify-between items-center border-b border-gray-100 pb-4">
         <h2 className="text-xl font-bold text-gray-900">
-            Editing {productType === 'draft' ? 'Draft' : 'Product'}
+            Edit Product
         </h2>
         {productData && <span className="capitalize text-sm font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-800">{productData.approval_status}</span>}
       </div>
@@ -475,13 +495,63 @@ function EditProductComponent() {
                     </button>
                 ))}
                 </div>
+                {formData.variants.colors.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <label className="text-xs text-gray-600">Stock per Color (Optional)</label>
+                    {formData.variants.colors.map(color => (
+                      <div key={color} className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700 w-16">{color}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.variant_stock.colors[color] ?? ''}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            setFormData(prev => ({
+                              ...prev,
+                              variant_stock: {
+                                ...prev.variant_stock,
+                                colors: { ...prev.variant_stock.colors, [color]: Number.isNaN(n) ? 0 : n }
+                              }
+                            }));
+                          }}
+                          placeholder="0"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                        />
+                        <span className="text-xs text-gray-500">units</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
 
             {/* Sizes */}
             <div>
-                <label className="text-xs text-gray-600 mb-2 block">Available Sizes</label>
+                {/* Clothing Sizes */}
+                <label className="text-xs text-gray-600 mb-0.5 block">Clothing Sizes</label>
+                <p className="text-xs text-gray-400 mb-2">For apparel like shirts, dresses, trousers</p>
+                <div className="grid grid-cols-6 gap-2 mb-4">
+                {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                    <button
+                    key={size}
+                    type="button"
+                    onClick={() => toggleSize(size)}
+                    className={`py-2 rounded-lg text-xs font-medium transition-colors border ${
+                        formData.variants.sizes.includes(size)
+                        ? 'bg-system-blue-light text-white border-system-blue-light'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                    >
+                    {size}
+                    </button>
+                ))}
+                </div>
+
+                {/* Shoe Sizes */}
+                <label className="text-xs text-gray-600 mb-0.5 block">Shoe Sizes (EU)</label>
+                <p className="text-xs text-gray-400 mb-2">For footwear like sneakers, sandals, boots</p>
                 <div className="grid grid-cols-6 gap-2">
-                {['24', '25', '26', '27', '28', '29', '30', '36', '37', '38', '39', '40', '41', '42', '43'].map((size) => (
+                {['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'].map((size) => (
                     <button
                     key={size}
                     type="button"
@@ -496,6 +566,41 @@ function EditProductComponent() {
                     </button>
                 ))}
                 </div>
+
+                {formData.variants.sizes.some(s => ['XS','S','M','L','XL','XXL'].includes(s)) && formData.variants.sizes.some(s => ['36','37','38','39','40','41','42','43','44','45'].includes(s)) && (
+                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-700">Tip: Most products use one size type. Select both only if your product genuinely comes in both clothing and shoe sizes.</p>
+                  </div>
+                )}
+
+                {formData.variants.sizes.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <label className="text-xs text-gray-600">Stock per Size (Optional)</label>
+                    {formData.variants.sizes.map(size => (
+                      <div key={size} className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700 w-16">Size {size}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.variant_stock.sizes[size] ?? ''}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            setFormData(prev => ({
+                              ...prev,
+                              variant_stock: {
+                                ...prev.variant_stock,
+                                sizes: { ...prev.variant_stock.sizes, [size]: Number.isNaN(n) ? 0 : n }
+                              }
+                            }));
+                          }}
+                          placeholder="0"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                        />
+                        <span className="text-xs text-gray-500">units</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
          </div>
       </div>
@@ -506,7 +611,7 @@ function EditProductComponent() {
             {isUpdating ? 'Saving...' : 'Save Changes'}
         </button>
 
-        {productType === 'draft' && (
+        {productData?.publish_status === 'draft' && (
             <button onClick={handleSubmitForApproval} disabled={isUpdating} className="w-full py-3.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50">
                 {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
             </button>

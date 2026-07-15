@@ -28,6 +28,10 @@ interface ProductFormData {
     colors: string[];
     sizes: string[];
   };
+  variant_stock: {
+    colors: Record<string, number>;
+    sizes: Record<string, number>;
+  };
   video: File | null;
   videoTitle: string;
   videoDescription: string;
@@ -73,6 +77,10 @@ export default function AddNewProductPage() {
     variants: {
       colors: [],
       sizes: []
+    },
+    variant_stock: {
+      colors: {},
+      sizes: {}
     },
     video: null,
     videoTitle: '',
@@ -183,6 +191,14 @@ export default function AddNewProductPage() {
         productData.append('variants', JSON.stringify(formData.variants));
     }
 
+    // Per-option variant stock
+    const hasVariantStock =
+      Object.keys(formData.variant_stock.colors).length > 0 ||
+      Object.keys(formData.variant_stock.sizes).length > 0;
+    if (hasVariantStock) {
+        productData.append('variant_stock', JSON.stringify(formData.variant_stock));
+    }
+
     // Video Data
     if (formData.video) {
         productData.append('video_data[video]', formData.video);
@@ -203,49 +219,65 @@ export default function AddNewProductPage() {
       await createDraft(productData).unwrap();
       toast.success('Product saved as draft!');
       router.push('/vendor/product');
-    } catch (err) {
-      console.error('Failed to save draft:', err);
+    } catch (err: any) {
+      const e = err?.data?.error ?? err?.data?.message;
+      const msg = typeof e === 'string' ? e : e && typeof e === 'object' ? Object.entries(e).map(([f, v]) => `${f}: ${Array.isArray(v) ? v.join(' ') : v}`).join('\n') : 'Failed to save draft.';
+      toast.error(msg);
     }
   };
 
   const handlePublish = async () => {
     const productData = buildProductData();
+    let draftSlug: string | null = null;
     try {
       const draftResult = await createDraft(productData).unwrap();
-      if (draftResult.data.slug) {
-        await submitDraft(draftResult.data.slug).unwrap();
-        toast.success('Product saved and submitted for approval!');
-      } else {
+      const slug = draftResult.data?.slug;
+      if (!slug) {
         toast.error('Draft created but slug missing, please submit from list.');
+        router.push('/vendor/product');
+        return;
       }
+      draftSlug = slug;
+      await submitDraft(slug).unwrap();
+      toast.success('Product saved and submitted for approval!');
       router.push('/vendor/product');
     } catch (err: any) {
-      console.error('Failed to create/submit product:', err);
-      toast.error(err?.data?.message || 'Failed to complete the operation.');
+      const e = err?.data?.error ?? err?.data?.message;
+      const msg = typeof e === 'string' ? e : e && typeof e === 'object' ? Object.entries(e).map(([f, v]) => `${f}: ${Array.isArray(v) ? v.join(' ') : v}`).join('\n') : 'Failed to complete the operation.';
+      if (draftSlug) {
+        toast.error(`Saved as draft, but could not publish: ${msg}`);
+        router.push('/vendor/product');
+      } else {
+        toast.error(msg);
+      }
     }
   };
 
   const toggleColor = (color: string) => {
+    const isSelected = formData.variants.colors.includes(color);
+    const newColors = isSelected
+      ? formData.variants.colors.filter(c => c !== color)
+      : [...formData.variants.colors, color];
+    const newColorStock = { ...formData.variant_stock.colors };
+    if (isSelected) delete newColorStock[color];
     setFormData({
       ...formData,
-      variants: {
-        ...formData.variants,
-        colors: formData.variants.colors.includes(color)
-          ? formData.variants.colors.filter(c => c !== color)
-          : [...formData.variants.colors, color]
-      }
+      variants: { ...formData.variants, colors: newColors },
+      variant_stock: { ...formData.variant_stock, colors: newColorStock }
     });
   };
 
   const toggleSize = (size: string) => {
+    const isSelected = formData.variants.sizes.includes(size);
+    const newSizes = isSelected
+      ? formData.variants.sizes.filter(s => s !== size)
+      : [...formData.variants.sizes, size];
+    const newSizeStock = { ...formData.variant_stock.sizes };
+    if (isSelected) delete newSizeStock[size];
     setFormData({
       ...formData,
-      variants: {
-        ...formData.variants,
-        sizes: formData.variants.sizes.includes(size)
-          ? formData.variants.sizes.filter(s => s !== size)
-          : [...formData.variants.sizes, size]
-      }
+      variants: { ...formData.variants, sizes: newSizes },
+      variant_stock: { ...formData.variant_stock, sizes: newSizeStock }
     });
   };
 
@@ -565,7 +597,10 @@ export default function AddNewProductPage() {
                   min="0"
                   max="100"
                   value={formData.discount}
-                  onChange={(e) => setFormData({...formData, discount: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    setFormData({ ...formData, discount: Number.isNaN(n) ? 0 : Math.min(100, Math.max(0, n)) });
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
                   placeholder="0"
                 />
@@ -596,16 +631,63 @@ export default function AddNewProductPage() {
                       </button>
                     ))}
                   </div>
+                  {formData.variants.colors.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <label className="text-xs text-gray-600">Stock per Color (Optional)</label>
+                      {formData.variants.colors.map(color => (
+                        <div key={color} className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700 w-16">{color}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={formData.variant_stock.colors[color] ?? ''}
+                            onChange={(e) => {
+                              const n = parseInt(e.target.value, 10);
+                              setFormData({
+                                ...formData,
+                                variant_stock: {
+                                  ...formData.variant_stock,
+                                  colors: { ...formData.variant_stock.colors, [color]: Number.isNaN(n) ? 0 : n }
+                                }
+                              });
+                            }}
+                            placeholder="0"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                          />
+                          <span className="text-xs text-gray-500">units</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Sizes */}
                 <div>
-                  <label className="text-xs text-gray-600 mb-2 block">Size</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat mb-3">
-                    <option>Size</option>
-                  </select>
+                  {/* Clothing Sizes */}
+                  <label className="text-xs text-gray-600 mb-0.5 block">Clothing Sizes</label>
+                  <p className="text-xs text-gray-400 mb-2">For apparel like shirts, dresses, trousers</p>
+                  <div className="grid grid-cols-6 gap-2 mb-4">
+                    {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => toggleSize(size)}
+                        className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                          formData.variants.sizes.includes(size)
+                            ? 'bg-system-blue-light text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Shoe Sizes */}
+                  <label className="text-xs text-gray-600 mb-0.5 block">Shoe Sizes (EU)</label>
+                  <p className="text-xs text-gray-400 mb-2">For footwear like sneakers, sandals, boots</p>
                   <div className="grid grid-cols-6 gap-2">
-                    {['24', '25', '26', '27', '28', '29', '30', '36', '37', '38', '39', '40', '41', '42', '43'].map((size) => (
+                    {['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'].map((size) => (
                       <button
                         key={size}
                         type="button"
@@ -620,6 +702,41 @@ export default function AddNewProductPage() {
                       </button>
                     ))}
                   </div>
+
+                  {formData.variants.sizes.some(s => ['XS','S','M','L','XL','XXL'].includes(s)) && formData.variants.sizes.some(s => ['36','37','38','39','40','41','42','43','44','45'].includes(s)) && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-700">Tip: Most products use one size type. Select both only if your product genuinely comes in both clothing and shoe sizes.</p>
+                    </div>
+                  )}
+
+                  {formData.variants.sizes.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <label className="text-xs text-gray-600">Stock per Size (Optional)</label>
+                      {formData.variants.sizes.map(size => (
+                        <div key={size} className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700 w-16">Size {size}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={formData.variant_stock.sizes[size] ?? ''}
+                            onChange={(e) => {
+                              const n = parseInt(e.target.value, 10);
+                              setFormData({
+                                ...formData,
+                                variant_stock: {
+                                  ...formData.variant_stock,
+                                  sizes: { ...formData.variant_stock.sizes, [size]: Number.isNaN(n) ? 0 : n }
+                                }
+                              });
+                            }}
+                            placeholder="0"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                          />
+                          <span className="text-xs text-gray-500">units</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -687,7 +804,7 @@ export default function AddNewProductPage() {
               {isError && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-sm text-red-600">
-                          {(error as any)?.data?.message || 'Failed to create product. Please check the fields.'}
+                          {(() => { const e = (error as any)?.data?.error ?? (error as any)?.data?.message; return typeof e === 'string' ? e : 'Failed to create product. Please check the fields.'; })()}
                       </p>
                   </div>
               )}

@@ -11,7 +11,7 @@ export default function CreateNotification() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [recipient, setRecipient] = useState('Users');
+  const [recipient, setRecipient] = useState('customer');
   const [showSchedule, setShowSchedule] = useState(false);
   
   // Scheduling State
@@ -100,10 +100,15 @@ export default function CreateNotification() {
   };
 
   const handleSendNotification = async () => {
+    if (!title || !description) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+
     let scheduledFor = null;
-    if (showSchedule) {
+    if (scheduledDate && scheduledTime) {
       scheduledFor = getISOString();
-      if (!scheduledFor && (scheduledDate || scheduledTime)) return; // Validation failed
+      if (!scheduledFor) return; // Validation failed
     }
 
     const commonBody = {
@@ -130,10 +135,15 @@ export default function CreateNotification() {
   };
 
   const handleSaveDraft = async () => {
+    if (!title || !description) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+
     let scheduledFor = null;
-    if (showSchedule) {
+    if (scheduledDate && scheduledTime) {
       scheduledFor = getISOString();
-       if (!scheduledFor && (scheduledDate || scheduledTime)) return; // Validation failed
+      if (!scheduledFor) return; // Validation failed
     }
 
     const commonBody = {

@@ -31,3 +31,8 @@ This project is a Next.js application utilizing the App Router for routing and U
 ### Data Flow
 
 Data fetching and state management are primarily handled using Redux Toolkit and Redux Toolkit Query. API interactions are compartmentalized by user role within the `lib/api` directory.
+
+## Agent & Tool Usage
+- Use direct tools (Grep, Read, Glob, Edit) for all exploration and file work. Do NOT spawn Agent subagents unless the task genuinely requires parallelism across many files or the user explicitly asks.
+- Never use `isolation: "worktree"` on Agent calls unless branch isolation is explicitly needed.
+- For multi-file searches, prefer chained Grep/Glob calls over spawning an Explore agent.
