@@ -92,6 +92,7 @@ function EditProductComponent() {
   });
 
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
 
   const isLoading = isLoadingStore;
   const isUpdating = isPatching || isSubmitting;
@@ -148,7 +149,18 @@ function EditProductComponent() {
         stock: productData.stock || 0,
         price: parseFloat(productData.price) || 0,
         discount: (productData as any).discount || 0,
-        images: existingImages.map(url => ({ file: url, color: '' })),
+        images: (productData.images && Array.isArray(productData.images) && productData.images.length > 0)
+          ? productData.images
+              .filter((img: any) => {
+                const url = typeof img === 'string' ? img : (img.image_url || img.image);
+                return typeof url === 'string' && url.length > 0;
+              })
+              .map((img: any) => ({
+                file: typeof img === 'string' ? img : (img.image_url || img.image),
+                id: typeof img !== 'string' ? img.id : undefined,
+                color: '',
+              }))
+          : existingImages.map(url => ({ file: url, color: '' })),
         mainImageIndex: mainIndex,
         variants: {
           colors: parsedVariants.colors || [],
@@ -158,6 +170,7 @@ function EditProductComponent() {
       });
       
       setPreviewUrls(existingImages);
+      setDeletedImageIds([]);
     }
   }, [productData]);
 
@@ -187,9 +200,14 @@ function EditProductComponent() {
             newMainIndex--;
         }
         
+        // Track deleted existing image IDs for backend removal
+        if (removedImage?.id) {
+            setDeletedImageIds(prev => [...prev, removedImage.id!]);
+        }
+
         // Revoke object URL if it was a new file
         if (removedImage && typeof removedImage.file !== 'string') {
-            URL.revokeObjectURL(URL.createObjectURL(removedImage.file)); // Create then revoke to get the same URL
+            URL.revokeObjectURL(URL.createObjectURL(removedImage.file));
         }
 
         return {
@@ -259,6 +277,11 @@ function EditProductComponent() {
     if (hasVariantStock) {
         changes.append('variant_stock', JSON.stringify(formData.variant_stock));
     }
+
+    // Signal backend to delete removed existing images
+    deletedImageIds.forEach(imgId => {
+        changes.append('delete_images', String(imgId));
+    });
 
     // Append ONLY NEW images
     formData.images.forEach((img, index) => {
