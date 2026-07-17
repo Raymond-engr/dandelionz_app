@@ -18,6 +18,7 @@ import CategoryListItemSkeleton from '@/components/CategoryListItemSkeleton';
 import ProductListItemSkeleton from '@/components/ProductListItemSkeleton';
 import toast from 'react-hot-toast';
 import SearchBar from '@/components/SearchBar';
+import { apiError } from '@/lib/utils';
 
 export default function ProductManagement() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function ProductManagement() {
       setShowDeleteConfirm(null);
     } catch (err: any) {
       console.error('Failed to delete category:', err);
-      toast.error(err?.data?.message || 'Failed to delete category');
+      toast.error(apiError(err, 'Failed to delete category'));
     }
   };
 
@@ -68,7 +69,7 @@ export default function ProductManagement() {
       setShowDeleteConfirm(null);
     } catch (err: any) {
       console.error('Failed to delete product:', err);
-      toast.error(err?.data?.message || 'Failed to delete product');
+      toast.error(apiError(err, 'Failed to delete product'));
     }
   };
 
@@ -82,7 +83,7 @@ export default function ProductManagement() {
       toast.success('Draft submitted successfully');
       refetchProducts();
     } catch (err: any) {
-      toast.error(err?.data?.error || 'Failed to submit draft');
+      toast.error(apiError(err, 'Failed to submit draft'));
     }
   };
 
@@ -92,7 +93,7 @@ export default function ProductManagement() {
       toast.success('Draft deleted successfully');
       setShowDeleteConfirm(null);
     } catch (err: any) {
-      toast.error(err?.data?.error || 'Failed to delete draft');
+      toast.error(apiError(err, 'Failed to delete draft'));
     }
   };
 

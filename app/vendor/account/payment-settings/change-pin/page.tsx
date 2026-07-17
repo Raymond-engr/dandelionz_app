@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useSetPaymentPINMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function ChangePinPage() {
   const router = useRouter();
-  const [setPaymentPIN, { isLoading, error: apiError }] = useSetPaymentPINMutation();
+  const [setPaymentPIN, { isLoading, error: mutationError }] = useSetPaymentPINMutation();
 
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -32,11 +33,11 @@ export default function ChangePinPage() {
       router.back();
     } catch (err: any) {
       console.error('Failed to set PIN:', err);
-      setLocalError(err?.data?.message || 'Failed to update PIN.');
+      setLocalError(apiError(err, 'Failed to update PIN.'));
     }
   };
 
-  const currentError = localError || (apiError as any)?.data?.message;
+  const currentError = localError || (mutationError ? apiError(mutationError) : null);
 
   return (
     <AppLayout showBottomNav={false} userRole="vendor">

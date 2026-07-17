@@ -4,6 +4,7 @@ import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useSendVerificationEmailMutation } from '@/lib/api/authApi';
 import { useRouter } from 'next/navigation';
+import { apiError } from '@/lib/utils';
 
 export default function VerifyNoticePage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function VerifyNoticePage() {
             {isError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg w-full max-w-sm">
                 <p className="text-sm text-red-600">
-                  {(error as any)?.data?.message || 'An error occurred while sending the email. Please try again.'}
+                  {apiError(error, 'An error occurred while sending the email. Please try again.')}
                 </p>
               </div>
             )}

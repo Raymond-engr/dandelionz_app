@@ -10,6 +10,7 @@ import {
 } from '@/lib/api/customerApi';
 import { useGetBanksQuery, useVerifyBankAccountMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { apiError } from '@/lib/utils';
 
 export default function CustomerWithdrawalPage() {
   const router = useRouter();
@@ -110,7 +111,7 @@ export default function CustomerWithdrawalPage() {
         setSuccess(true);
       }
     } catch (err: any) {
-      setError(err?.data?.message || err?.data?.detail || 'Failed to process withdrawal.');
+      setError(apiError(err, 'Failed to process withdrawal.'));
     }
   };
 

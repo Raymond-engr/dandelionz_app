@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { useVerifyEmailMutation } from '@/lib/api/authApi';
+import { apiError } from '@/lib/utils';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -78,7 +79,7 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">Verification Failed</h1>
             <p className="text-sm text-gray-600 text-center mb-6">
-              {(error as any)?.data?.message || 'The verification link is invalid or has expired.'}
+              {apiError(error, 'The verification link is invalid or has expired.')}
             </p>
             <div className="flex gap-3">
               <button

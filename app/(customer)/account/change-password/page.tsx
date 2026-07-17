@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useChangeCustomerPasswordMutation } from '@/lib/api/customerApi';
 import toast from 'react-hot-toast';
 import PasswordCriteria, { validatePassword } from '@/components/PasswordCriteria';
+import { apiError } from '@/lib/utils';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function ChangePasswordPage() {
       router.back();
     } catch (err: any) {
       console.error('Password change failed:', err);
-      const errorMessage = err?.data?.error || err?.data?.message || 'Failed to change password. Please check your current password.';
+      const errorMessage = apiError(err, 'Failed to change password. Please check your current password.');
       setError(errorMessage);
       setStep(1);
     }

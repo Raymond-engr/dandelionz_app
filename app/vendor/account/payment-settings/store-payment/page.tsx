@@ -12,6 +12,7 @@ import {
 import { ChevronLeft, CheckCircle, Search, Loader2 } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function StorePaymentPage() {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function StorePaymentPage() {
     } catch (err: any) {
       setIsAccountVerified(false);
       setAccountName("");
-      toast.error(err?.data?.message || "Could not verify this account. Please check details.");
+      toast.error(apiError(err, "Could not verify this account. Please check details."));
     }
   };
 
@@ -95,7 +96,7 @@ export default function StorePaymentPage() {
       toast.success("Payment details updated successfully.");
       router.back();
     } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to update settings.");
+      toast.error(apiError(err, "Failed to update settings."));
     }
   };
 

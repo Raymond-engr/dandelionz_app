@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSetCustomerPaymentPinMutation } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function SetPinPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function SetPinPage() {
       toast.success('Payment PIN set successfully.');
       router.push('/account/wallet/withdraw');
     } catch (err: any) {
-      toast.error(err?.data?.error || 'Failed to set PIN. Please try again.');
+      toast.error(apiError(err, 'Failed to set PIN. Please try again.'));
     }
   };
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useGetCustomerProfileQuery, usePartialUpdateCustomerProfileMutation } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { debounce } from 'lodash';
+import { apiError } from '@/lib/utils';
 
 // Define result type for Nominatim API
 interface NominatimResult {
@@ -187,7 +188,7 @@ export default function DeliveryAddressPage() {
           )}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{(error as any)?.data?.message || 'Failed to update address.'}</p>
+                <p className="text-sm text-red-600">{apiError(error, 'Failed to update address.')}</p>
             </div>
           )}
 

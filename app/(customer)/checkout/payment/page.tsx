@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 import { useInitializeCheckoutMutation } from '@/lib/api/publicApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 type PaymentMethod = 'delivery' | 'card';
 
@@ -70,7 +71,7 @@ export default function PaymentPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">
-                {(error as any)?.data?.message || (error as any)?.data?.error || 'An error occurred while trying to initiate payment.'}
+                {apiError(error, 'An error occurred while trying to initiate payment.')}
               </p>
             </div>
           )}
