@@ -8,6 +8,7 @@ import {
   useSubmitDraftMutation,
   useGetVendorProfileQuery,
 } from '@/lib/api/vendorApi';
+import { useGetAllCategoriesQuery } from '@/lib/api/adminApi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -37,28 +38,10 @@ interface ProductFormData {
   videoDescription: string;
 }
 
-const CATEGORIES = [
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'fashion', label: 'Fashion' },
-    { value: 'home_appliances', label: 'Home Appliances' },
-    { value: 'beauty', label: 'Beauty & Personal Care' },
-    { value: 'sports', label: 'Sports & Outdoors' },
-    { value: 'automotive', label: 'Automotive' },
-    { value: 'books', label: 'Books' },
-    { value: 'toys', label: 'Toys & Games' },
-    { value: 'groceries', label: 'Groceries' },
-    { value: 'computers', label: 'Computers & Accessories' },
-    { value: 'phones', label: 'Phones & Tablets' },
-    { value: 'jewelry', label: 'Jewelry & Watches' },
-    { value: 'baby', label: 'Baby Products' },
-    { value: 'pets', label: 'Pet Supplies' },
-    { value: 'office', label: 'Office Products' },
-    { value: 'gaming', label: 'Video Games & Consoles' },
-];
-
 export default function AddNewProductPage() {
   const router = useRouter();
   const { data: profileData, isLoading: isLoadingProfile } = useGetVendorProfileQuery();
+  const { data: categories = [], refetch: refetchCategories } = useGetAllCategoriesQuery();
   const [createDraft, { isLoading: isSavingDraft, error: draftError }] = useCreateDraftMutation();
   const [submitDraft, { isLoading: isSubmitting, error: submitError }] = useSubmitDraftMutation();
 
@@ -94,6 +77,11 @@ export default function AddNewProductPage() {
     setPreviewUrls(urls);
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [formData.images]);
+
+  React.useEffect(() => {
+    window.addEventListener('focus', refetchCategories);
+    return () => window.removeEventListener('focus', refetchCategories);
+  }, [refetchCategories]);
 
   const isLoading = isSavingDraft || isSubmitting;
   const isError = !!(draftError || submitError);
@@ -211,6 +199,12 @@ export default function AddNewProductPage() {
       router.push('/admin/product');
     } catch (err: any) {
       const e = err?.data?.error ?? err?.data?.message;
+      if (e && typeof e === 'object' && e.category) {
+        setFormData(prev => ({ ...prev, category: '' }));
+        refetchCategories();
+        toast.error('Category no longer available. Please pick a category again from the refreshed list.');
+        return;
+      }
       const msg = typeof e === 'string' ? e : e && typeof e === 'object' ? Object.entries(e).map(([f, v]) => `${f}: ${Array.isArray(v) ? v.join(' ') : v}`).join('\n') : 'Failed to save draft.';
       toast.error(msg);
     }
@@ -233,6 +227,12 @@ export default function AddNewProductPage() {
       router.push('/admin/product');
     } catch (err: any) {
       const e = err?.data?.error ?? err?.data?.message;
+      if (!draftSlug && e && typeof e === 'object' && e.category) {
+        setFormData(prev => ({ ...prev, category: '' }));
+        refetchCategories();
+        toast.error('Category no longer available. Please pick a category again from the refreshed list.');
+        return;
+      }
       const msg = typeof e === 'string' ? e : e && typeof e === 'object' ? Object.entries(e).map(([f, v]) => `${f}: ${Array.isArray(v) ? v.join(' ') : v}`).join('\n') : 'Failed to complete the operation.';
       if (draftSlug) {
         toast.error(`Saved as draft, but could not publish: ${msg}`);
@@ -392,8 +392,8 @@ export default function AddNewProductPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
                   >
                     <option value="">Select Category</option>
-                    {CATEGORIES.map(cat => (
-                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    {categories.map((cat: any) => (
+                        <option key={cat.id || cat.slug} value={cat.slug}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
