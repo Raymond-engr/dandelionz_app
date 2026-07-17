@@ -8,28 +8,11 @@ import {
   usePatchProductMutation,
   useSubmitDraftMutation,
 } from '@/lib/api/vendorApi';
+import { useGetAllCategoriesQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-
-const CATEGORIES = [
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'fashion', label: 'Fashion' },
-    { value: 'home_appliances', label: 'Home Appliances' },
-    { value: 'beauty', label: 'Beauty & Personal Care' },
-    { value: 'sports', label: 'Sports & Outdoors' },
-    { value: 'automotive', label: 'Automotive' },
-    { value: 'books', label: 'Books' },
-    { value: 'toys', label: 'Toys & Games' },
-    { value: 'groceries', label: 'Groceries' },
-    { value: 'computers', label: 'Computers & Accessories' },
-    { value: 'phones', label: 'Phones & Tablets' },
-    { value: 'jewelry', label: 'Jewelry & Watches' },
-    { value: 'baby', label: 'Baby Products' },
-    { value: 'pets', label: 'Pet Supplies' },
-    { value: 'office', label: 'Office Products' },
-    { value: 'gaming', label: 'Video Games & Consoles' },
-];
+import { apiError } from '@/lib/utils';
 
 function getIdFromPath(pathname: string | null) {
   if (!pathname) return '';
@@ -67,8 +50,14 @@ function EditProductComponent() {
   const id = getIdFromPath(pathname);
 
   const { data: storeProductData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductDetailsQuery(id);
+  const { data: categories = [], refetch: refetchCategories } = useGetAllCategoriesQuery();
   const [patchProduct, { isLoading: isPatching }] = usePatchProductMutation();
   const [submitDraft, { isLoading: isSubmitting }] = useSubmitDraftMutation();
+
+  useEffect(() => {
+    window.addEventListener('focus', refetchCategories);
+    return () => window.removeEventListener('focus', refetchCategories);
+  }, [refetchCategories]);
 
   const [formData, setFormData] = useState<EditProductFormData>({
     name: '',
@@ -299,7 +288,13 @@ function EditProductComponent() {
       router.push('/vendor/product');
     } catch (err: any) {
       console.error('Failed to save:', err);
-      toast.error(err?.data?.message || 'Failed to save changes.');
+      if (err?.data?.error?.category) {
+        setFormData(prev => ({ ...prev, category: '' }));
+        refetchCategories();
+        toast.error('Category no longer available. Please pick a category again from the refreshed list.');
+        return;
+      }
+      toast.error(apiError(err, 'Failed to save changes.'));
     }
   };
 
@@ -310,7 +305,7 @@ function EditProductComponent() {
       router.push('/vendor/product');
     } catch (err: any) {
       console.error('Failed to submit:', err);
-      toast.error(err?.data?.message || 'Failed to submit draft.');
+      toast.error(apiError(err, 'Failed to submit draft.'));
     }
   };
 
@@ -368,8 +363,8 @@ function EditProductComponent() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
               >
                 <option value="">Select Category</option>
-                {CATEGORIES.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                {categories.map((cat: any) => (
+                    <option key={cat.id || cat.slug} value={cat.slug}>{cat.name}</option>
                 ))}
               </select>
             </div>

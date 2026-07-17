@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useGetAnalyticsQuery } from '@/lib/api/adminApi';
 import { useAppSelector } from '@/lib/hooks';
 import StatCardSkeleton from '@/components/StatCardSkeleton';
+import { apiError } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-white pb-20 flex items-center justify-center">
           <div className="text-center p-4">
             <p className="text-red-600 mb-4 font-medium">Failed to load analytics</p>
-            <p className="text-sm text-gray-500 mb-6">{(error as any)?.data?.message || 'Please try again later'}</p>
+            <p className="text-sm text-gray-500 mb-6">{apiError(error, 'Please try again later')}</p>
             <button 
               onClick={() => window.location.reload()}
               className="px-6 py-2 bg-system-blue-light text-white rounded-lg font-medium shadow-sm"

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAdminRequestWithdrawalMutation, useGetWalletStatsQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, apiError } from '@/lib/utils';
 
 export default function WithdrawPage() {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function WithdrawPage() {
       toast.success("Withdrawal initiated successfully!");
       router.push('/admin/account/withdrawal/success');
     } catch (err: any) {
-      toast.error(err.data?.message || "Failed to request withdrawal");
+      toast.error(apiError(err, "Failed to request withdrawal"));
     }
   };
 

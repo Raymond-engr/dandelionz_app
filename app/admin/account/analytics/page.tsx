@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, TrendingUp, Users, Store, ShoppingCart } from 'lucide-react';
 import { useGetDetailedAnalyticsQuery, AnalyticsQueryParams } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { apiError } from '@/lib/utils';
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function AdminAnalyticsPage() {
         <div className="min-h-screen bg-white pb-6 flex items-center justify-center">
           <div className="text-center p-4">
             <p className="text-red-600 mb-4 font-medium">Failed to load analytics</p>
-            <p className="text-sm text-gray-500 mb-6">{(error as any)?.data?.message || 'Please try again later'}</p>
+            <p className="text-sm text-gray-500 mb-6">{apiError(error, 'Please try again later')}</p>
             <button 
               onClick={() => window.location.reload()}
               className="px-6 py-2 bg-system-blue-light text-white rounded-lg font-medium shadow-sm active:scale-95 transition-transform"

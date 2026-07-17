@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useRequestPINResetMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { apiError } from '@/lib/utils';
 
 export default function ForgotPinPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function ForgotPinPage() {
       await requestPINReset().unwrap();
     } catch (err: any) {
       console.error('Failed to request PIN reset:', err);
-      setLocalError(err?.data?.message || 'Failed to request PIN reset.');
+      setLocalError(apiError(err, 'Failed to request PIN reset.'));
     }
   };
 

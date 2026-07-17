@@ -12,6 +12,7 @@ import {
   useDeleteProductMutation
 } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 interface ProductDetailsProps {
   params: Promise<{ id: string }>;
@@ -47,7 +48,7 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
       router.push('/admin/product');
     } catch (err: any) {
       console.error('Failed to delete product:', err);
-      toast.error(err?.data?.message || 'Failed to delete product');
+      toast.error(apiError(err, 'Failed to delete product'));
     }
   };
 
@@ -62,7 +63,7 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
         refetchProduct(); // Refresh product data
       } catch (err: any) {
         console.error('Failed to approve product:', err);
-        setSubmissionError(err?.data?.message || 'Failed to approve product.');
+        setSubmissionError(apiError(err, 'Failed to approve product.'));
       }
     } else if (action === 'Reject Product') {
       try {
@@ -71,7 +72,7 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
         refetchProduct(); // Refresh product data
       } catch (err: any) {
         console.error('Failed to reject product:', err);
-        setSubmissionError(err?.data?.message || 'Failed to reject product.');
+        setSubmissionError(apiError(err, 'Failed to reject product.'));
       }
     }
   };

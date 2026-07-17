@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 interface VendorDetailsProps {
   params: Promise<{ id: string }>;
@@ -115,7 +116,7 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
         refetch();
       }, 2000);
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to perform action');
+      toast.error(apiError(err, 'Failed to perform action'));
     }
   };
 

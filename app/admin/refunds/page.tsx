@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useGetAdminRefundsQuery, useProcessAdminRefundMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -32,7 +33,7 @@ export default function AdminRefundsPage() {
       setApproveModal(null);
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to approve refund.');
+      toast.error(apiError(err, 'Failed to approve refund.'));
     }
   };
 
@@ -45,7 +46,7 @@ export default function AdminRefundsPage() {
       setRejectionReason('');
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to reject refund.');
+      toast.error(apiError(err, 'Failed to reject refund.'));
     }
   };
 

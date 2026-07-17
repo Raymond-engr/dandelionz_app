@@ -86,6 +86,50 @@ export function resolveNotificationUrl(url: string | null | undefined, role: str
   return path;
 }
 
+const prettify = (f: string) =>
+  f.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+
+/**
+ * Turn an RTK Query error into a message safe to render.
+ *
+ * Mirrors the mobile app's `apiError` so both platforms surface the same text.
+ * Two things callers reliably get wrong on their own:
+ *
+ * - The API is inconsistent about which key carries the message. Validation
+ *   errors arrive under `error` (see BaseAPIView.handle_exception), while most
+ *   other endpoints use `message`.
+ * - `error` is not always a string. For serializer errors the backend keeps the
+ *   structured payload ({name: ["already exists"]}), so reading it straight into
+ *   render state throws "Objects are not valid as a React child". This flattens
+ *   it to "Name: already exists".
+ *
+ * Always returns a string.
+ */
+export function apiError(err: any, fallback = "Something went wrong"): string {
+  // Transport failures carry no server message — RTK Query puts a raw JS error
+  // string on `err.error` ("TypeError: Failed to fetch"), which must not reach
+  // the user. Handle these before reading the body.
+  if (err?.status === "FETCH_ERROR")
+    return "Network error. Check your connection and try again.";
+  if (err?.status === "TIMEOUT_ERROR")
+    return "The request timed out. Please try again.";
+  if (err?.status === "PARSING_ERROR") return fallback;
+
+  const e = err?.data?.error ?? err?.data?.message ?? err?.error;
+  if (typeof e === "string") return e;
+  if (Array.isArray(e)) return e.join("\n");
+  if (e && typeof e === "object") {
+    return Object.entries(e)
+      .map(([field, msgs]) => {
+        const text = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
+        return field === "non_field_errors" ? text : `${prettify(field)}: ${text}`;
+      })
+      .join("\n");
+  }
+  if (err?.status === 413) return "Your images are too large. Try fewer or smaller photos.";
+  return fallback;
+}
+
 export const SYSTEM_NOTIFICATION_CATEGORIES = [
   'order', 'product', 'payment', 'delivery', 'general', 'withdrawal', 'system',
 ];

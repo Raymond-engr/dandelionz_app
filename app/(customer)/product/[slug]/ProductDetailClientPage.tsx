@@ -20,6 +20,7 @@ import {
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 interface ProductDetailClientPageProps {
   initialProduct?: Product;
@@ -138,7 +139,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       }
     } catch (err: any) {
       console.error('Failed to update cart:', err);
-      toast.error(err.data?.error || 'Failed to update cart');
+      toast.error(apiError(err, 'Failed to update cart'));
     }
   };
 
@@ -190,7 +191,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       refetchProduct();
       refetchReviews();
     } catch (err: any) {
-      toast.error(err.data?.message || 'Failed to submit review');
+      toast.error(apiError(err, 'Failed to submit review'));
     }
   };
 

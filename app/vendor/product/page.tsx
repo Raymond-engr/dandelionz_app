@@ -13,6 +13,7 @@ import {
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import VendorProductListItemSkeleton from '@/components/VendorProductListItemSkeleton';
+import { apiError } from '@/lib/utils';
 
 type ProductType = 'store' | 'draft';
 
@@ -43,7 +44,7 @@ export default function VendorProductsPage() {
       await submitDraft(slug).unwrap();
       toast.success('Product submitted for approval!');
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to submit product');
+      toast.error(apiError(err, 'Failed to submit product'));
     }
   };
 
@@ -60,7 +61,7 @@ export default function VendorProductsPage() {
       }
       setShowDeleteConfirm(null);
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to delete product');
+      toast.error(apiError(err, 'Failed to delete product'));
     }
   };
 

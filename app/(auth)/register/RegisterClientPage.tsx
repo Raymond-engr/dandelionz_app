@@ -8,6 +8,7 @@ import { useRegisterMutation } from '@/lib/api/authApi';
 import { useAppDispatch } from '@/lib/hooks';
 import { setCredentials } from '@/lib/features/auth/authSlice';
 import PasswordCriteria, { validatePassword } from '@/components/PasswordCriteria';
+import { apiError } from '@/lib/utils';
 
 export default function RegisterClientPage() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function RegisterClientPage() {
       }
     } catch (err: any) {
       console.error('Registration failed:', err);
-      setValidationError(err?.data?.message || 'Registration failed. Please try again.');
+      setValidationError(apiError(err, 'Registration failed. Please try again.'));
     }
   };
 
@@ -122,7 +123,7 @@ export default function RegisterClientPage() {
         {(validationError || error) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">
-              {validationError || (error as any)?.data?.message || 'An error occurred'}
+              {validationError || apiError(error, 'An error occurred')}
             </p>
           </div>
         )}

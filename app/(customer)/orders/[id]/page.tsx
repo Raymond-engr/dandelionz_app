@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation, useCancelOrderMutation } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function OrderDetailsPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function OrderDetailsPage() {
       setCancelModal(false);
       router.back();
     } catch (err: any) {
-      toast.error(err?.data?.error || 'Could not cancel order.');
+      toast.error(apiError(err, 'Could not cancel order.'));
     }
   };
 
@@ -60,7 +61,7 @@ export default function OrderDetailsPage() {
       }
     } catch (err: any) {
         console.error("Installment payment failed", err);
-        toast.error(err?.data?.message || "Could not initiate payment.");
+        toast.error(apiError(err, "Could not initiate payment."));
     }
   };
 

@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVendorRequestWithdrawalMutation } from '@/lib/api/vendorApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function ConfirmWithdrawalPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function ConfirmWithdrawalPage() {
       router.push(`/vendor/wallet/success?${successQuery}`);
     } catch (err: any) {
       console.error('Withdrawal failed:', err);
-      setLocalError(err?.data?.message || 'Failed to process withdrawal.');
+      setLocalError(apiError(err, 'Failed to process withdrawal.'));
     }
   };
 

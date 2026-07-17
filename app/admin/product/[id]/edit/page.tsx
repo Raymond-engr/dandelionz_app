@@ -3,30 +3,12 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, usePathname } from 'next/navigation';
-import { useGetAdminProductDetailsQuery } from '@/lib/api/adminApi';
+import { useGetAdminProductDetailsQuery, useGetAllCategoriesQuery } from '@/lib/api/adminApi';
 import { usePatchProductMutation } from '@/lib/api/vendorApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-
-const CATEGORIES = [
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'fashion', label: 'Fashion' },
-  { value: 'home_appliances', label: 'Home Appliances' },
-  { value: 'beauty', label: 'Beauty & Personal Care' },
-  { value: 'sports', label: 'Sports & Outdoors' },
-  { value: 'automotive', label: 'Automotive' },
-  { value: 'books', label: 'Books' },
-  { value: 'toys', label: 'Toys & Games' },
-  { value: 'groceries', label: 'Groceries' },
-  { value: 'computers', label: 'Computers & Accessories' },
-  { value: 'phones', label: 'Phones & Tablets' },
-  { value: 'jewelry', label: 'Jewelry & Watches' },
-  { value: 'baby', label: 'Baby Products' },
-  { value: 'pets', label: 'Pet Supplies' },
-  { value: 'office', label: 'Office Products' },
-  { value: 'gaming', label: 'Video Games & Consoles' },
-];
+import { apiError } from '@/lib/utils';
 
 function getIdFromPath(pathname: string | null) {
   if (!pathname) return '';
@@ -57,7 +39,13 @@ function AdminEditProductComponent() {
   const id = getIdFromPath(pathname);
 
   const { data: productData, isLoading, error } = useGetAdminProductDetailsQuery(id);
+  const { data: categories = [], refetch: refetchCategories } = useGetAllCategoriesQuery();
   const [patchProduct, { isLoading: isSaving }] = usePatchProductMutation();
+
+  useEffect(() => {
+    window.addEventListener('focus', refetchCategories);
+    return () => window.removeEventListener('focus', refetchCategories);
+  }, [refetchCategories]);
 
   const [formData, setFormData] = useState<EditFormData>({
     name: '',
@@ -186,7 +174,13 @@ function AdminEditProductComponent() {
       toast.success('Product updated successfully!');
       router.push('/admin/product');
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to save changes.');
+      if (err?.data?.error?.category) {
+        setFormData(prev => ({ ...prev, category: '' }));
+        refetchCategories();
+        toast.error('Category no longer available. Please pick a category again from the refreshed list.');
+        return;
+      }
+      toast.error(apiError(err, 'Failed to save changes.'));
     }
   };
 
@@ -248,8 +242,8 @@ function AdminEditProductComponent() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light appearance-none"
             >
               <option value="">Select Category</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              {categories.map((cat: any) => (
+                <option key={cat.id || cat.slug} value={cat.slug}>{cat.name}</option>
               ))}
             </select>
           </div>

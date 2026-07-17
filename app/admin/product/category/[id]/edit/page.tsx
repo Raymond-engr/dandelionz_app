@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 import {
   useGetCategoryQuery,
   useCreateCategoryMutation,
@@ -92,8 +93,10 @@ export default function EditCategory({ params: paramsPromise }: EditCategoryProp
       router.push('/admin/product'); // Redirect to products page after success
     } catch (err: any) {
       console.error('Failed to save category:', err);
-      // More specific error handling based on API response structure if available
-      setError(err?.data?.message || 'Failed to save category. Please try again.');
+      // Validation errors ("category with this name already exists") arrive under
+      // `error` as a structured dict, not `message` — apiError reads both keys and
+      // flattens the dict to a string this component can render.
+      setError(apiError(err, 'Failed to save category. Please try again.'));
     }
   };
 

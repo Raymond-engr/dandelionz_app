@@ -77,8 +77,8 @@ export default function VendorProfilePage() {
         bank_name: vendorInfo.bank_name || '',
         account_number: vendorInfo.account_number || '',
       });
-      setLatitude(vendorInfo.latitude || null);
-      setLongitude(vendorInfo.longitude || null);
+      setLatitude(vendorInfo.store_latitude ?? null);
+      setLongitude(vendorInfo.store_longitude ?? null);
     }
   }, [profileData]);
 
@@ -118,7 +118,9 @@ export default function VendorProfilePage() {
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData({ ...formData, address: value });
-    
+    setLatitude(null);
+    setLongitude(null);
+
     // Only search if editing
     if (isEditing) {
       debouncedSearch(value);
@@ -193,14 +195,24 @@ export default function VendorProfilePage() {
       if (formData.storeDescription !== profileData?.data.store_description) {
         changedFields.store_description = formData.storeDescription;
       }
-      if (formData.address !== profileData?.data.address) {
+      const addressChanged = formData.address !== profileData?.data.address;
+      if (addressChanged) {
         changedFields.address = formData.address;
       }
-      if (latitude !== null && latitude !== profileData?.data.latitude) {
-        changedFields.latitude = latitude;
-      }
-      if (longitude !== null && longitude !== profileData?.data.longitude) {
-        changedFields.longitude = longitude;
+      // Send coordinates when we have them. When the address was edited by hand we have
+      // none, so clear the stored pair rather than leave it pointing at the old address —
+      // the server geocodes the new text when the vendor publishes.
+      if (latitude !== null && longitude !== null) {
+        if (
+          latitude !== profileData?.data.store_latitude ||
+          longitude !== profileData?.data.store_longitude
+        ) {
+          changedFields.store_latitude = latitude;
+          changedFields.store_longitude = longitude;
+        }
+      } else if (addressChanged) {
+        changedFields.store_latitude = null;
+        changedFields.store_longitude = null;
       }
       if (formData.bank_name !== profileData?.data.bank_name) {
         changedFields.bank_name = formData.bank_name;
@@ -242,8 +254,8 @@ export default function VendorProfilePage() {
             bank_name: vendorInfo.bank_name || '',
             account_number: vendorInfo.account_number || '',
         });
-        setLatitude(vendorInfo.latitude || null);
-        setLongitude(vendorInfo.longitude || null);
+        setLatitude(vendorInfo.store_latitude ?? null);
+        setLongitude(vendorInfo.store_longitude ?? null);
     }
   }
 
@@ -426,7 +438,7 @@ export default function VendorProfilePage() {
               )}
               
               {/* Coordinates Feedback */}
-              {latitude && longitude && isEditing && (
+              {latitude !== null && longitude !== null && isEditing && (
                 <p className="mt-1 text-xs text-green-600 flex items-center">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

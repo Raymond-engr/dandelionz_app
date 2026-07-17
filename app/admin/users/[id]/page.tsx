@@ -7,6 +7,7 @@ import { useGetUserDetailsQuery, useUpdateUserStatusMutation } from '@/lib/api/a
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 interface UserDetailsProps {
   params: Promise<{ id: string }>;
@@ -48,7 +49,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
         refetch();
       }, 2000);
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to update user status');
+      toast.error(apiError(err, 'Failed to update user status'));
     }
   };
 

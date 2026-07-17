@@ -5,10 +5,11 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useDeleteCustomerAccountMutation } from '@/lib/api/customerApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function DeleteAccountPage() {
   const router = useRouter();
-  const [deleteAccount, { isLoading, error: apiError }] = useDeleteCustomerAccountMutation();
+  const [deleteAccount, { isLoading, error: mutationError }] = useDeleteCustomerAccountMutation();
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
 
@@ -25,7 +26,7 @@ export default function DeleteAccountPage() {
       router.push('/login');
     } catch (err: any) {
       console.error('Failed to delete account:', err);
-      setLocalError(err?.data?.error || err?.data?.message || 'Failed to delete account. Please check your password.');
+      setLocalError(apiError(err, 'Failed to delete account. Please check your password.'));
     }
   };
 
@@ -33,7 +34,7 @@ export default function DeleteAccountPage() {
     router.back();
   };
 
-  const currentError = localError || (apiError as any)?.data?.message;
+  const currentError = localError || (mutationError ? apiError(mutationError) : null);
 
   return (
     <AppLayout showBottomNav={false} userRole="customer">

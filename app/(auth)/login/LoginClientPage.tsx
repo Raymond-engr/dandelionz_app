@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoginMutation } from '@/lib/api/authApi';
 import { useAppDispatch } from '@/lib/hooks';
 import { setCredentials } from '@/lib/features/auth/authSlice';
+import { apiError } from '@/lib/utils';
 
 export default function LoginClientPage() {
   const router = useRouter();
@@ -91,11 +92,11 @@ export default function LoginClientPage() {
       }
       if (err?.status === 403) {
         setValidationError(
-          err?.data?.error || 'Your account has been suspended. Please contact support.'
+          apiError(err, 'Your account has been suspended. Please contact support.')
         );
         return;
       }
-      setValidationError(err?.data?.error || 'Invalid email or password');
+      setValidationError(apiError(err, 'Invalid email or password'));
     }
   };
 
@@ -123,7 +124,7 @@ export default function LoginClientPage() {
         {(validationError || error) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">
-              {validationError || (error as any)?.data?.error || 'An error occurred'}
+              {validationError || apiError(error, 'An error occurred')}
             </p>
           </div>
         )}

@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useChangePaymentPinMutation, useGetAdminPaymentSettingsQuery } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 type PinStep = 'enter' | 'confirm' | 'success';
 
@@ -63,7 +64,7 @@ export default function ChangePINPage() {
       }).unwrap();
       setCurrentStep('success');
     } catch (err: any) {
-      toast.error(err.data?.message || "Failed to change PIN");
+      toast.error(apiError(err, "Failed to change PIN"));
     }
   };
 

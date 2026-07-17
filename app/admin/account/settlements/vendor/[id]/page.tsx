@@ -12,6 +12,7 @@ import {
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 export default function WithdrawalDetailPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function WithdrawalDetailPage() {
         router.back();
       }
     } catch (err: any) {
-      toast.error(err.data?.message || 'Failed to approve withdrawal');
+      toast.error(apiError(err, 'Failed to approve withdrawal'));
     }
   };
 
@@ -62,7 +63,7 @@ export default function WithdrawalDetailPage() {
         router.back();
       }
     } catch (err: any) {
-      toast.error(err.data?.message || 'Failed to reject withdrawal');
+      toast.error(apiError(err, 'Failed to reject withdrawal'));
     }
   };
 
