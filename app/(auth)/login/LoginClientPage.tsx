@@ -8,6 +8,7 @@ import { useLoginMutation } from '@/lib/api/authApi';
 import { useAppDispatch } from '@/lib/hooks';
 import { setCredentials } from '@/lib/features/auth/authSlice';
 import { apiError } from '@/lib/utils';
+import { isSafeRedirectTarget } from '@/lib/redirects';
 
 export default function LoginClientPage() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function LoginClientPage() {
   const [validationError, setValidationError] = useState('');
 
   const redirect = searchParams.get('redirect');
+  // searchParams.get() decodes the value, so a redirect carrying its own query string
+  // ("/account/wallet/deposit/callback?reference=DEP-X") arrives intact here.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +68,11 @@ export default function LoginClientPage() {
       // Role-based routing
       const userRole = result.data.user.role;
       
-      if (redirect) {
-        router.push(redirect);
+      // Never navigate to `redirect` unchecked: it comes from the query string, so an
+      // unvalidated push would let /login?redirect=https://evil.com send a user off-site
+      // immediately after they entered their password.
+      if (isSafeRedirectTarget(redirect)) {
+        router.push(redirect as string);
       } else {
         switch (userRole) {
           case 'BUSINESS_ADMIN':

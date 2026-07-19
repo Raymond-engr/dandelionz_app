@@ -59,9 +59,15 @@ interface NotificationStats {
 
 export interface CustomerWalletBalance {
   balance: number;
+  /** Deposited funds: spendable at checkout, never withdrawable to a bank. */
+  spendable_balance: number;
+  /** Refunds and earnings: both spendable and withdrawable. */
+  withdrawable_balance: number;
   total_credits: number;
   total_debits: number;
   this_month_earnings: number;
+  /** Server-enforced minimum withdrawal, so the client never disagrees with it. */
+  min_withdrawal: number;
 }
 
 export interface CustomerWalletTransaction {
@@ -71,6 +77,46 @@ export interface CustomerWalletTransaction {
   description: string;
   created_at: string;
 }
+
+/**
+ * A wallet top-up. Deposited funds credit the SPENDABLE bucket only: they can be used at
+ * checkout but can never be withdrawn to a bank.
+ */
+export interface CustomerWalletDeposit {
+  id: number;
+  reference: string;
+  amount: number;
+  status: string;
+  authorization_url: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerPaymentSettings {
+  bank_name: string;
+  bank_code: string;
+  account_number: string;
+  account_name: string;
+  recipient_code: string;
+  has_pin: boolean;
+}
+
+/**
+ * Pure helper: true only when every field the backend needs to create a
+ * Paystack transfer recipient is present. bank_code is required — without it
+ * the backend cannot resolve the destination bank.
+ */
+export const hasCompletePayoutDetails = (
+  settings?: Partial<CustomerPaymentSettings> | null
+): boolean => {
+  if (!settings) return false;
+  return Boolean(
+    settings.bank_name?.trim() &&
+      settings.bank_code?.trim() &&
+      settings.account_number?.trim() &&
+      settings.account_name?.trim()
+  );
+};
 
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -93,14 +139,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     requestCustomerWithdrawal: builder.mutation<
       { success: boolean; message: string; reference: string },
-      {
-        amount: number;
-        pin: string;
-        bank_name: string;
-        account_number: string;
-        account_name: string;
-        bank_code: string;
-      }
+      { amount: number; pin: string }
     >({
       query: (body) => ({
         url: '/user/customer/wallet/withdraw/',
@@ -108,6 +147,76 @@ export const customerApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ['CustomerWallet'],
+    }),
+
+    // Wallet top-up (deposit). Funds credit the spendable bucket, not the withdrawable one.
+    initializeWalletDeposit: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: { reference: string; amount: number; authorization_url: string };
+      },
+      { amount: number }
+    >({
+      query: (body) => ({
+        url: '/transactions/wallet/deposit/',
+        method: 'POST',
+        body,
+      }),
+      // Deliberately no invalidation: nothing is credited until Paystack is paid and the
+      // deposit is verified on return.
+    }),
+
+    verifyWalletDeposit: builder.query<
+      { success: boolean; message: string; data: CustomerWalletDeposit },
+      { reference: string }
+    >({
+      query: ({ reference }) => ({
+        url: '/transactions/wallet/deposit/verify/',
+        params: { reference },
+      }),
+      // A successful verify is the moment the balance actually changes, so refresh the
+      // wallet balance and transactions rather than leaving a stale cached balance on screen.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(customerApi.util.invalidateTags(['CustomerWallet']));
+        } catch {
+          // Verification failed; balances are unchanged, so there is nothing to refresh.
+        }
+      },
+    }),
+
+    getWalletDeposits: builder.query<
+      { count: number; results: CustomerWalletDeposit[] },
+      { limit?: number; offset?: number } | void
+    >({
+      query: (params) => ({
+        url: '/transactions/wallet/deposits/',
+        params: params || {},
+      }),
+      providesTags: ['CustomerWallet'],
+    }),
+
+    // Payment Settings
+    getCustomerPaymentSettings: builder.query<
+      { success: boolean; data: CustomerPaymentSettings },
+      void
+    >({
+      query: () => '/user/customer/payment-settings/',
+      providesTags: ['CustomerPaymentSettings'],
+    }),
+
+    updateCustomerPaymentSettings: builder.mutation<
+      { success: boolean; message: string },
+      Partial<CustomerPaymentSettings>
+    >({
+      query: (body) => ({
+        url: '/user/customer/payment-settings/',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['CustomerPaymentSettings'],
     }),
 
     setCustomerPaymentPin: builder.mutation<
@@ -266,5 +375,10 @@ export const {
   useGetCustomerWalletQuery,
   useGetCustomerWalletTransactionsQuery,
   useRequestCustomerWithdrawalMutation,
+  useInitializeWalletDepositMutation,
+  useVerifyWalletDepositQuery,
+  useGetWalletDepositsQuery,
   useSetCustomerPaymentPinMutation,
+  useGetCustomerPaymentSettingsQuery,
+  useUpdateCustomerPaymentSettingsMutation,
 } = customerApi;

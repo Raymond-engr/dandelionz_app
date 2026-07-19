@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVerifyPaymentQuery, useVerifyInstallmentPaymentQuery } from '@/lib/api/publicApi';
@@ -11,15 +11,30 @@ function CheckoutStatus() {
   const searchParams = useSearchParams();
   const reference = searchParams.get('reference');
   const planId = searchParams.get('plan_id');
-  
+
+  // Paystack sends every payment back to this one URL (the backend has a single
+  // PAYSTACK_CALLBACK_URL for orders, installments and wallet top-ups alike), so a
+  // wallet deposit lands here too. Deposit references are prefixed DEP-; without this
+  // branch the order verify would run against a deposit reference and the customer
+  // would be shown order messaging and a broken "View Order" link.
+  const isDeposit = Boolean(reference?.startsWith('DEP-'));
+
+  useEffect(() => {
+    if (isDeposit && reference) {
+      router.replace(
+        `/account/wallet/deposit/callback?reference=${encodeURIComponent(reference)}`
+      );
+    }
+  }, [isDeposit, reference, router]);
+
   // Standard verification for normal orders
-  const { 
-    data: standardData, 
-    error: standardError, 
-    isLoading: isStandardLoading 
+  const {
+    data: standardData,
+    error: standardError,
+    isLoading: isStandardLoading
   } = useVerifyPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !!planId }
+    { skip: !reference || !!planId || isDeposit }
   );
 
   // Installment verification for plans
@@ -29,12 +44,23 @@ function CheckoutStatus() {
     isLoading: isInstallmentLoading
   } = useVerifyInstallmentPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !planId }
+    { skip: !reference || !planId || isDeposit }
   );
 
   const isLoading = isStandardLoading || isInstallmentLoading;
   const error = standardError || installmentError;
   const verifyData = planId ? installmentData : (standardData as any);
+
+  // Hold the spinner while the effect above navigates away, so a top-up never flashes
+  // "Checkout Successful" on its way to the wallet confirmation.
+  if (isDeposit) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <LoadingSpinner />
+        <h2 className="text-xl font-semibold text-gray-800 mt-4">Confirming your top-up...</h2>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
