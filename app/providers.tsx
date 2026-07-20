@@ -5,6 +5,7 @@ import { store } from '@/lib/store';
 import { useEffect } from 'react';
 import { setCredentials } from '@/lib/features/auth/authSlice';
 import { NotificationProvider } from '@/lib/features/notification/NotificationProvider';
+import { RECENT_SEARCHES_KEY } from '@/lib/hooks/use-recent-searches';
 // import AuthCheck from '@/components/AuthCheck';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }));
       } else {
         localStorage.removeItem('auth');
+        // Search history is per-browser, not per-account, so it has to be
+        // cleared here or the next person to sign in on this machine sees it.
+        localStorage.removeItem(RECENT_SEARCHES_KEY);
       }
     });
     return unsubscribe;
