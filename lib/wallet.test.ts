@@ -6,6 +6,7 @@ import {
   MAX_DEPOSIT,
   isDepositAmountValid,
   isRefundAmountValid,
+  planCheckoutSplit,
 } from './wallet';
 
 describe('MIN_WITHDRAWAL', () => {
@@ -166,5 +167,42 @@ describe('isRefundAmountValid', () => {
     // bug was, so the boundaries are pinned identically in both suites.
     expect(isRefundAmountValid(1, { refundable: 1 }).valid).toBe(true);
     expect(isRefundAmountValid(1.01, { refundable: 1 }).valid).toBe(false);
+  });
+});
+
+describe('planCheckoutSplit', () => {
+  it('puts the whole order on the card when the wallet is empty', () => {
+    expect(planCheckoutSplit(5000, 0)).toEqual({ wallet: 0, card: 5000 });
+  });
+
+  it('covers the whole order when the wallet is large enough', () => {
+    expect(planCheckoutSplit(1000, 5000)).toEqual({ wallet: 1000, card: 0 });
+  });
+
+  it('splits when the wallet covers only part', () => {
+    expect(planCheckoutSplit(5000, 2000)).toEqual({ wallet: 2000, card: 3000 });
+  });
+
+  it('never returns a negative card leg', () => {
+    expect(planCheckoutSplit(100, 999999).card).toBe(0);
+  });
+
+  it('always sums back to the order total', () => {
+    for (const [total, balance] of [[5000, 2000], [1000, 5000], [750.5, 250.25]]) {
+      const { wallet, card } = planCheckoutSplit(total, balance);
+      expect(wallet + card).toBeCloseTo(total, 2);
+    }
+  });
+
+  it('treats a zero or negative total as nothing to pay', () => {
+    expect(planCheckoutSplit(0, 5000)).toEqual({ wallet: 0, card: 0 });
+    expect(planCheckoutSplit(-100, 5000)).toEqual({ wallet: 0, card: 0 });
+  });
+
+  it('agrees with the mobile implementation and the server on the boundaries', () => {
+    // Same cases asserted in PlanSplitTests on the backend and in the mobile suite.
+    expect(planCheckoutSplit(1000, 5000)).toEqual({ wallet: 1000, card: 0 });
+    expect(planCheckoutSplit(5000, 2000)).toEqual({ wallet: 2000, card: 3000 });
+    expect(planCheckoutSplit(5000, 0)).toEqual({ wallet: 0, card: 5000 });
   });
 });

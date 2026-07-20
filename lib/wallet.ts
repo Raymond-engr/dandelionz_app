@@ -104,3 +104,30 @@ export function isRefundAmountValid(
   }
   return { valid: true };
 }
+
+export interface CheckoutSplit {
+  /** What the wallet will cover. */
+  wallet: number;
+  /** What the card will be charged. Zero means no Paystack redirect happens at all. */
+  card: number;
+}
+
+/**
+ * Preview how an order total will divide between wallet and card.
+ *
+ * The server decides this for real — see plan_split in transactions/wallet_checkout.py —
+ * and this mirrors it so the checkout page can show the split before the customer commits.
+ * If the two ever disagree, the number on screen is a promise the server will break.
+ *
+ * Deliberately mirrors `lib/wallet.ts` in the mobile app.
+ */
+export function planCheckoutSplit(total: number, walletBalance: number): CheckoutSplit {
+  if (!Number.isFinite(total) || total <= 0) {
+    return { wallet: 0, card: 0 };
+  }
+  if (!Number.isFinite(walletBalance) || walletBalance <= 0) {
+    return { wallet: 0, card: total };
+  }
+  const wallet = Math.min(walletBalance, total);
+  return { wallet, card: Math.max(0, total - wallet) };
+}
