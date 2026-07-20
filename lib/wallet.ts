@@ -63,3 +63,44 @@ export function isDepositAmountValid(
   if (amount > max) return false;
   return true;
 }
+
+export interface RefundAmountCheck {
+  valid: boolean;
+  reason?: string;
+}
+
+/**
+ * Pure validity check for refunding deposited funds to the original card.
+ *
+ * Gated on `refundable`, not on the spendable balance: a top-up with no recorded Paystack
+ * transaction id cannot be sent back to source, so the two numbers can differ and the
+ * lower one is the real ceiling. Telling the user "you have ₦5,000" and then rejecting a
+ * ₦5,000 refund is exactly the mismatch this avoids.
+ *
+ * Returns a reason as well as a boolean, unlike `isDepositAmountValid`, because the
+ * refund form has no fixed bounds to show as static helper text — the ceiling is
+ * per-account, so the failure has to explain itself.
+ *
+ * Deliberately mirrors `lib/wallet.ts` in the mobile app.
+ */
+export function isRefundAmountValid(
+  amount: number,
+  { refundable }: { refundable: number }
+): RefundAmountCheck {
+  if (!Number.isFinite(amount)) {
+    return { valid: false, reason: 'Enter an amount.' };
+  }
+  if (amount <= 0) {
+    return { valid: false, reason: 'Enter an amount greater than zero.' };
+  }
+  if (refundable <= 0) {
+    return { valid: false, reason: 'You have no deposited funds to refund.' };
+  }
+  if (amount > refundable) {
+    return {
+      valid: false,
+      reason: `You can refund up to ₦${refundable.toLocaleString()}.`,
+    };
+  }
+  return { valid: true };
+}

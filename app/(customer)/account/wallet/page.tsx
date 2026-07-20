@@ -99,6 +99,18 @@ export default function CustomerWalletPage() {
                   Withdraw
                 </button>
               </div>
+
+              {/* Refunding to card is the only exit for deposited funds, so it appears only
+                  when there are some. Kept below the main pair: it is a rarer action than
+                  funding or withdrawing and shouldn't compete with them. */}
+              {!walletLoading && spendable > 0 && (
+                <button
+                  onClick={() => router.push('/account/wallet/refund')}
+                  className="mt-3 w-full py-2.5 text-sm font-semibold text-white/80 border border-white/30 rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  Refund deposits to card
+                </button>
+              )}
             </div>
           </div>
 
@@ -110,7 +122,14 @@ export default function CustomerWalletPage() {
               </svg>
               <p className="text-sm text-blue-800">
                 Your balance is money you added yourself, so it can be spent at checkout but
-                not withdrawn. Refunds and earnings are withdrawable.
+                not withdrawn. Refunds and earnings are withdrawable. To get this money back,{' '}
+                <button
+                  onClick={() => router.push('/account/wallet/refund')}
+                  className="font-semibold underline hover:no-underline"
+                >
+                  refund it to your card
+                </button>
+                .
               </p>
             </div>
           ) : !walletLoading && withdrawable > 0 ? (

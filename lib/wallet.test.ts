@@ -5,6 +5,7 @@ import {
   MIN_DEPOSIT,
   MAX_DEPOSIT,
   isDepositAmountValid,
+  isRefundAmountValid,
 } from './wallet';
 
 describe('MIN_WITHDRAWAL', () => {
@@ -118,5 +119,52 @@ describe('isDepositAmountValid', () => {
   it('honours caller-supplied bounds over the defaults', () => {
     expect(isDepositAmountValid(50, { min: 10 })).toBe(true);
     expect(isDepositAmountValid(5000, { max: 1000 })).toBe(false);
+  });
+});
+
+describe('isRefundAmountValid', () => {
+  it('accepts an amount within the refundable total', () => {
+    expect(isRefundAmountValid(500, { refundable: 2000 }).valid).toBe(true);
+  });
+
+  it('accepts refunding the whole refundable balance', () => {
+    expect(isRefundAmountValid(2000, { refundable: 2000 }).valid).toBe(true);
+  });
+
+  it('rejects more than can be sent back to source', () => {
+    const check = isRefundAmountValid(2500, { refundable: 2000 });
+    expect(check.valid).toBe(false);
+    expect(check.reason).toContain('2,000');
+  });
+
+  it('caps on the refundable amount, not the spendable balance', () => {
+    // A top-up with no recorded Paystack transaction id counts towards the balance but
+    // cannot go back to a card, so the two numbers legitimately differ. Gating on the
+    // balance would let the user submit a refund the server is bound to reject.
+    expect(isRefundAmountValid(5000, { refundable: 1200 }).valid).toBe(false);
+  });
+
+  it('rejects zero and negative amounts', () => {
+    expect(isRefundAmountValid(0, { refundable: 2000 }).valid).toBe(false);
+    expect(isRefundAmountValid(-100, { refundable: 2000 }).valid).toBe(false);
+  });
+
+  it('explains an empty or unparsed input rather than showing a bounds error', () => {
+    const check = isRefundAmountValid(NaN, { refundable: 2000 });
+    expect(check.valid).toBe(false);
+    expect(check.reason).toBe('Enter an amount.');
+  });
+
+  it('says there is nothing to refund when no deposits remain', () => {
+    const check = isRefundAmountValid(100, { refundable: 0 });
+    expect(check.valid).toBe(false);
+    expect(check.reason).toContain('no deposited funds');
+  });
+
+  it('agrees with the mobile implementation on every boundary', () => {
+    // The two clients ship the same rules; drift between them is what the shared-minimum
+    // bug was, so the boundaries are pinned identically in both suites.
+    expect(isRefundAmountValid(1, { refundable: 1 }).valid).toBe(true);
+    expect(isRefundAmountValid(1.01, { refundable: 1 }).valid).toBe(false);
   });
 });
