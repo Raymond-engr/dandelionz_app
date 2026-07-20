@@ -20,9 +20,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   // Save auth to localStorage whenever it changes
   useEffect(() => {
+    let wasAuthenticated = store.getState().auth.isAuthenticated;
+
     const unsubscribe = store.subscribe(() => {
       const state = store.getState();
-      if (state.auth.isAuthenticated) {
+      const isAuthenticated = state.auth.isAuthenticated;
+
+      if (isAuthenticated) {
         localStorage.setItem('auth', JSON.stringify({
           user: state.auth.user,
           accessToken: state.auth.accessToken,
@@ -30,10 +34,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }));
       } else {
         localStorage.removeItem('auth');
-        // Search history is per-browser, not per-account, so it has to be
-        // cleared here or the next person to sign in on this machine sees it.
-        localStorage.removeItem(RECENT_SEARCHES_KEY);
+        // Search history is per-browser, not per-account, so a session ending
+        // has to clear it or the next person to sign in here sees it. Guarded
+        // on the transition: this callback runs on every dispatched action, so
+        // clearing whenever `isAuthenticated` is merely false would wipe a
+        // signed-out visitor's history continuously and it would never persist.
+        if (wasAuthenticated) {
+          localStorage.removeItem(RECENT_SEARCHES_KEY);
+        }
       }
+
+      wasAuthenticated = isAuthenticated;
     });
     return unsubscribe;
   }, []);
