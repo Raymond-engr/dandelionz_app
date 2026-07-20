@@ -83,11 +83,22 @@ export async function downloadLedgerExport({
   });
 
   if (!response.ok) {
-    throw new Error(
-      response.status === 403 || response.status === 401
-        ? 'You do not have permission to export the ledger.'
-        : `The export failed (${response.status}). Please try again.`
-    );
+    // 401 and 403 mean different things and must not share a message. This request does
+    // not go through RTK Query, so it never hits the token-refresh mutex in baseApi: an
+    // access token that expired while the page sat open comes back 401, and telling an
+    // admin they lack permission for a page they are looking at sends them to the wrong
+    // place entirely. Any other request on the page will refresh the token, so retrying
+    // genuinely works.
+    if (response.status === 401) {
+      throw new Error('Your session expired. Please try the export again.');
+    }
+    if (response.status === 403) {
+      throw new Error('You do not have permission to export the ledger.');
+    }
+    if (response.status === 429) {
+      throw new Error('Too many exports in a short time. Please wait a moment.');
+    }
+    throw new Error(`The export failed (${response.status}). Please try again.`);
   }
 
   const blob = await response.blob();
@@ -98,7 +109,9 @@ export async function downloadLedgerExport({
   document.body.appendChild(link);
   link.click();
   link.remove();
-  // Revoked after the click so the browser has taken ownership of the data; leaking these
-  // keeps the whole blob in memory for the life of the tab.
-  window.URL.revokeObjectURL(objectUrl);
+  // Deferred, not immediate. Revoking in the same tick as the click can cancel the
+  // download before the browser has finished reading the blob - Firefox in particular -
+  // and it fails silently: the spinner completes and no file appears. Leaking the URL
+  // would pin the whole blob in memory for the life of the tab, so it still has to go.
+  setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
 }

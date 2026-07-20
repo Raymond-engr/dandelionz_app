@@ -224,12 +224,14 @@ export const customerApi = baseApi.injectEndpoints({
     }),
 
     getWalletDeposits: builder.query<
-      { count: number; results: CustomerWalletDeposit[] },
-      { limit?: number; offset?: number } | void
+      { count: number; next: string | null; previous: string | null; results: CustomerWalletDeposit[] },
+      // page/page_size, not limit/offset: the endpoint uses PageNumberPagination, which
+      // ignores limit/offset entirely and would silently serve page 1 forever.
+      { page?: number; page_size?: number } | void
     >({
       query: (params) => ({
         url: '/transactions/wallet/deposits/',
-        params: params || {},
+        params: params || undefined,
       }),
       providesTags: ['CustomerWallet'],
     }),
@@ -259,8 +261,14 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ['CustomerWallet'],
     }),
 
-    getDepositRefunds: builder.query<CustomerDepositRefund[], void>({
-      query: () => '/transactions/wallet/deposit/refunds/',
+    getDepositRefunds: builder.query<
+      { count: number; next: string | null; previous: string | null; results: CustomerDepositRefund[] },
+      { page?: number; page_size?: number } | void
+    >({
+      query: (params) => ({
+        url: '/transactions/wallet/deposit/refunds/',
+        params: params || undefined,
+      }),
       providesTags: ['CustomerWallet'],
     }),
 
