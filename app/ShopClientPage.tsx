@@ -7,13 +7,17 @@ import ProductGrid from '@/components/ProductGrid';
 import FilterModal from '@/components/FilterModal';
 import HeroSlider from '@/components/HeroSlider';
 import CategorySlider from '@/components/CategorySlider';
-import { useGetProductsQuery } from '@/lib/api/publicApi';
+import { useGetProductsQuery, useGetRecommendationsQuery } from '@/lib/api/publicApi';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
+import RecommendationSection from '@/components/RecommendationSection';
 import { CATEGORIES_FOR_NAV } from '@/lib/categories';
+import { useAppSelector } from '@/lib/hooks';
+import { RECOMMENDATION_LIMIT, shopRecommendationSurface } from '@/lib/recommendations';
 
 
 export default function ShopClientPage() {
   const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const [showFilter, setShowFilter] = useState(false);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500);
@@ -27,6 +31,15 @@ export default function ShopClientPage() {
     max_price: maxPrice < 500 ? maxPrice : undefined,
     price: price > 0 ? price : undefined,
     ordering: ordering || undefined,
+  });
+
+  // Personalised when we know who's asking, trending otherwise. Deliberately
+  // independent of the filter state below: this row is a way out of the
+  // current filters, not a reflection of them.
+  const recommendationSurface = shopRecommendationSurface(isAuthenticated);
+  const { data: recommendationData } = useGetRecommendationsQuery({
+    type: recommendationSurface.type,
+    limit: RECOMMENDATION_LIMIT,
   });
 
   const handleApplyFilter = (filters: { min_price?: number; max_price?: number; price?: number; ordering?: string; category?: string }) => {
@@ -92,6 +105,13 @@ export default function ShopClientPage() {
         <div className="mb-6">
           <CategorySlider categories={CATEGORIES_FOR_NAV.map(cat => ({id: cat.id, name: cat.name, image: cat.image}))} />
         </div>
+
+        {/* Recommendations */}
+        <RecommendationSection
+          title={recommendationSurface.title}
+          products={recommendationData?.data}
+          className="mb-6"
+        />
 
         {/* Products Section */}
         <div className="pb-4">

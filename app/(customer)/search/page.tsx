@@ -4,12 +4,15 @@ import AppLayout from '@/components/AppLayout';
 import FilterModal from '@/components/FilterModal';
 import ProductGrid from '@/components/ProductGrid';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
+import RecommendationSection from '@/components/RecommendationSection';
 import SearchBar from '@/components/SearchBar';
 import { CATEGORIES_FOR_NAV } from '@/lib/categories';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useRecentSearches } from '@/lib/hooks/use-recent-searches';
+import { RECOMMENDATION_LIMIT } from '@/lib/recommendations';
 import {
   useGetProductsQuery,
+  useGetRecommendationsQuery,
   useGetSearchSuggestionsQuery,
 } from '@/lib/api/publicApi';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -55,6 +58,16 @@ function SearchPageContent() {
   );
 
   const products = resultData?.data ?? [];
+
+  // A zero-result search is a dead end, so offer trending as a way onward.
+  // Only asked for once a search has actually settled on nothing: skipping
+  // while `isFetching` keeps this off the wire for the common hit case, and
+  // `products` still holds the previous term's results mid-refetch.
+  const noResults = Boolean(submitted) && !isFetching && products.length === 0;
+  const { data: trendingData } = useGetRecommendationsQuery(
+    { type: 'trending', limit: RECOMMENDATION_LIMIT },
+    { skip: !noResults },
+  );
 
   // debouncedQuery lags query by 300ms, so suggestionData can still describe the
   // previous term. Treat it as absent until it catches up, otherwise the panel
@@ -173,13 +186,21 @@ function SearchPageContent() {
 
     if (products.length === 0) {
       return (
-        <div className="py-16 text-center">
-          <p className="text-base font-semibold text-gray-900">
-            No results for &ldquo;{submitted}&rdquo;
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Try a different spelling or a more general term.
-          </p>
+        <div className="py-16">
+          <div className="text-center">
+            <p className="text-base font-semibold text-gray-900">
+              No results for &ldquo;{submitted}&rdquo;
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              Try a different spelling or a more general term.
+            </p>
+          </div>
+
+          <RecommendationSection
+            title="Trending now"
+            products={trendingData?.data}
+            className="mt-10"
+          />
         </div>
       );
     }
