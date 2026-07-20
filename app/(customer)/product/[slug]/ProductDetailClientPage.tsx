@@ -30,6 +30,29 @@ interface ProductDetailClientPageProps {
   initialProduct?: Product;
 }
 
+/**
+ * Serialize an object for injection into a <script type="application/ld+json">
+ * via dangerouslySetInnerHTML.
+ *
+ * JSON.stringify alone is not safe here. The HTML parser ends a <script> block
+ * at the literal characters `</script>`, and it does not understand JSON while
+ * scanning -- JSON.stringify escapes quotes and backslashes but leaves `<` and
+ * `/` untouched. A product field (name, description, brand) containing
+ * `</script><script>...` would therefore close this block early and inject an
+ * executable script. Those fields are vendor-controlled, so this is a stored
+ * XSS vector.
+ *
+ * Escaping `<`, `>` and `&` to their \uXXXX forms makes `</script>` impossible
+ * in the output. The escapes are transparent to JSON parsers and to search
+ * engines reading the structured data, so the SEO payload is unchanged.
+ */
+function toSafeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
 export default function ProductDetailClientPage({ initialProduct }: ProductDetailClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -267,7 +290,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: toSafeJsonLd({
             "@context": "https://schema.org",
             "@type": "Product",
             "name": product.name,
