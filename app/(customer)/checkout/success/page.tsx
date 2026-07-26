@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useVerifyPaymentQuery, useVerifyInstallmentPaymentQuery } from '@/lib/api/publicApi';
+import { useVerifyPaymentQuery, useVerifyInstallmentPaymentQuery, useVerifyDeliveryPaymentQuery } from '@/lib/api/publicApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 function CheckoutStatus() {
@@ -19,6 +19,10 @@ function CheckoutStatus() {
   // would be shown order messaging and a broken "View Order" link.
   const isDeposit = Boolean(reference?.startsWith('DEP-'));
 
+  // Delivery-fee payments come back to this same callback URL, prefixed DLV-. They must be
+  // verified against the delivery endpoint (not the order verify) and routed back to the order.
+  const isDelivery = Boolean(reference?.startsWith('DLV-'));
+
   useEffect(() => {
     if (isDeposit && reference) {
       router.replace(
@@ -27,6 +31,22 @@ function CheckoutStatus() {
     }
   }, [isDeposit, reference, router]);
 
+  const {
+    data: deliveryData,
+    error: deliveryError,
+    isLoading: isDeliveryLoading,
+  } = useVerifyDeliveryPaymentQuery(
+    { reference: reference as string },
+    { skip: !reference || !isDelivery }
+  );
+
+  // Once the delivery fee is verified, send the customer back to the order it belongs to.
+  useEffect(() => {
+    if (isDelivery && deliveryData?.data?.order_id) {
+      router.replace(`/orders/${deliveryData.data.order_id}`);
+    }
+  }, [isDelivery, deliveryData, router]);
+
   // Standard verification for normal orders
   const {
     data: standardData,
@@ -34,7 +54,7 @@ function CheckoutStatus() {
     isLoading: isStandardLoading
   } = useVerifyPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !!planId || isDeposit }
+    { skip: !reference || !!planId || isDeposit || isDelivery }
   );
 
   // Installment verification for plans
@@ -44,11 +64,11 @@ function CheckoutStatus() {
     isLoading: isInstallmentLoading
   } = useVerifyInstallmentPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !planId || isDeposit }
+    { skip: !reference || !planId || isDeposit || isDelivery }
   );
 
-  const isLoading = isStandardLoading || isInstallmentLoading;
-  const error = standardError || installmentError;
+  const isLoading = isStandardLoading || isInstallmentLoading || isDeliveryLoading;
+  const error = standardError || installmentError || (isDelivery ? deliveryError : undefined);
   const verifyData = planId ? installmentData : (standardData as any);
 
   // Hold the spinner while the effect above navigates away, so a top-up never flashes
@@ -58,6 +78,17 @@ function CheckoutStatus() {
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <LoadingSpinner />
         <h2 className="text-xl font-semibold text-gray-800 mt-4">Confirming your top-up...</h2>
+      </div>
+    );
+  }
+
+  // Hold the spinner while the delivery fee is verified and the effect above routes back
+  // to the order, so a delivery payment never flashes the generic "Checkout Successful".
+  if (isDelivery && !deliveryError) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <LoadingSpinner />
+        <h2 className="text-xl font-semibold text-gray-800 mt-4">Confirming your delivery payment...</h2>
       </div>
     );
   }
@@ -133,9 +164,14 @@ function CheckoutStatus() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-system-blue-light mb-12 text-center">
+      <h2 className="text-2xl font-bold text-system-blue-light mb-4 text-center">
         {successMessage}
       </h2>
+      {!planId && (
+        <p className="text-sm text-gray-600 mb-10 text-center max-w-sm">
+          A delivery fee may be billed once your order is confirmed. Shipping begins as soon as it&apos;s paid.
+        </p>
+      )}
       <div className="w-full max-w-sm space-y-4">
         <button
           onClick={() => router.push('/orders')}

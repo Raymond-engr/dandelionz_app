@@ -3,10 +3,11 @@
 import React, { useState, use } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetAdminOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation, useGetAdminRefundsQuery } from '@/lib/api/adminApi';
+import { useGetAdminOrderDetailsQuery, useCancelOrderWithReasonMutation, useUpdateOrderStatusMutation, useGetAdminRefundsQuery, useSetOrderDeliveryMutation } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { OrderItem } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
+import { apiError } from '@/lib/utils';
 
 interface OrderDetailsProps {
   params: Promise<{ id: string }>;
@@ -36,6 +37,73 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
+  const [setOrderDelivery, { isLoading: isSavingDelivery }] = useSetOrderDeliveryMutation();
+
+  // Delivery scheduling form. datetime-local wants "YYYY-MM-DDTHH:mm"; the API wants ISO.
+  const [useDefaultWindow, setUseDefaultWindow] = useState(false);
+  const [deliveryEarliest, setDeliveryEarliest] = useState('');
+  const [deliveryLatest, setDeliveryLatest] = useState('');
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState('');
+
+  const toLocalInput = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    // Offset to local time so the value round-trips through the datetime-local control.
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
+  // Seed the form once the order loads.
+  React.useEffect(() => {
+    if (!order) return;
+    setDeliveryFeeInput(order.delivery_fee != null ? String(parseFloat(order.delivery_fee)) : '');
+    setDeliveryEarliest(toLocalInput(order.expected_delivery_earliest));
+    setDeliveryLatest(toLocalInput(order.expected_delivery_latest));
+  }, [order?.order_id, order?.delivery_fee, order?.expected_delivery_earliest, order?.expected_delivery_latest]);
+
+  const handleSaveDelivery = async () => {
+    if (!order) return;
+    const fee = parseFloat(deliveryFeeInput);
+    if (isNaN(fee) || fee < 0) {
+      toast.error('Enter a valid delivery fee.');
+      return;
+    }
+
+    const body: {
+      order_id: string;
+      delivery_fee: number;
+      use_default?: boolean;
+      expected_delivery_earliest?: string;
+      expected_delivery_latest?: string;
+    } = { order_id: order.order_id, delivery_fee: fee };
+
+    if (useDefaultWindow) {
+      body.use_default = true;
+    } else {
+      if (!deliveryEarliest || !deliveryLatest) {
+        toast.error('Set both delivery dates or use the default window.');
+        return;
+      }
+      if (new Date(deliveryEarliest) > new Date(deliveryLatest)) {
+        toast.error('The earliest date must be on or before the latest date.');
+        return;
+      }
+      body.expected_delivery_earliest = new Date(deliveryEarliest).toISOString();
+      body.expected_delivery_latest = new Date(deliveryLatest).toISOString();
+    }
+
+    try {
+      await setOrderDelivery(body).unwrap();
+      toast.success('Delivery details updated.');
+      refetch();
+    } catch (err) {
+      toast.error(apiError(err, 'Could not update delivery details.'));
+    }
+  };
+
+  const formatDeliveryDate = (iso?: string | null) =>
+    iso ? new Date(iso).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
   const handleAction = async () => {
     if (!order) return;
@@ -158,6 +226,91 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                   <span className="text-base font-semibold text-gray-900">Total Amount:</span>
                   <span className="text-base font-bold text-gray-900">₦{parseFloat(order.total_price || '0').toLocaleString()}</span>
                 </div>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Delivery</h2>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+              {/* Current state */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 block mb-1">Scheduled Window</label>
+                  <p className="text-sm font-medium text-gray-900">
+                    {order.expected_delivery_latest
+                      ? `${formatDeliveryDate(order.expected_delivery_earliest)} — ${formatDeliveryDate(order.expected_delivery_latest)}`
+                      : 'Not scheduled'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 block mb-1">Delivery Fee</label>
+                  <p className="text-sm font-medium text-gray-900">
+                    ₦{parseFloat(order.delivery_fee || '0').toLocaleString()}{' '}
+                    <span className={`text-xs font-semibold ${order.delivery_fee_paid ? 'text-green-600' : 'text-amber-600'}`}>
+                      {order.delivery_fee_paid ? '(Paid)' : '(Unpaid)'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Scheduling form */}
+              <div className="pt-3 border-t border-gray-200 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useDefaultWindow}
+                    onChange={(e) => setUseDefaultWindow(e.target.checked)}
+                    disabled={isSavingDelivery}
+                    className="w-4 h-4 rounded border-gray-300 text-system-blue-light focus:ring-system-blue-light"
+                  />
+                  <span className="text-sm text-gray-900">Use default window (7–14 days)</span>
+                </label>
+
+                {!useDefaultWindow && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">Earliest</label>
+                      <input
+                        type="datetime-local"
+                        value={deliveryEarliest}
+                        onChange={(e) => setDeliveryEarliest(e.target.value)}
+                        disabled={isSavingDelivery}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">Latest</label>
+                      <input
+                        type="datetime-local"
+                        value={deliveryLatest}
+                        onChange={(e) => setDeliveryLatest(e.target.value)}
+                        disabled={isSavingDelivery}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs text-gray-600 block mb-1">Delivery Fee (₦)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={100}
+                    value={deliveryFeeInput}
+                    onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                    placeholder="0.00"
+                    disabled={isSavingDelivery}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveDelivery}
+                  disabled={isSavingDelivery}
+                  className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                >
+                  {isSavingDelivery ? 'Saving...' : 'Save Delivery Details'}
+                </button>
               </div>
             </div>
 

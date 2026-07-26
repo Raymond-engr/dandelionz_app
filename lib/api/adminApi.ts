@@ -173,6 +173,12 @@ export interface Order {
   payment_status: string;
   total_price: string;
   delivery_fee: string;
+  /** Whether the separately-billed delivery fee has been settled by the customer. */
+  delivery_fee_paid?: boolean;
+  /** Start of the scheduled delivery window (ISO); null until scheduled. */
+  expected_delivery_earliest?: string | null;
+  /** End of the scheduled delivery window (ISO); null until scheduled. */
+  expected_delivery_latest?: string | null;
   discount: string;
   tracking_number: string | null;
   ordered_at: string;
@@ -822,6 +828,48 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order"],
     }),
 
+    // Schedule an order's delivery: either send use_default (backend applies a 7–14 day
+    // window) or both explicit dates, plus the delivery fee to bill the customer.
+    setOrderDelivery: builder.mutation<
+      Order,
+      {
+        order_id: string;
+        use_default?: boolean;
+        expected_delivery_earliest?: string;
+        expected_delivery_latest?: string;
+        delivery_fee: number;
+      }
+    >({
+      query: ({ order_id, ...body }) => ({
+        url: `/user/admin/orders/${order_id}/delivery/`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (response: { success: boolean; data: Order }) => response.data,
+      invalidatesTags: ["Order"],
+    }),
+
+    // Orders needing a delivery decision, bucketed for the attention banner.
+    getDeliveryAttention: builder.query<
+      {
+        success: boolean;
+        data: {
+          counts: {
+            unscheduled: number;
+            awaiting_fee: number;
+            ready_to_ship: number;
+          };
+          unscheduled: Order[];
+          awaiting_fee: Order[];
+          ready_to_ship: Order[];
+        };
+      },
+      void
+    >({
+      query: () => "/user/admin/orders/delivery/attention/",
+      providesTags: ["Order"],
+    }),
+
     cancelOrderWithReason: builder.mutation<
       { success: boolean; message: string },
       { order_id: string; reason: string }
@@ -1252,6 +1300,8 @@ export const {
   useGetAllOrdersQuery,
   useGetAdminOrderDetailsQuery,
   useUpdateOrderStatusMutation,
+  useSetOrderDeliveryMutation,
+  useGetDeliveryAttentionQuery,
   useCancelOrderWithReasonMutation,
   useAssignLogisticsMutation,
   useProcessRefundMutation,

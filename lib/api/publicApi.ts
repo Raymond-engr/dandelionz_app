@@ -48,6 +48,12 @@ export interface Order {
   payment_status: string;
   total_price: string;
   delivery_fee: string;
+  /** Whether the separately-billed delivery fee has been settled. */
+  delivery_fee_paid?: boolean;
+  /** Start of the scheduled delivery window (ISO); null until an admin schedules it. */
+  expected_delivery_earliest?: string | null;
+  /** End of the scheduled delivery window (ISO); null until an admin schedules it. */
+  expected_delivery_latest?: string | null;
   discount: string;
   total_with_delivery: string;
   is_delivered: boolean;
@@ -406,6 +412,68 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Cart", "Order"],
     }),
 
+    // Delivery fee is billed separately from the goods, after an admin schedules the order.
+    // Mirrors the checkout split-payment flow: the wallet can cover part or all of the fee,
+    // and only the remainder (if any) goes to Paystack.
+    initializeDeliveryPayment: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          /**
+           * False when the wallet covered the whole fee: it is already paid, so the client
+           * must skip the Paystack redirect.
+           */
+          requires_payment: boolean;
+          /** Null when the wallet covered everything and there is no card leg. */
+          authorization_url?: string | null;
+          reference: string;
+          wallet_amount: number;
+          card_amount: number;
+          order_id: string;
+        };
+        message?: string;
+      },
+      { order_id: string; use_wallet: boolean; wallet_amount?: number }
+    >({
+      query: ({ order_id, ...body }) => ({
+        url: `/transactions/orders/${order_id}/delivery-payment/`,
+        method: "POST",
+        body,
+      }),
+      // The wallet is debited when the delivery payment starts, not when the card leg lands.
+      invalidatesTags: ["Order", "CustomerWallet"],
+    }),
+
+    // Called after returning from Paystack for a delivery fee. Delivery references are
+    // prefixed DLV-, distinguishing them from order (no prefix), installment and DEP- refs.
+    verifyDeliveryPayment: builder.query<
+      {
+        success: boolean;
+        data: {
+          reference: string;
+          status: string;
+          order_id: string;
+          delivery_fee_paid: boolean;
+        };
+      },
+      { reference: string }
+    >({
+      query: ({ reference }) => ({
+        url: `/transactions/verify-delivery-payment/?reference=${reference}`,
+        method: "GET",
+      }),
+      providesTags: ["Order"],
+      // A successful verify is when the balance and the order's paid flag actually change.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(publicApi.util.invalidateTags(["Order", "CustomerWallet"]));
+        } catch {
+          // Verification failed; nothing changed, so there is nothing to refresh.
+        }
+      },
+    }),
+
     verifyPayment: builder.query<
       {
         status: string;
@@ -500,6 +568,8 @@ export const {
   useGetProductReviewsQuery,
   useInitializeCheckoutMutation,
   useInitializeInstallmentCheckoutMutation,
+  useInitializeDeliveryPaymentMutation,
+  useVerifyDeliveryPaymentQuery,
   useVerifyPaymentQuery,
   useVerifyInstallmentPaymentQuery,
   useInitializeNextInstallmentMutation,

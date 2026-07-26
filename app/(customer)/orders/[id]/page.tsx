@@ -3,7 +3,8 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams } from 'next/navigation';
-import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation, useCancelOrderMutation } from '@/lib/api/publicApi';
+import { useGetCustomerOrderDetailsQuery, useGetInstallmentPlansQuery, useInitializeNextInstallmentMutation, useCancelOrderMutation, useInitializeDeliveryPaymentMutation } from '@/lib/api/publicApi';
+import { useGetCustomerWalletQuery } from '@/lib/api/customerApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
@@ -13,15 +14,51 @@ export default function OrderDetailsPage() {
   const params = useParams();
   const orderId = params.id as string;
 
-  const { data: response, isLoading: isLoadingOrder, error } = useGetCustomerOrderDetailsQuery(orderId);
+  const { data: response, isLoading: isLoadingOrder, error, refetch } = useGetCustomerOrderDetailsQuery(orderId);
   // Fetch plans to check if this order is an installment order
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
-  
+  const { data: walletData } = useGetCustomerWalletQuery();
+
   const [initNextInstallment, { isLoading: isPaying }] = useInitializeNextInstallmentMutation();
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const [initDeliveryPayment, { isLoading: isPayingDelivery }] = useInitializeDeliveryPaymentMutation();
   const [cancelModal, setCancelModal] = React.useState(false);
+  const [useDeliveryWallet, setUseDeliveryWallet] = React.useState(false);
 
   const order = response;
+  const walletBalance = Number(walletData?.data?.balance ?? 0) || 0;
+  const deliveryFee = order ? parseFloat(order.delivery_fee || '0') : 0;
+  const goodsPaid = order ? (['PAID', 'SHIPPED', 'DELIVERED'].includes(order.status) || order.payment_status === 'PAID') : false;
+
+  const handlePayDeliveryFee = async () => {
+    if (!order) return;
+    try {
+      const payload = await initDeliveryPayment({
+        order_id: order.order_id,
+        use_wallet: useDeliveryWallet,
+      }).unwrap();
+
+      // The wallet covered the whole fee: it is already paid, so skip the Paystack redirect.
+      if (payload.data?.requires_payment === false) {
+        toast.success('Your wallet balance covered the delivery fee.');
+        refetch();
+        return;
+      }
+
+      if (payload.data?.authorization_url) {
+        window.location.href = payload.data.authorization_url;
+      } else {
+        toast.error('Could not initiate delivery payment. Please try again.');
+      }
+    } catch (err: any) {
+      toast.error(apiError(err, 'Could not initiate delivery payment.'));
+    }
+  };
+
+  const formatDeliveryDate = (iso?: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '';
   const canCancel = order && ['PENDING', 'PAID'].includes(order.status) && order.status !== 'CANCELLED';
 
   const confirmCancelOrder = async () => {
@@ -119,6 +156,70 @@ export default function OrderDetailsPage() {
               {order.status === 'CANCELED' ? 'CANCELLED' : order.status}
             </span>
           </div>
+
+          {/* Delivery window */}
+          {order.expected_delivery_latest && (
+            <div className="mb-6 border border-gray-100 p-4 rounded-lg bg-gray-50">
+              <p className="text-sm text-gray-600">
+                Arriving between{' '}
+                <span className="font-medium text-gray-900">{formatDeliveryDate(order.expected_delivery_earliest)}</span>
+                {' '}and{' '}
+                <span className="font-medium text-gray-900">{formatDeliveryDate(order.expected_delivery_latest)}</span>
+              </p>
+              {deliveryFee > 0 && order.delivery_fee_paid && (
+                <p className="text-xs text-green-700 font-medium mt-1">✓ Delivery fee paid</p>
+              )}
+            </div>
+          )}
+
+          {/* Delivery fee due */}
+          {deliveryFee > 0 && !order.delivery_fee_paid && (
+            <div className="mb-6 border border-amber-100 bg-amber-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-amber-800">Delivery fee</h3>
+                <span className="text-sm font-bold text-gray-900">₦{deliveryFee.toLocaleString()}</span>
+              </div>
+              <p className="text-xs text-amber-700 mb-3">
+                Pay your delivery fee to have your order shipped.
+              </p>
+
+              {walletBalance > 0 && (
+                <label className="flex items-center gap-3 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={useDeliveryWallet}
+                    onChange={(e) => setUseDeliveryWallet(e.target.checked)}
+                    disabled={isPayingDelivery}
+                    className="w-5 h-5 rounded border-gray-300 text-system-blue-light focus:ring-system-blue-light"
+                  />
+                  <span className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">Use wallet balance</span>
+                    <span className="text-xs text-gray-500">
+                      ₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                      available{useDeliveryWallet ? ' — anything left over goes on your card' : ''}
+                    </span>
+                  </span>
+                </label>
+              )}
+
+              <button
+                onClick={handlePayDeliveryFee}
+                disabled={isPayingDelivery}
+                className="w-full py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+              >
+                {isPayingDelivery ? 'Processing...' : 'Pay delivery fee'}
+              </button>
+            </div>
+          )}
+
+          {/* Paid goods, not yet scheduled */}
+          {goodsPaid && !order.expected_delivery_latest && (
+            <div className="mb-6 border border-blue-100 bg-blue-50 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                A delivery fee will be billed shortly. Shipping begins once it&apos;s paid.
+              </p>
+            </div>
+          )}
 
           <div className="mb-6">
 
