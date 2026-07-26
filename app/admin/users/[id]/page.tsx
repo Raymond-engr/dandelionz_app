@@ -25,9 +25,12 @@ export default function UserDetails({ params }: UserDetailsProps) {
   const userId = id;
 
   const { data: userData, isLoading, error, refetch } = useGetUserDetailsQuery(userId);
+  // The refund profile is customer-only; skip it for vendors/admins so their detail page
+  // doesn't fire a 404. userData resolves first, then this query un-skips for customers.
+  const isCustomer = userData?.data?.role === 'CUSTOMER';
   const [updateUserStatus, { isLoading: isUpdating }] = useUpdateUserStatusMutation();
 
-  const { data: refundProfileData, refetch: refetchRefundProfile } = useGetCustomerRefundProfileQuery(userId);
+  const { data: refundProfileData, refetch: refetchRefundProfile } = useGetCustomerRefundProfileQuery(userId, { skip: !isCustomer });
   const [reviewRefundFlag, { isLoading: isReviewing }] = useReviewRefundFlagMutation();
   const refundProfile = refundProfileData?.data;
 
