@@ -9,7 +9,8 @@ import {
   useGetAdminProductDetailsQuery,
   useApproveProductAdminMutation,
   useRejectProductAdminMutation,
-  useDeleteProductMutation
+  useDeleteProductMutation,
+  useSetProductCommissionMutation
 } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
@@ -40,6 +41,42 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
   const [rejectProductAdmin, { isLoading: isRejectingProduct }] = useRejectProductAdminMutation();
   // Delete product mutation
   const [deleteProduct, { isLoading: isDeletingProduct }] = useDeleteProductMutation();
+  // Per-product commission override
+  const [setProductCommission, { isLoading: isSavingCommission }] = useSetProductCommissionMutation();
+  const [commissionInput, setCommissionInput] = useState('');
+
+  // Seed the input from the product's stored override once it loads (decimal -> percent).
+  useEffect(() => {
+    if (product?.commission_rate != null && product.commission_rate !== '') {
+      setCommissionInput(String(Math.round(parseFloat(product.commission_rate) * 100 * 100) / 100));
+    } else {
+      setCommissionInput('');
+    }
+  }, [product?.commission_rate]);
+
+  const handleSaveCommission = async (clear = false) => {
+    if (!product) return;
+    let value: number | null = null;
+    if (!clear && commissionInput.trim() !== '') {
+      const pct = parseFloat(commissionInput);
+      if (isNaN(pct) || pct < 0 || pct > 10) {
+        toast.error('Enter a commission between 0 and 10%.');
+        return;
+      }
+      value = Math.round(pct * 10) / 1000; // percent -> decimal, 3 dp
+    }
+    try {
+      const res = await setProductCommission({ slug: productId, commission_rate: value }).unwrap();
+      toast.success(
+        value === null
+          ? `Override cleared; using the vendor/platform rate (${res.data.effective_rate_label}).`
+          : `This product's commission set to ${res.data.effective_rate_label}.`
+      );
+      refetchProduct();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Could not update commission.'));
+    }
+  };
 
   const handleDeleteProduct = async () => {
     try {
@@ -243,6 +280,49 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
                   <p className={`text-sm font-semibold ${product.status === 'APPROVED' ? 'text-green-600' : product.status === 'REJECTED' ? 'text-red-600' : 'text-yellow-600'}`}>
                     {product.status}
                   </p>
+                </div>
+              </div>
+
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Commission</h2>
+              <div className="mb-6">
+                <p className="text-xs text-gray-500 mb-3">
+                  Override the platform commission for this product only. Currently{' '}
+                  <span className="font-semibold text-gray-900">
+                    {product.commission_rate != null && product.commission_rate !== ''
+                      ? `${(parseFloat(product.commission_rate) * 100).toString()}% (product override)`
+                      : 'using the vendor/platform rate'}
+                  </span>
+                  . Leave blank to inherit. Maximum 10%.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={commissionInput}
+                      onChange={(e) => setCommissionInput(e.target.value)}
+                      placeholder="Inherit (vendor/platform)"
+                      className="w-full px-4 py-3 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      disabled={isSavingCommission}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                  </div>
+                  <button
+                    onClick={() => handleSaveCommission(false)}
+                    disabled={isSavingCommission}
+                    className="px-4 py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                  >
+                    {isSavingCommission ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => handleSaveCommission(true)}
+                    disabled={isSavingCommission || (product.commission_rate == null || product.commission_rate === '')}
+                    className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  >
+                    Clear
+                  </button>
                 </div>
               </div>
 
