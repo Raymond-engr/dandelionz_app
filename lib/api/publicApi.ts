@@ -133,12 +133,21 @@ export interface InstallmentPlan {
   number_of_installments: number;
   paid_installments_count: number;
   pending_installments_count: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'DEFAULTED';
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DEFAULTED';
   is_fully_paid: boolean;
   start_date: string;
   created_at: string;
   updated_at: string;
   installments?: InstallmentPayment[];
+  // Running-balance ("CDcare") fields: installments are now a balance the customer pays
+  // down flexibly rather than a fixed per-row schedule.
+  amount_paid: number;
+  balance_remaining: number;
+  /** 0..1 — share of total_amount that has been paid. Order ships once this reaches 0.5. */
+  paid_fraction: number;
+  /** Smallest amount that must be paid right now (0 when nothing is currently due). */
+  minimum_due_now: number;
+  next_due_date: string | null;
 }
 
 export interface CartItem {
@@ -494,11 +503,22 @@ export const publicApi = baseApi.injectEndpoints({
       providesTags: ["Order"],
     }),
 
+    // Called after returning from Paystack for an installment payment. Installment references
+    // are prefixed INS-, distinguishing them from order (no prefix), delivery (DLV-) and
+    // deposit (DEP-) refs. Verifying settles the running balance and may complete the plan.
     verifyInstallmentPayment: builder.query<
       {
         success: boolean;
-        message: string;
-        data: InstallmentPayment;
+        message?: string;
+        data: {
+          reference: string;
+          status: string;
+          plan_id: number;
+          order_id: string;
+          amount_paid: number;
+          balance_remaining: number;
+          plan_status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DEFAULTED';
+        };
       },
       { reference: string }
     >({
@@ -507,27 +527,46 @@ export const publicApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["Order"],
+      // A successful verify is the moment the balance and plan status actually change.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(publicApi.util.invalidateTags(["Order", "CustomerWallet"]));
+        } catch {
+          // Verification failed; nothing changed, so there is nothing to refresh.
+        }
+      },
     }),
 
-    initializeNextInstallment: builder.mutation<
+    // Pay down the installment running balance. Send an explicit `amount`, or omit it with
+    // `clear_balance: true` to pay off the whole balance. `use_wallet` spends wallet balance
+    // first (mirrors the delivery-fee flow). When the wallet covers the payment the response
+    // has requires_payment: false and no card leg; otherwise redirect to authorization_url.
+    payInstallment: builder.mutation<
       {
         success: boolean;
         data: {
-          authorization_url: string;
+          /** False when the wallet settled it: already paid, so skip the Paystack redirect. */
+          requires_payment: boolean;
+          /** Null when the wallet covered everything and there is no card leg. */
+          authorization_url?: string | null;
           reference: string;
+          method: 'WALLET' | 'CARD';
           amount: number;
-          payment_number: number;
-          installment_plan_id: number;
+          plan_id: number;
+          order_id: string;
         };
-        message: string;
+        message?: string;
       },
-      { plan_id: number; payment_number: number }
+      { plan_id: number; amount?: number; clear_balance?: boolean; use_wallet?: boolean }
     >({
       query: (body) => ({
         url: "/transactions/installment-plans/init-payment/",
         method: "POST",
         body,
       }),
+      // The wallet is debited when the payment starts, not when the card leg lands.
+      invalidatesTags: ["Order", "CustomerWallet"],
     }),
 
     getInstallmentPlans: builder.query<{ success: boolean; data: InstallmentPlan[] }, void>({
@@ -572,7 +611,7 @@ export const {
   useVerifyDeliveryPaymentQuery,
   useVerifyPaymentQuery,
   useVerifyInstallmentPaymentQuery,
-  useInitializeNextInstallmentMutation,
+  usePayInstallmentMutation,
   useGetInstallmentPlansQuery,
   useGetInstallmentPlanDetailsQuery,
   useGetInstallmentPaymentsQuery,

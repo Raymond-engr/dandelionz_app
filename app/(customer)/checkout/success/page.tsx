@@ -23,6 +23,12 @@ function CheckoutStatus() {
   // verified against the delivery endpoint (not the order verify) and routed back to the order.
   const isDelivery = Boolean(reference?.startsWith('DLV-'));
 
+  // Installment (running-balance) payments come back here prefixed INS-. They verify against
+  // the installment endpoint and route back to the order they belong to. Detecting by prefix
+  // (rather than a plan_id query param, which the Paystack callback doesn't carry) keeps this
+  // robust; the legacy planId path below is still honoured for the in-app "View My Plans" flow.
+  const isInstallment = Boolean(reference?.startsWith('INS-'));
+
   useEffect(() => {
     if (isDeposit && reference) {
       router.replace(
@@ -54,18 +60,25 @@ function CheckoutStatus() {
     isLoading: isStandardLoading
   } = useVerifyPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !!planId || isDeposit || isDelivery }
+    { skip: !reference || !!planId || isInstallment || isDeposit || isDelivery }
   );
 
-  // Installment verification for plans
+  // Installment verification for plans (INS- callback, or the legacy in-app plan_id flow)
   const {
     data: installmentData,
     error: installmentError,
     isLoading: isInstallmentLoading
   } = useVerifyInstallmentPaymentQuery(
     { reference: reference as string },
-    { skip: !reference || !planId || isDeposit || isDelivery }
+    { skip: !reference || (!planId && !isInstallment) || isDeposit || isDelivery }
   );
+
+  // Once an INS- payment is verified, send the customer back to the order it belongs to.
+  useEffect(() => {
+    if (isInstallment && installmentData?.data?.order_id) {
+      router.replace(`/orders/${installmentData.data.order_id}`);
+    }
+  }, [isInstallment, installmentData, router]);
 
   const isLoading = isStandardLoading || isInstallmentLoading || isDeliveryLoading;
   const error = standardError || installmentError || (isDelivery ? deliveryError : undefined);
@@ -89,6 +102,17 @@ function CheckoutStatus() {
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <LoadingSpinner />
         <h2 className="text-xl font-semibold text-gray-800 mt-4">Confirming your delivery payment...</h2>
+      </div>
+    );
+  }
+
+  // Hold the spinner while the installment payment is verified and the effect above routes
+  // back to the order, so an INS- payment never flashes the generic "Checkout Successful".
+  if (isInstallment && !installmentError) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <LoadingSpinner />
+        <h2 className="text-xl font-semibold text-gray-800 mt-4">Confirming your installment payment...</h2>
       </div>
     );
   }
