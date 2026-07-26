@@ -441,6 +441,42 @@ export interface RefundRequest {
   payment_reference: string;
 }
 
+/**
+ * One row in the refund-abuse review queue. This is a review signal only — customers
+ * are never blocked on the strength of a flag.
+ */
+export interface RefundFlag {
+  uuid: string;
+  email: string;
+  full_name: string;
+  paid_orders: number;
+  refund_count: number;
+  /** Share of paid orders that were refunded, as a fraction (e.g. 0.42). */
+  refund_rate: number;
+}
+
+/**
+ * The full refund picture for one customer. `flagged` means they cross the thresholds;
+ * `needs_review` means they're flagged and haven't been reviewed since their last refund.
+ */
+export interface RefundProfile {
+  uuid: string;
+  email: string;
+  full_name: string;
+  paid_orders: number;
+  refund_count: number;
+  /** Share of paid orders that were refunded, as a fraction (e.g. 0.42). */
+  refund_rate: number;
+  flagged: boolean;
+  needs_review: boolean;
+  reviewed_count: number;
+  thresholds: {
+    min_orders: number;
+    min_refunds: number;
+    rate: number;
+  };
+}
+
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Profile Management
@@ -693,6 +729,36 @@ export const adminApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["User"],
+    }),
+
+    // Refund-abuse review queue: customers who refund a suspicious share of their orders,
+    // most-refunded first. Review-only — a flag never blocks a customer.
+    getRefundFlags: builder.query<
+      { success: boolean; data: { count: number; results: RefundFlag[] } },
+      void
+    >({
+      query: () => "/user/admin/customers/refund-flags/",
+      providesTags: ["RefundFlags"],
+    }),
+
+    getCustomerRefundProfile: builder.query<
+      { success: boolean; data: RefundProfile },
+      string
+    >({
+      query: (uuid) => `/user/admin/customers/${uuid}/refund-profile/`,
+      providesTags: ["RefundFlags"],
+    }),
+
+    // Mark a customer reviewed: snoozes the flag until they refund again.
+    reviewRefundFlag: builder.mutation<
+      { success: boolean; data: RefundProfile; message: string },
+      string
+    >({
+      query: (uuid) => ({
+        url: `/user/admin/customers/${uuid}/refund-flag/review/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["RefundFlags"],
     }),
 
     // Vendor Management
@@ -1287,6 +1353,9 @@ export const {
   useSuspendUserMutation,
   useUpdateUserStatusMutation,
   useActivateUserMutation,
+  useGetRefundFlagsQuery,
+  useGetCustomerRefundProfileQuery,
+  useReviewRefundFlagMutation,
   useGetAllVendorsQuery,
   useGetVendorDetailsQuery,
   useApproveVendorMutation,
