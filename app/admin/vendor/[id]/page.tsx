@@ -3,11 +3,12 @@
 import React, { useState, use } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { 
-  useGetVendorDetailsQuery, 
+import {
+  useGetVendorDetailsQuery,
   useApproveVendorMutation,
   useVerifyVendorKYCMutation,
-  useSuspendVendorMutation
+  useSuspendVendorMutation,
+  useSetVendorCommissionMutation
 } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -26,12 +27,48 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
   const [approveVendor, { isLoading: isApproving }] = useApproveVendorMutation();
   const [verifyKYC, { isLoading: isVerifying }] = useVerifyVendorKYCMutation();
   const [suspendVendor, { isLoading: isSuspending }] = useSuspendVendorMutation();
+  const [setVendorCommission, { isLoading: isSavingCommission }] = useSetVendorCommissionMutation();
 
   const [action, setAction] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  // Held as a percent string (e.g. "8") for the operator; converted to a decimal for the API.
+  const [commissionInput, setCommissionInput] = useState('');
 
   const vendor = data?.data;
+
+  // Seed the input from the vendor's stored rate once it loads (decimal -> percent).
+  React.useEffect(() => {
+    if (vendor?.commission_rate != null && vendor.commission_rate !== '') {
+      setCommissionInput(String(Math.round(parseFloat(vendor.commission_rate) * 100 * 100) / 100));
+    } else {
+      setCommissionInput('');
+    }
+  }, [vendor?.commission_rate]);
+
+  const handleSaveCommission = async (clear = false) => {
+    if (!vendor) return;
+    let value: number | null = null;
+    if (!clear && commissionInput.trim() !== '') {
+      const pct = parseFloat(commissionInput);
+      if (isNaN(pct) || pct < 0 || pct > 10) {
+        toast.error('Enter a commission between 0 and 10%.');
+        return;
+      }
+      value = Math.round(pct * 10) / 1000; // percent -> decimal, 3 dp
+    }
+    try {
+      const res = await setVendorCommission({ uuid: vendorId, commission_rate: value }).unwrap();
+      toast.success(
+        value === null
+          ? `Reset to platform default (${res.data.effective_rate_label}).`
+          : `Vendor commission set to ${res.data.effective_rate_label}.`
+      );
+      refetch();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Could not update commission.'));
+    }
+  };
 
   // Configuration for actions with descriptions and styling
   const ACTION_CONFIG = React.useMemo(() => ({
@@ -259,6 +296,49 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                       <p className="text-sm font-medium text-gray-900">{vendor.recipient_code}</p>
                     </div>
                   )}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-1">Commission</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  Platform commission on this vendor&apos;s sales. Currently{' '}
+                  <span className="font-semibold text-gray-900">
+                    {vendor.commission_rate != null && vendor.commission_rate !== ''
+                      ? `${(parseFloat(vendor.commission_rate) * 100).toString()}% (custom)`
+                      : '10% (platform default)'}
+                  </span>
+                  . A per-product override, where set, takes precedence. Maximum 10%.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={commissionInput}
+                      onChange={(e) => setCommissionInput(e.target.value)}
+                      placeholder="Default (10)"
+                      className="w-full px-4 py-3 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                      disabled={isSavingCommission}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                  </div>
+                  <button
+                    onClick={() => handleSaveCommission(false)}
+                    disabled={isSavingCommission}
+                    className="px-4 py-3 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-all disabled:opacity-50"
+                  >
+                    {isSavingCommission ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => handleSaveCommission(true)}
+                    disabled={isSavingCommission || (vendor.commission_rate == null || vendor.commission_rate === '')}
+                    className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-40"
+                  >
+                    Reset
+                  </button>
                 </div>
               </section>
             </div>

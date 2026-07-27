@@ -4,7 +4,7 @@ import React from 'react';
 import { ShoppingCart, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useGetAllOrdersQuery } from '@/lib/api/adminApi';
+import { useGetAllOrdersQuery, useGetDeliveryAttentionQuery } from '@/lib/api/adminApi';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 import { Order } from '@/lib/api/adminApi';
@@ -12,8 +12,11 @@ import { Order } from '@/lib/api/adminApi';
 export default function OrderManagement() {
   const router = useRouter();
   const { data: orders = [], isLoading, error } = useGetAllOrdersQuery({});
+  const { data: attention } = useGetDeliveryAttentionQuery();
 
   const totalOrders = orders.length;
+  const counts = attention?.data?.counts;
+  const needsAttention = counts ? counts.unscheduled + counts.awaiting_fee + counts.ready_to_ship > 0 : false;
 
   const handleOrderClick = (orderId: string) => {
     router.push(`/admin/orders/${orderId}`);
@@ -53,6 +56,18 @@ export default function OrderManagement() {
             </div>
             <ShoppingCart className="w-12 h-12 opacity-80" />
           </div>
+
+          {/* Delivery attention summary */}
+          {needsAttention && counts && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-semibold text-amber-800 mb-1">Delivery needs attention</p>
+              <p className="text-xs text-amber-700">
+                {counts.unscheduled} order{counts.unscheduled === 1 ? '' : 's'} need scheduling
+                {' · '}{counts.awaiting_fee} awaiting fee
+                {' · '}{counts.ready_to_ship} ready to ship
+              </p>
+            </div>
+          )}
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">All Orders</h2>

@@ -4,7 +4,7 @@ import React from 'react';
 import { Users, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useGetAllUsersQuery } from '@/lib/api/adminApi';
+import { useGetAllUsersQuery, useGetRefundFlagsQuery } from '@/lib/api/adminApi';
 import UserListItemSkeleton from '@/components/UserListItemSkeleton';
 import Skeleton from '@/components/ui/Skeleton';
 import { User } from '@/lib/api/adminApi';
@@ -12,6 +12,9 @@ import { User } from '@/lib/api/adminApi';
 export default function UserManagement() {
   const router = useRouter();
   const { data: usersData, isLoading, error } = useGetAllUsersQuery({});
+  const { data: refundFlagsData } = useGetRefundFlagsQuery();
+
+  const flaggedCount = refundFlagsData?.data?.count ?? 0;
 
   const users = usersData?.data || [];
   const totalUsers = users.length;
@@ -52,6 +55,17 @@ export default function UserManagement() {
               {isLoading ? <Skeleton className="h-8 w-12 bg-red-200" /> : <p className="text-2xl font-bold text-gray-900">{suspendedUsers}</p>}
             </div>
           </div>
+
+          {/* Refund-abuse review queue summary (review-only, never a block) */}
+          {flaggedCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-semibold text-amber-800 mb-1">Refund flags need review</p>
+              <p className="text-xs text-amber-700">
+                {flaggedCount} customer{flaggedCount === 1 ? '' : 's'} refund an unusually high share of their orders.
+                Open a customer to review their refund history. This is a review signal only — no customer is blocked.
+              </p>
+            </div>
+          )}
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">All Users</h2>

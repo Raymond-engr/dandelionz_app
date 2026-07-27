@@ -129,6 +129,7 @@ export interface Vendor {
   store_description?: string;
   business_registration_number?: string;
   address?: string;
+  commission_rate?: string | null; // Platform commission for this vendor (decimal); null = platform default
   bank_name?: string;
   account_number?: string;
   recipient_code?: string;
@@ -172,6 +173,12 @@ export interface Order {
   payment_status: string;
   total_price: string;
   delivery_fee: string;
+  /** Whether the separately-billed delivery fee has been settled by the customer. */
+  delivery_fee_paid?: boolean;
+  /** Start of the scheduled delivery window (ISO); null until scheduled. */
+  expected_delivery_earliest?: string | null;
+  /** End of the scheduled delivery window (ISO); null until scheduled. */
+  expected_delivery_latest?: string | null;
   discount: string;
   tracking_number: string | null;
   ordered_at: string;
@@ -213,6 +220,7 @@ export interface Product {
   status: string;
   stock: number;
   discount?: number; // Added discount field
+  commission_rate?: string | null; // Per-product commission override (decimal); null = vendor/platform rate
 }
 
 interface AdminProduct {
@@ -234,6 +242,7 @@ interface AdminProduct {
     email: string;
   };
   status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Specific status for admin actions
+  commission_rate?: string | null; // Per-product commission override (decimal); null = vendor/platform rate
 }
 
 export interface Category {
@@ -430,6 +439,42 @@ export interface RefundRequest {
   created_at: string;
   processed_at: string | null;
   payment_reference: string;
+}
+
+/**
+ * One row in the refund-abuse review queue. This is a review signal only — customers
+ * are never blocked on the strength of a flag.
+ */
+export interface RefundFlag {
+  uuid: string;
+  email: string;
+  full_name: string;
+  paid_orders: number;
+  refund_count: number;
+  /** Share of paid orders that were refunded, as a fraction (e.g. 0.42). */
+  refund_rate: number;
+}
+
+/**
+ * The full refund picture for one customer. `flagged` means they cross the thresholds;
+ * `needs_review` means they're flagged and haven't been reviewed since their last refund.
+ */
+export interface RefundProfile {
+  uuid: string;
+  email: string;
+  full_name: string;
+  paid_orders: number;
+  refund_count: number;
+  /** Share of paid orders that were refunded, as a fraction (e.g. 0.42). */
+  refund_rate: number;
+  flagged: boolean;
+  needs_review: boolean;
+  reviewed_count: number;
+  thresholds: {
+    min_orders: number;
+    min_refunds: number;
+    rate: number;
+  };
 }
 
 export const adminApi = baseApi.injectEndpoints({
@@ -686,6 +731,36 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["User"],
     }),
 
+    // Refund-abuse review queue: customers who refund a suspicious share of their orders,
+    // most-refunded first. Review-only — a flag never blocks a customer.
+    getRefundFlags: builder.query<
+      { success: boolean; data: { count: number; results: RefundFlag[] } },
+      void
+    >({
+      query: () => "/user/admin/customers/refund-flags/",
+      providesTags: ["RefundFlags"],
+    }),
+
+    getCustomerRefundProfile: builder.query<
+      { success: boolean; data: RefundProfile },
+      string
+    >({
+      query: (uuid) => `/user/admin/customers/${uuid}/refund-profile/`,
+      providesTags: ["RefundFlags"],
+    }),
+
+    // Mark a customer reviewed: snoozes the flag until they refund again.
+    reviewRefundFlag: builder.mutation<
+      { success: boolean; data: RefundProfile; message: string },
+      string
+    >({
+      query: (uuid) => ({
+        url: `/user/admin/customers/${uuid}/refund-flag/review/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["RefundFlags"],
+    }),
+
     // Vendor Management
     getAllVendors: builder.query<{ success: boolean; data: Vendor[] }, void>({
       query: () => "/user/admin/vendors/",
@@ -733,6 +808,28 @@ export const adminApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Vendor"],
+    }),
+
+    // Set or clear a vendor's platform commission rate. Send a decimal 0-0.10, or null to
+    // clear the override and fall back to the platform default. Capped server-side at 10%.
+    setVendorCommission: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          vendor_uuid: string;
+          commission_rate: string | null;
+          effective_rate: string;
+          effective_rate_label: string;
+        };
+      },
+      { uuid: string; commission_rate: number | null }
+    >({
+      query: ({ uuid, commission_rate }) => ({
+        url: `/user/admin/vendors/${uuid}/commission/`,
+        method: "PATCH",
+        body: { commission_rate },
+      }),
+      invalidatesTags: ["Vendor", "Product"],
     }),
 
     getVendorProducts: builder.query<
@@ -795,6 +892,48 @@ export const adminApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Order"],
+    }),
+
+    // Schedule an order's delivery: either send use_default (backend applies a 7–14 day
+    // window) or both explicit dates, plus the delivery fee to bill the customer.
+    setOrderDelivery: builder.mutation<
+      Order,
+      {
+        order_id: string;
+        use_default?: boolean;
+        expected_delivery_earliest?: string;
+        expected_delivery_latest?: string;
+        delivery_fee: number;
+      }
+    >({
+      query: ({ order_id, ...body }) => ({
+        url: `/user/admin/orders/${order_id}/delivery/`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (response: { success: boolean; data: Order }) => response.data,
+      invalidatesTags: ["Order"],
+    }),
+
+    // Orders needing a delivery decision, bucketed for the attention banner.
+    getDeliveryAttention: builder.query<
+      {
+        success: boolean;
+        data: {
+          counts: {
+            unscheduled: number;
+            awaiting_fee: number;
+            ready_to_ship: number;
+          };
+          unscheduled: Order[];
+          awaiting_fee: Order[];
+          ready_to_ship: Order[];
+        };
+      },
+      void
+    >({
+      query: () => "/user/admin/orders/delivery/attention/",
+      providesTags: ["Order"],
     }),
 
     cancelOrderWithReason: builder.mutation<
@@ -874,6 +1013,28 @@ export const adminApi = baseApi.injectEndpoints({
         url: `/user/admin/products/${slug}/`,
         method: "PATCH",
         body,
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
+    // Set or clear a product's commission-rate override. Send a decimal 0-0.10, or null to
+    // clear it so the vendor/platform rate applies. Capped server-side at 10%.
+    setProductCommission: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          slug: string;
+          commission_rate: string | null;
+          effective_rate: string;
+          effective_rate_label: string;
+        };
+      },
+      { slug: string; commission_rate: number | null }
+    >({
+      query: ({ slug, commission_rate }) => ({
+        url: `/user/admin/products/${slug}/commission/`,
+        method: "PATCH",
+        body: { commission_rate },
       }),
       invalidatesTags: ["Product"],
     }),
@@ -1192,11 +1353,15 @@ export const {
   useSuspendUserMutation,
   useUpdateUserStatusMutation,
   useActivateUserMutation,
+  useGetRefundFlagsQuery,
+  useGetCustomerRefundProfileQuery,
+  useReviewRefundFlagMutation,
   useGetAllVendorsQuery,
   useGetVendorDetailsQuery,
   useApproveVendorMutation,
   useVerifyVendorKYCMutation,
   useSuspendVendorMutation,
+  useSetVendorCommissionMutation,
   useGetVendorProductsQuery,
   useAdminGetVendorOrdersQuery,
   useAdminGetVendorAnalyticsQuery,
@@ -1204,6 +1369,8 @@ export const {
   useGetAllOrdersQuery,
   useGetAdminOrderDetailsQuery,
   useUpdateOrderStatusMutation,
+  useSetOrderDeliveryMutation,
+  useGetDeliveryAttentionQuery,
   useCancelOrderWithReasonMutation,
   useAssignLogisticsMutation,
   useProcessRefundMutation,
@@ -1212,6 +1379,7 @@ export const {
   useGetProductDetailsQuery,
   useGetAdminProductDetailsQuery,
   useApproveProductMutation,
+  useSetProductCommissionMutation,
   useApproveProductAdminMutation,
   useRejectProductAdminMutation,
   useDeleteProductMutation,

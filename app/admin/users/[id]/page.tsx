@@ -3,7 +3,8 @@
 import React, { useState, use, useEffect } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetUserDetailsQuery, useUpdateUserStatusMutation } from '@/lib/api/adminApi';
+import { useGetUserDetailsQuery, useUpdateUserStatusMutation, useGetCustomerRefundProfileQuery, useReviewRefundFlagMutation } from '@/lib/api/adminApi';
+import { AlertTriangle } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -24,7 +25,28 @@ export default function UserDetails({ params }: UserDetailsProps) {
   const userId = id;
 
   const { data: userData, isLoading, error, refetch } = useGetUserDetailsQuery(userId);
+  // The refund profile is customer-only; skip it for vendors/admins so their detail page
+  // doesn't fire a 404. userData resolves first, then this query un-skips for customers.
+  const isCustomer = userData?.data?.role === 'CUSTOMER';
   const [updateUserStatus, { isLoading: isUpdating }] = useUpdateUserStatusMutation();
+
+  const { data: refundProfileData, refetch: refetchRefundProfile } = useGetCustomerRefundProfileQuery(userId, { skip: !isCustomer });
+  const [reviewRefundFlag, { isLoading: isReviewing }] = useReviewRefundFlagMutation();
+  const refundProfile = refundProfileData?.data;
+
+  const handleMarkReviewed = async () => {
+    if (!refundProfile) return;
+    if (!window.confirm('Mark this customer as reviewed? This snoozes the flag until they refund again. It does not block or restrict the customer.')) {
+      return;
+    }
+    try {
+      const response = await reviewRefundFlag(refundProfile.uuid).unwrap();
+      toast.success(response.message || 'Customer marked as reviewed.');
+      refetchRefundProfile();
+    } catch (err) {
+      toast.error(apiError(err, 'Could not mark customer as reviewed.'));
+    }
+  };
 
   const user = userData?.data;
 
@@ -149,6 +171,61 @@ export default function UserDetails({ params }: UserDetailsProps) {
                 </div>
               </div>
             </div>
+
+            {/* Refund history (review-only signal) */}
+            {refundProfile && (
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center justify-between border-b pb-1">
+                  <h3 className="text-sm font-semibold text-gray-900">Refund history</h3>
+                  {refundProfile.needs_review && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 uppercase">
+                      <AlertTriangle className="w-3 h-3" />
+                      Flagged for review
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Paid Orders</p>
+                    <p className="text-lg font-bold text-gray-900">{refundProfile.paid_orders}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Refunds</p>
+                    <p className="text-lg font-bold text-gray-900">{refundProfile.refund_count}</p>
+                  </div>
+                  <div className={`rounded-lg p-3 ${refundProfile.needs_review ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                    <p className="text-xs text-gray-600 mb-1">Refund Rate</p>
+                    <p className={`text-lg font-bold ${refundProfile.needs_review ? 'text-amber-800' : 'text-gray-900'}`}>
+                      {Math.round(refundProfile.refund_rate * 100)}%
+                    </p>
+                  </div>
+                </div>
+
+                {refundProfile.needs_review ? (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-800 mb-3">
+                      This customer refunds a high share of their paid orders (threshold: at least{' '}
+                      {refundProfile.thresholds.min_refunds} refunds across {refundProfile.thresholds.min_orders}+ orders at{' '}
+                      {Math.round(refundProfile.thresholds.rate * 100)}%+). This is a review signal only — the customer is not blocked or restricted.
+                    </p>
+                    <button
+                      onClick={handleMarkReviewed}
+                      disabled={isReviewing}
+                      className="w-full py-2.5 bg-system-blue-light text-white rounded-lg text-sm font-medium hover:bg-[#020360] transition-colors disabled:opacity-50"
+                    >
+                      {isReviewing ? 'Marking...' : 'Mark reviewed'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    {refundProfile.reviewed_count > 0
+                      ? 'Reviewed. No action needed — this is a review signal only, never a block.'
+                      : 'Within normal range. Shown for reference only.'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* User Account Actions */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
