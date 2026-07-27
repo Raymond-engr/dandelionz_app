@@ -149,8 +149,10 @@ function AdminEditProductComponent() {
     changes.append('category', formData.category);
     changes.append('price', formData.price.toString());
     changes.append('stock', formData.stock.toString());
-    if (formData.brand) changes.append('brand', formData.brand);
-    if (formData.tags) changes.append('tags', formData.tags);
+    // Sent unconditionally like every other field above: skipping the empty
+    // case meant clearing brand or tags silently kept the previous value.
+    changes.append('brand', formData.brand.trim());
+    changes.append('tags', formData.tags.trim());
     changes.append('discount', formData.discount.toString());
 
     if (formData.variants.colors.length > 0 || formData.variants.sizes.length > 0) {

@@ -8,14 +8,26 @@ interface SearchBarProps {
   placeholder?: string;
   onFilterClick?: () => void;
   showFilter?: boolean;
+  autoFocus?: boolean;
+  /** Fired when the user submits the field (Enter). */
+  onSubmit?: () => void;
+  /**
+   * Turns the bar into a button instead of an input. Used on the shop page,
+   * where clicking should open the dedicated search page rather than filter
+   * in place.
+   */
+  onClick?: () => void;
 }
 
-export default function SearchBar({ 
-  value, 
-  onChange, 
+export default function SearchBar({
+  value,
+  onChange,
   placeholder = "Search Products",
   onFilterClick,
-  showFilter = false
+  showFilter = false,
+  autoFocus = false,
+  onSubmit,
+  onClick
 }: SearchBarProps) {
   return (
     <div className="flex items-center gap-2">
@@ -25,7 +37,17 @@ export default function SearchBar({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
+          onClick={onClick}
+          readOnly={Boolean(onClick)}
+          autoFocus={autoFocus}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onSubmit?.();
+          }}
+          // Search terms are not prose; the usual assists get in the way.
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent${onClick ? ' cursor-pointer' : ''}`}
         />
         <svg 
           className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"

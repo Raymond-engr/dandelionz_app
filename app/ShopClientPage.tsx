@@ -1,35 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import ProductGrid from '@/components/ProductGrid';
 import FilterModal from '@/components/FilterModal';
 import HeroSlider from '@/components/HeroSlider';
 import CategorySlider from '@/components/CategorySlider';
-import { useGetProductsQuery } from '@/lib/api/publicApi';
+import { useGetProductsQuery, useGetRecommendationsQuery } from '@/lib/api/publicApi';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
+import RecommendationSection from '@/components/RecommendationSection';
+import { CATEGORIES_FOR_NAV } from '@/lib/categories';
+import { useAppSelector } from '@/lib/hooks';
+import { RECOMMENDATION_LIMIT, shopRecommendationSurface } from '@/lib/recommendations';
 
-const CATEGORIES_FOR_NAV = [
-  { id: 'electronics', name: 'Electronics', image: '/category-electronics.png' },
-  { id: 'fashion', name: 'Fashion', image: '/category-fashion.png' },
-  { id: 'home_appliances', name: 'Home Appliances', image: '/category-home_appliances.png' },
-  { id: 'beauty', name: 'Beauty & Personal Care', image: '/category-beauty.png' },
-  { id: 'sports', name: 'Sports & Outdoors', image: '/category-sports.png' },
-  { id: 'automotive', name: 'Automotive', image: '/category-automotive.png' },
-  { id: 'books', name: 'Books', image: '/category-books.png' },
-  { id: 'toys', name: 'Toys & Games', image: '/category-toys.png' },
-  { id: 'groceries', name: 'Groceries', image: '/category-groceries.png' },
-  { id: 'computers', name: 'Computers & Accessories', image: '/category-computers.png' },
-  { id: 'phones', name: 'Phones & Tablets', image: '/category-phones.png' },
-  { id: 'jewelry', name: 'Jewelry & Watches', image: '/category-jewelry.png' },
-  { id: 'baby', name: 'Baby Products', image: '/category-baby.png' },
-  { id: 'pets', name: 'Pet Supplies', image: '/category-pets.png' },
-  { id: 'office', name: 'Office Products', image: '/category-office.png' },
-  { id: 'gaming', name: 'Video Games & Consoles', image: '/category-gaming.png' },
-];
 
 export default function ShopClientPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const [showFilter, setShowFilter] = useState(false);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500);
@@ -38,12 +26,20 @@ export default function ShopClientPage() {
   const [ordering, setOrdering] = useState('');
 
   const { data: productsData, isLoading: productsLoading, isFetching, error: productsError, refetch } = useGetProductsQuery({
-    search: searchQuery || undefined,
     category: selectedCategory || undefined,
     min_price: minPrice > 0 ? minPrice : undefined,
     max_price: maxPrice < 500 ? maxPrice : undefined,
     price: price > 0 ? price : undefined,
     ordering: ordering || undefined,
+  });
+
+  // Personalised when we know who's asking, trending otherwise. Deliberately
+  // independent of the filter state below: this row is a way out of the
+  // current filters, not a reflection of them.
+  const recommendationSurface = shopRecommendationSurface(isAuthenticated);
+  const { data: recommendationData } = useGetRecommendationsQuery({
+    type: recommendationSurface.type,
+    limit: RECOMMENDATION_LIMIT,
   });
 
   const handleApplyFilter = (filters: { min_price?: number; max_price?: number; price?: number; ordering?: string; category?: string }) => {
@@ -67,12 +63,16 @@ export default function ShopClientPage() {
           {/* Search Bar */}
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
+              {/* Opens the dedicated search page; this bar never filters the
+                  shop grid in place. */}
               <input
                 type="text"
                 placeholder="Search Products"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
+                value=""
+                readOnly
+                onChange={() => {}}
+                onClick={() => router.push('/search')}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
               />
               <svg 
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -105,6 +105,13 @@ export default function ShopClientPage() {
         <div className="mb-6">
           <CategorySlider categories={CATEGORIES_FOR_NAV.map(cat => ({id: cat.id, name: cat.name, image: cat.image}))} />
         </div>
+
+        {/* Recommendations */}
+        <RecommendationSection
+          title={recommendationSurface.title}
+          products={recommendationData?.data}
+          className="mb-6"
+        />
 
         {/* Products Section */}
         <div className="pb-4">

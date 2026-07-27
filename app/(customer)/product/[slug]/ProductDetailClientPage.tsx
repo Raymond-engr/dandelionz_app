@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -14,16 +14,43 @@ import {
     useRemoveFromCartMutation,
     useGetProductReviewsQuery,
     useAddProductReviewMutation,
+    useGetRecommendationsQuery,
+    useRecordInteractionMutation,
     Product,
     ProductImage
 } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import RecommendationSection from '@/components/RecommendationSection';
+import { RECOMMENDATION_LIMIT } from '@/lib/recommendations';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
-
+ 
 interface ProductDetailClientPageProps {
   initialProduct?: Product;
+}
+
+/**
+ * Serialize an object for injection into a <script type="application/ld+json">
+ * via dangerouslySetInnerHTML.
+ *
+ * JSON.stringify alone is not safe here. The HTML parser ends a <script> block
+ * at the literal characters `</script>`, and it does not understand JSON while
+ * scanning -- JSON.stringify escapes quotes and backslashes but leaves `<` and
+ * `/` untouched. A product field (name, description, brand) containing
+ * `</script><script>...` would therefore close this block early and inject an
+ * executable script. Those fields are vendor-controlled, so this is a stored
+ * XSS vector.
+ *
+ * Escaping `<`, `>` and `&` to their \uXXXX forms makes `</script>` impossible
+ * in the output. The escapes are transparent to JSON parsers and to search
+ * engines reading the structured data, so the SEO payload is unchanged.
+ */
+function toSafeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 }
 
 export default function ProductDetailClientPage({ initialProduct }: ProductDetailClientPageProps) {
@@ -62,6 +89,34 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
   const reviews = reviewsResponse || [];
   
   const [addProductReview, { isLoading: isSubmittingReview }] = useAddProductReviewMutation();
+
+  // Related products. Keyed off the slug rather than the loaded product so the
+  // row can start resolving alongside the product itself.
+  const { data: relatedResponse } = useGetRecommendationsQuery(
+    { type: 'related', product: slug, limit: RECOMMENDATION_LIMIT },
+    { skip: !slug }
+  );
+
+  // View tracking. Strictly fire-and-forget: the shopper must never wait on it
+  // and must never see it fail, so nothing here touches render state.
+  const [recordInteraction] = useRecordInteractionMutation();
+  const trackedSlug = useRef<string | null>(null);
+
+  useEffect(() => {
+    // A ref, not the effect deps, is what makes this once-per-product: the
+    // effect re-runs on every StrictMode remount and on any dep identity
+    // change, and a view is not something we want to double-count.
+    if (!slug || trackedSlug.current === slug) return;
+    trackedSlug.current = slug;
+
+    recordInteraction({ product: slug, event_type: 'view' })
+      .unwrap()
+      .catch(() => {
+        // Swallowed on purpose. A dropped analytics beacon is not the
+        // shopper's problem, and an unhandled rejection here would surface in
+        // the console on every offline page view.
+      });
+  }, [slug, recordInteraction]);
 
   // Fetch wishlist data to check if item exists
   const { data: wishlistResponse } = useGetWishlistQuery(undefined, {
@@ -235,7 +290,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: toSafeJsonLd({
             "@context": "https://schema.org",
             "@type": "Product",
             "name": product.name,
@@ -510,6 +565,13 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
               <p className="text-base text-gray-500 italic">No reviews yet. Be the first to review!</p>
             )}
           </div>
+
+          {/* Related products — renders nothing at all when there are none. */}
+          <RecommendationSection
+            title="You might also like"
+            products={relatedResponse?.data}
+            className="border-t pt-6 mt-8"
+          />
         </div>
       </div>
     </AppLayout>

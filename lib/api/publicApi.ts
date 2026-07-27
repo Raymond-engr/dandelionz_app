@@ -173,6 +173,38 @@ type GetProductsResponse = {
   data: Product[];
 };
 
+export type SearchSuggestion = {
+  name: string;
+  slug: string;
+};
+
+type SearchSuggestionsResponse = {
+  success: boolean;
+  data: {
+    products: SearchSuggestion[];
+    categories: SearchSuggestion[];
+  };
+};
+
+export type RecommendationType = "related" | "for-you" | "trending";
+
+export type RecommendationParams = {
+  type: RecommendationType;
+  /** Required for `related`: the slug of the product being viewed. */
+  product?: string;
+  /** Narrows `trending` to a single category. */
+  category?: string;
+  limit?: number;
+};
+
+/** Same envelope as /store/products/, so `Product` is reused verbatim. */
+type RecommendationsResponse = {
+  success: boolean;
+  data: Product[];
+};
+
+export type InteractionEventType = "view" | "cart_add";
+
 // Public/Store API (no auth required)
 export const publicApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -200,6 +232,40 @@ export const publicApi = baseApi.injectEndpoints({
     getProductBySlug: builder.query<{ success: boolean; data: Product }, string>({
       query: (slug) => `/store/products/${slug}/`,
       providesTags: ["Product"],
+    }),
+
+    getSearchSuggestions: builder.query<SearchSuggestionsResponse, string>({
+      query: (q) => ({
+        url: "/store/products/suggestions/",
+        params: { q },
+      }),
+      // Deliberately untagged: suggestions are a transient typeahead aid, and
+      // invalidating them on every product mutation would refetch constantly.
+    }),
+
+    getRecommendations: builder.query<RecommendationsResponse, RecommendationParams>({
+      query: ({ type, product, category, limit }) => ({
+        url: "/store/recommendations/",
+        // fetchBaseQuery drops undefined params, so the optional ones simply
+        // don't appear for the surfaces that never send them.
+        params: { type, product, category, limit },
+      }),
+      // Untagged for the same reason as suggestions: these are ranked feeds,
+      // and invalidating on "Product" would refetch every row on any write.
+    }),
+
+    recordInteraction: builder.mutation<
+      unknown,
+      { product: string; event_type: InteractionEventType }
+    >({
+      query: (body) => ({
+        url: "/store/events/",
+        method: "POST",
+        body,
+      }),
+      // No invalidation on purpose. This is fire-and-forget telemetry, and
+      // re-ranking a visible feed mid-session would shuffle products out from
+      // under the shopper's finger.
     }),
 
     // Categories
@@ -589,6 +655,9 @@ export const publicApi = baseApi.injectEndpoints({
 export const {
   useGetProductsQuery,
   useGetProductBySlugQuery,
+  useGetSearchSuggestionsQuery,
+  useGetRecommendationsQuery,
+  useRecordInteractionMutation,
   useGetCategoriesQuery,
   useGetCartQuery,
   useAddToCartMutation,
