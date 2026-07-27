@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
 import { useInitializeCheckoutMutation } from '@/lib/api/publicApi';
+import { useGetCustomerWalletQuery } from '@/lib/api/customerApi';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
 
@@ -13,7 +14,11 @@ type PaymentMethod = 'delivery' | 'card';
 export default function PaymentPage() {
   const router = useRouter();
   const [method, setMethod] = useState<PaymentMethod>('card');
+  const [useWallet, setUseWallet] = useState(false);
   const [initializeCheckout, { isLoading, error }] = useInitializeCheckoutMutation();
+  const { data: walletData } = useGetCustomerWalletQuery();
+
+  const walletBalance = Number(walletData?.data?.balance ?? 0) || 0;
 
   const handleMakePayment = async () => {
     if (method === 'delivery') {
@@ -21,7 +26,21 @@ export default function PaymentPage() {
     } else if (method === 'card') {
       // For card payments, we initialize Paystack checkout
       try {
-        const payload = await initializeCheckout().unwrap();
+        const payload = await initializeCheckout(
+          useWallet ? { use_wallet: true } : undefined
+        ).unwrap();
+
+        // The wallet covered the whole order: it is already paid, so redirecting to
+        // Paystack would ask the customer to pay a second time.
+        if (payload.data?.requires_payment === false) {
+          toast.success('Your wallet balance covered this order in full.');
+          router.push(
+            `/checkout/success?orderId=${encodeURIComponent(payload.data.order_id ?? '')}` +
+            `&reference=${encodeURIComponent(payload.data.reference ?? '')}`
+          );
+          return;
+        }
+
         // Redirect the user to the Paystack authorization URL
         // Access payload.data.authorization_url as per the API response structure
         if (payload.data?.authorization_url) {
@@ -117,6 +136,34 @@ export default function PaymentPage() {
                 </div>
                 <span className="text-sm font-medium text-gray-900">Pay with Card (via Paystack)</span>
             </label>
+
+            {/* Wallet balance can cover part or all of the order, so it is a toggle on top
+                of the payment mode rather than a mode of its own: unless it covers the
+                total, the card is still involved and it is not an either/or choice. */}
+            {walletBalance > 0 && (
+              <label className="flex items-center gap-3 cursor-pointer p-4 border rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={useWallet}
+                  onChange={(e) => setUseWallet(e.target.checked)}
+                  disabled={isLoading}
+                  className="w-5 h-5 rounded border-gray-300 text-system-blue-light focus:ring-system-blue-light"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    Use wallet balance
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ₦{walletBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    available
+                    {useWallet ? ' — anything left over goes on your card' : ''}
+                  </span>
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Make Payment Button */}

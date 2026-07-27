@@ -28,8 +28,15 @@ export function middleware(request: NextRequest) {
   // If no token and trying to access protected route
   if (!token && !isPublicRoute) {
     const url = request.nextUrl.clone();
+    // Carry the query string, not just the path. Pages reached with params in the URL -
+    // a Paystack return with ?reference=, an order link with an id - were losing them
+    // here, so signing back in landed on a page that no longer knew what it was for.
+    const target = `${pathname}${request.nextUrl.search}`;
     url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
+    // Clear the cloned query first, otherwise the original params sit alongside the
+    // encoded redirect value and appear twice.
+    url.search = "";
+    url.searchParams.set("redirect", target);
     return NextResponse.redirect(url);
   }
 

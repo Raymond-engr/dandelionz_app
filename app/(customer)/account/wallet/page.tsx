@@ -22,6 +22,9 @@ export default function CustomerWalletPage() {
   const stats = walletData?.data;
   const transactions = txData?.results || [];
 
+  const spendable = Number(stats?.spendable_balance ?? 0);
+  const withdrawable = Number(stats?.withdrawable_balance ?? 0);
+
   return (
     <AppLayout showBottomNav={true} userRole="customer">
       <div className="min-h-screen bg-white">
@@ -32,36 +35,111 @@ export default function CustomerWalletPage() {
           {/* Balance Card */}
           <div className="bg-system-blue-light rounded-xl p-6 mb-4 shadow-sm relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-white/80 text-sm mb-2 font-medium">Available Balance</p>
+              <p className="text-white/80 text-sm mb-2 font-medium">Total Balance</p>
               {walletLoading ? (
                 <div className="h-10 w-48 bg-white/20 animate-pulse rounded-md mb-4"></div>
               ) : (
-                <p className="text-white text-4xl font-bold mb-6">
+                <p className="text-white text-4xl font-bold mb-4">
                   ₦{(stats?.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               )}
-              
-              <button
-                onClick={() => router.push('/account/wallet/withdraw')}
-                disabled={walletLoading || !stats?.balance || stats.balance <= 0}
-                className="flex items-center justify-center gap-2 w-full py-3.5 bg-white text-system-blue-light rounded-xl font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:hover:bg-white"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Withdraw to Bank
-              </button>
+
+              {/* The two buckets behave differently, so never show only the total: deposits
+                  are spendable but locked in, refunds and earnings can leave the platform. */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-white/10 rounded-lg p-3">
+                  <p className="text-xs text-white/70 mb-1">Spendable (deposits)</p>
+                  {walletLoading ? (
+                    <div className="h-6 w-20 bg-white/20 animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-white text-lg font-bold">
+                      ₦{spendable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-white/70 mt-1 leading-snug">
+                    Use at checkout &middot; cannot be withdrawn
+                  </p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3">
+                  <p className="text-xs text-white/70 mb-1">Withdrawable</p>
+                  {walletLoading ? (
+                    <div className="h-6 w-20 bg-white/20 animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-white text-lg font-bold">
+                      ₦{withdrawable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-white/70 mt-1 leading-snug">
+                    Refunds &amp; earnings &middot; can be cashed out
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => router.push('/account/wallet/deposit')}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-white text-system-blue-light rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Fund Wallet
+                </button>
+
+                <button
+                  onClick={() => router.push('/account/wallet/withdraw')}
+                  // Gated on the withdrawable bucket, not the total: a wallet holding only
+                  // deposits has money in it but nothing that can legally leave.
+                  disabled={walletLoading || withdrawable <= 0}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-white/10 text-white border border-white/40 rounded-xl font-bold hover:bg-white/20 transition-colors disabled:opacity-50 disabled:hover:bg-white/10"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Withdraw
+                </button>
+              </div>
+
+              {/* Refunding to card is the only exit for deposited funds, so it appears only
+                  when there are some. Kept below the main pair: it is a rarer action than
+                  funding or withdrawing and shouldn't compete with them. */}
+              {!walletLoading && spendable > 0 && (
+                <button
+                  onClick={() => router.push('/account/wallet/refund')}
+                  className="mt-3 w-full py-2.5 text-sm font-semibold text-white/80 border border-white/30 rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  Refund deposits to card
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Refund Info Note */}
-          {stats?.balance ? stats.balance > 0 : false ? (
+          {/* Explain why the Withdraw CTA is dead while the wallet visibly has money in it. */}
+          {!walletLoading && spendable > 0 && withdrawable <= 0 ? (
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex items-start gap-3">
               <svg className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-sm text-blue-800">
-                You have funds from a refunded order. You can withdraw this to your bank account anytime.
+                Your balance is money you added yourself, so it can be spent at checkout but
+                not withdrawn. Refunds and earnings are withdrawable. To get this money back,{' '}
+                <button
+                  onClick={() => router.push('/account/wallet/refund')}
+                  className="font-semibold underline hover:no-underline"
+                >
+                  refund it to your card
+                </button>
+                .
+              </p>
+            </div>
+          ) : !walletLoading && withdrawable > 0 ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-800">
+                You have ₦{withdrawable.toLocaleString(undefined, { minimumFractionDigits: 2 })} from
+                refunds or earnings. You can withdraw this to your bank account anytime.
               </p>
             </div>
           ) : null}
@@ -69,7 +147,9 @@ export default function CustomerWalletPage() {
           {/* Stats Overview */}
           <div className="grid grid-cols-2 gap-3 mb-8">
             <div className="bg-green-50/50 border border-green-100 rounded-lg p-3">
-              <p className="text-xs text-gray-500 mb-1">Total In (Refunds)</p>
+              {/* total_credits now includes top-ups as well as refunds, so this can no
+                  longer be labelled "Refunds". */}
+              <p className="text-xs text-gray-500 mb-1">Total In (Refunds &amp; Top-ups)</p>
               <p className="text-lg font-bold text-gray-900">
                 ₦{(stats?.total_credits || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </p>

@@ -59,9 +59,15 @@ interface NotificationStats {
 
 export interface CustomerWalletBalance {
   balance: number;
+  /** Deposited funds: spendable at checkout, never withdrawable to a bank. */
+  spendable_balance: number;
+  /** Refunds and earnings: both spendable and withdrawable. */
+  withdrawable_balance: number;
   total_credits: number;
   total_debits: number;
   this_month_earnings: number;
+  /** Server-enforced minimum withdrawal, so the client never disagrees with it. */
+  min_withdrawal: number;
 }
 
 export interface CustomerWalletTransaction {
@@ -71,6 +77,82 @@ export interface CustomerWalletTransaction {
   description: string;
   created_at: string;
 }
+
+/**
+ * A wallet top-up. Deposited funds credit the SPENDABLE bucket only: they can be used at
+ * checkout but can never be withdrawn to a bank.
+ */
+export interface CustomerWalletDeposit {
+  id: number;
+  reference: string;
+  amount: number;
+  status: string;
+  authorization_url: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+/**
+ * A top-up that still has money on it, and how much of that could go back to the card.
+ * Partially refunded deposits report the remainder.
+ */
+export interface RefundableDeposit {
+  reference: string;
+  amount: string;
+  refundable_amount: string;
+  paid_at: string | null;
+}
+
+/**
+ * What can be returned to source right now.
+ *
+ * `refundable_amount` can be lower than `spendable_balance`: a deposit too old to have a
+ * Paystack transaction id recorded cannot be refunded, so the form is capped on this
+ * rather than on the balance.
+ */
+export interface RefundableBalance {
+  spendable_balance: string;
+  refundable_amount: string;
+  deposits: RefundableDeposit[];
+}
+
+/** A refund of deposited funds back to the card that paid. */
+export interface CustomerDepositRefund {
+  id: number;
+  reference: string;
+  deposit_reference: string;
+  amount: string;
+  status: 'PENDING' | 'PROCESSING' | 'PROCESSED' | 'FAILED';
+  failure_reason: string;
+  created_at: string;
+  settled_at: string | null;
+}
+
+export interface CustomerPaymentSettings {
+  bank_name: string;
+  bank_code: string;
+  account_number: string;
+  account_name: string;
+  recipient_code: string;
+  has_pin: boolean;
+}
+
+/**
+ * Pure helper: true only when every field the backend needs to create a
+ * Paystack transfer recipient is present. bank_code is required — without it
+ * the backend cannot resolve the destination bank.
+ */
+export const hasCompletePayoutDetails = (
+  settings?: Partial<CustomerPaymentSettings> | null
+): boolean => {
+  if (!settings) return false;
+  return Boolean(
+    settings.bank_name?.trim() &&
+      settings.bank_code?.trim() &&
+      settings.account_number?.trim() &&
+      settings.account_name?.trim()
+  );
+};
 
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -93,14 +175,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     requestCustomerWithdrawal: builder.mutation<
       { success: boolean; message: string; reference: string },
-      {
-        amount: number;
-        pin: string;
-        bank_name: string;
-        account_number: string;
-        account_name: string;
-        bank_code: string;
-      }
+      { amount: number; pin: string }
     >({
       query: (body) => ({
         url: '/user/customer/wallet/withdraw/',
@@ -108,6 +183,114 @@ export const customerApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ['CustomerWallet'],
+    }),
+
+    // Wallet top-up (deposit). Funds credit the spendable bucket, not the withdrawable one.
+    initializeWalletDeposit: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: { reference: string; amount: number; authorization_url: string };
+      },
+      { amount: number }
+    >({
+      query: (body) => ({
+        url: '/transactions/wallet/deposit/',
+        method: 'POST',
+        body,
+      }),
+      // Deliberately no invalidation: nothing is credited until Paystack is paid and the
+      // deposit is verified on return.
+    }),
+
+    verifyWalletDeposit: builder.query<
+      { success: boolean; message: string; data: CustomerWalletDeposit },
+      { reference: string }
+    >({
+      query: ({ reference }) => ({
+        url: '/transactions/wallet/deposit/verify/',
+        params: { reference },
+      }),
+      // A successful verify is the moment the balance actually changes, so refresh the
+      // wallet balance and transactions rather than leaving a stale cached balance on screen.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(customerApi.util.invalidateTags(['CustomerWallet']));
+        } catch {
+          // Verification failed; balances are unchanged, so there is nothing to refresh.
+        }
+      },
+    }),
+
+    getWalletDeposits: builder.query<
+      { count: number; next: string | null; previous: string | null; results: CustomerWalletDeposit[] },
+      // page/page_size, not limit/offset: the endpoint uses PageNumberPagination, which
+      // ignores limit/offset entirely and would silently serve page 1 forever.
+      { page?: number; page_size?: number } | void
+    >({
+      query: (params) => ({
+        url: '/transactions/wallet/deposits/',
+        params: params || undefined,
+      }),
+      providesTags: ['CustomerWallet'],
+    }),
+
+    // Refunding deposits to source. The only way deposited funds leave the wallet without
+    // being spent, since they are never withdrawable to a bank.
+    getRefundableBalance: builder.query<
+      { success: boolean; data: RefundableBalance },
+      void
+    >({
+      query: () => '/transactions/wallet/deposit/refund/',
+      providesTags: ['CustomerWallet'],
+    }),
+
+    // The balance drops as soon as this succeeds: the server debits at request time so the
+    // money cannot also be spent at checkout while the refund is in flight. So the wallet
+    // cache is invalidated here even though the refund has not settled yet.
+    requestDepositRefund: builder.mutation<
+      { success: boolean; message: string; data: CustomerDepositRefund[] },
+      { amount: number }
+    >({
+      query: (body) => ({
+        url: '/transactions/wallet/deposit/refund/',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['CustomerWallet'],
+    }),
+
+    getDepositRefunds: builder.query<
+      { count: number; next: string | null; previous: string | null; results: CustomerDepositRefund[] },
+      { page?: number; page_size?: number } | void
+    >({
+      query: (params) => ({
+        url: '/transactions/wallet/deposit/refunds/',
+        params: params || undefined,
+      }),
+      providesTags: ['CustomerWallet'],
+    }),
+
+    // Payment Settings
+    getCustomerPaymentSettings: builder.query<
+      { success: boolean; data: CustomerPaymentSettings },
+      void
+    >({
+      query: () => '/user/customer/payment-settings/',
+      providesTags: ['CustomerPaymentSettings'],
+    }),
+
+    updateCustomerPaymentSettings: builder.mutation<
+      { success: boolean; message: string },
+      Partial<CustomerPaymentSettings>
+    >({
+      query: (body) => ({
+        url: '/user/customer/payment-settings/',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['CustomerPaymentSettings'],
     }),
 
     setCustomerPaymentPin: builder.mutation<
@@ -266,5 +449,13 @@ export const {
   useGetCustomerWalletQuery,
   useGetCustomerWalletTransactionsQuery,
   useRequestCustomerWithdrawalMutation,
+  useInitializeWalletDepositMutation,
+  useVerifyWalletDepositQuery,
+  useGetWalletDepositsQuery,
+  useGetRefundableBalanceQuery,
+  useRequestDepositRefundMutation,
+  useGetDepositRefundsQuery,
   useSetCustomerPaymentPinMutation,
+  useGetCustomerPaymentSettingsQuery,
+  useUpdateCustomerPaymentSettingsMutation,
 } = customerApi;
