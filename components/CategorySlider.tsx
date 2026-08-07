@@ -29,10 +29,11 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories: hard
     // Only display what's in the API, but swap in hardcoded images where available
     return apiCategories.map((apiCat: any) => {
       const hardcodedMatch = hardcodedMap.get(apiCat.name.toLowerCase());
-      
+
       return {
         id: apiCat.id,
         name: apiCat.name,
+        slug: apiCat.slug,
         // Use hardcoded image if available, otherwise use API image
         image: hardcodedMatch?.image || apiCat.image
       };
@@ -56,8 +57,8 @@ const CategorySlider: React.FC<{ categories: Category[] }> = ({ categories: hard
         <div className="flex gap-3 px-1">
           {allCategories.map((category) => (
             <div key={category.id} className="shrink-0">
-              <Link 
-                href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+              <Link
+                href={`/category/${category.slug}`}
                 className="block group"
               >
                 {/* Card Container */}

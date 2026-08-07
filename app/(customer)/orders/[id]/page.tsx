@@ -295,24 +295,19 @@ export default function OrderDetailsPage() {
                     </div>
                   </div>
 
-                  {/* Progress bar with a 50% "ships" marker */}
+                  {/* Progress bar */}
                   <div className="mb-1">
                     <div className="relative h-3 w-full rounded-full bg-blue-100 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-system-blue-light transition-all"
                         style={{ width: `${paidPct}%` }}
                       />
-                      <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-amber-500 -translate-x-1/2" />
                     </div>
                     <div className="flex justify-between mt-1">
                       <span className="text-[10px] text-gray-500">{Math.round(paidPct)}% paid</span>
-                      <span className="text-[10px] font-medium text-amber-600">ships at 50%</span>
+                      <span className="text-[10px] font-medium text-amber-600">ships once fully paid</span>
                     </div>
                   </div>
-
-                  {plan.paid_fraction >= 0.5 && !isCompleted && (
-                    <p className="text-xs text-green-700 font-medium mt-2">✓ Half paid — your order can ship.</p>
-                  )}
 
                   {isCompleted ? (
                     <div className="mt-3 p-3 rounded-md border border-green-100 bg-green-50">
@@ -373,7 +368,7 @@ export default function OrderDetailsPage() {
                             <span className="text-sm font-medium text-gray-900">Use wallet balance</span>
                             <span className="text-xs text-gray-500">
                               ₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                              available{useInstallmentWallet ? ' — anything left over goes on your card' : ''}
+                              available{useInstallmentWallet ? ' — your wallet must cover the full amount above' : ''}
                             </span>
                           </span>
                         </label>

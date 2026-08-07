@@ -98,9 +98,16 @@ export default function OrderManagement() {
                       </p>
                       <p className="text-xs text-gray-600">{order.ordered_at ? format(new Date(order.ordered_at), 'PPP') : 'N/A'}</p>
                     </div>
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status || order.current_status)}`}>
-                      {order.status || order.current_status}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status || order.current_status)}`}>
+                        {order.status || order.current_status}
+                      </span>
+                      {order.installment_plan && (
+                        <span className="px-2 py-0.5 text-[10px] rounded-full font-medium bg-system-blue-light/10 text-system-blue-light uppercase">
+                          Installment
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </button>

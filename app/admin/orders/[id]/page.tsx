@@ -201,7 +201,19 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                    <label className="text-xs text-gray-600 block mb-1">Shipping Address</label>
                    <p className="text-sm font-medium text-gray-900">
                      {order.shipping_address.address}, {order.shipping_address.city}, {order.shipping_address.state}
+                     {order.shipping_address.country ? `, ${order.shipping_address.country}` : ''}
+                     {order.shipping_address.postal_code ? ` ${order.shipping_address.postal_code}` : ''}
                    </p>
+                   {!!order.customer_lat && !!order.customer_lng && (
+                     <a
+                       href={`https://www.google.com/maps?q=${order.customer_lat},${order.customer_lng}`}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="text-sm font-medium text-system-blue-light hover:underline"
+                     >
+                       View on map ›
+                     </a>
+                   )}
                 </div>
               )}
             </div>
@@ -357,11 +369,10 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
                     <div>
                       <div className="relative h-3 w-full rounded-full bg-gray-200 overflow-hidden">
                         <div className="h-full rounded-full bg-system-blue-light" style={{ width: `${paidPct}%` }} />
-                        <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-amber-500 -translate-x-1/2" />
                       </div>
                       <div className="flex justify-between mt-1">
                         <span className="text-[10px] text-gray-500">{Math.round(paidPct)}% paid</span>
-                        <span className="text-[10px] font-medium text-amber-600">ships at 50%</span>
+                        <span className="text-[10px] font-medium text-amber-600">ships once fully paid</span>
                       </div>
                     </div>
 
