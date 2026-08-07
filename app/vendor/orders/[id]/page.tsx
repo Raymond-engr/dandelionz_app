@@ -145,6 +145,40 @@ export default function VendorOrderDetailsPage({ params: paramsPromise }: Vendor
             </div>
           </div>
 
+          {/* Installment plan — read-only. Vendors can't act on it; this just explains why an
+              order may already be PAID/SHIPPED while collection is still running, and that
+              payout for it lands once the plan hits 100%, not before. */}
+          {order.installment_plan && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Installment Plan</h3>
+              <div className="border rounded-lg p-4">
+                {order.installment_plan.status === 'COMPLETED' ? (
+                  <p className="text-sm font-semibold text-green-700">Fully paid — payout released</p>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs text-gray-500">
+                        {Math.round((order.installment_plan.paid_fraction ?? 0) * 100)}% paid
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        ₦{order.installment_plan.amount_paid.toLocaleString()} of ₦{order.installment_plan.total_amount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full mb-2 overflow-hidden">
+                      <div
+                        className="h-full bg-system-blue-light rounded-full"
+                        style={{ width: `${Math.min(Math.max((order.installment_plan.paid_fraction ?? 0) * 100, 0), 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-amber-700">
+                      Customer is still paying this off. Your payout is released once it&apos;s fully paid.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tracking Timeline */}
           {trackingSteps.length > 0 && (
             <div className="mt-8">

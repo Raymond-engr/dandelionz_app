@@ -1,24 +1,59 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
-import { useInitializeInstallmentCheckoutMutation } from '@/lib/api/publicApi';
+import { useGetCartQuery, useInitializeInstallmentCheckoutMutation } from '@/lib/api/publicApi';
 import toast from 'react-hot-toast';
 
 type InstallmentDuration = '1_month' | '3_months' | '6_months' | '8_months';
 
+// Advisory checkpoint count per duration, mirroring InstallmentPlan.DURATION_INSTALLMENTS on
+// the backend - used only to prefill a sensible default amount. The 1-month plan uses 4
+// weekly checkpoints, not 1 monthly lump sum.
+const DURATION_CHECKPOINTS: Record<InstallmentDuration, number> = {
+  '1_month': 4,
+  '3_months': 3,
+  '6_months': 6,
+  '8_months': 8,
+};
+
 export default function InstallmentsPage() {
   const router = useRouter();
-  
+
   const [duration, setDuration] = useState<InstallmentDuration>('3_months');
+  const [amount, setAmount] = useState('');
+  const hasEditedAmount = useRef(false);
+  const { data: cartResponse } = useGetCartQuery();
+  const cartTotal = parseFloat(cartResponse?.data?.total || '0');
   const [initializeInstallment, { isLoading, error }] = useInitializeInstallmentCheckoutMutation();
 
+  // Prefill with the advisory per-month amount for the selected duration; the customer is
+  // free to change it before proceeding. Stops touching the field once they've typed into
+  // it themselves, so switching duration to compare plans doesn't wipe out their input.
+  useEffect(() => {
+    if (cartTotal <= 0 || hasEditedAmount.current) return;
+    setAmount((cartTotal / DURATION_CHECKPOINTS[duration]).toFixed(2));
+  }, [cartTotal, duration]);
+
   const handleProceed = async () => {
+    const parsedAmount = parseFloat(amount);
+    if (amount && (isNaN(parsedAmount) || parsedAmount <= 0)) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    if (cartTotal > 0 && parsedAmount > cartTotal) {
+      toast.error(`Amount exceeds your order total of ₦${cartTotal.toLocaleString()}.`);
+      return;
+    }
+
     try {
-        const payload = await initializeInstallment({ duration }).unwrap();
-        
+        const payload = await initializeInstallment({
+          duration,
+          ...(amount ? { amount: parsedAmount } : {}),
+        }).unwrap();
+
         if (payload.data?.authorization_url) {
             // Redirect to Paystack for the first installment
             window.location.href = payload.data.authorization_url;
@@ -123,6 +158,32 @@ export default function InstallmentsPage() {
                     </div>
                 </label>
             ))}
+          </div>
+
+          <h2 className="text-base font-semibold text-gray-900 mb-2">First Payment Amount</h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Pay as much as you like now. The rest becomes your running balance
+            {cartTotal > 0 ? ` — order total is ₦${cartTotal.toLocaleString()}.` : '.'}
+          </p>
+          <div className="mb-8">
+            <label className="block text-xs text-gray-500 mb-1">Amount to pay (₦)</label>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={amount}
+              onChange={(e) => {
+                hasEditedAmount.current = true;
+                setAmount(e.target.value);
+              }}
+              disabled={isLoading}
+              placeholder="0.00"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+            />
+            <p className="text-[11px] text-gray-500 mt-2">
+              This first payment is by card via Paystack. Once your plan starts, you can pay the
+              rest from your wallet or by card, whichever you prefer.
+            </p>
           </div>
 
           {/* Proceed Button */}

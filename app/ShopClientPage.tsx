@@ -55,12 +55,15 @@ export default function ShopClientPage() {
 
   return (
     <AppLayout showBottomNav={true}>
-      <div className="bg-white p-4">
+      <div className="bg-white">
         {/* Header */}
-        <div className="pb-4">
-          <h1 className="text-lg font-semibold text-gray-900 mb-4">Home</h1>
-          
-          {/* Search Bar */}
+        <div className="p-4 pb-4">
+          <h1 className="text-lg font-semibold text-gray-900">Home</h1>
+        </div>
+
+        {/* Search bar + filter: sticky, stays pinned to the top of the viewport
+            while the rest of the homepage scrolls underneath it. */}
+        <div className="sticky top-0 z-10 bg-white px-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
               {/* Opens the dedicated search page; this bar never filters the
@@ -74,16 +77,16 @@ export default function ShopClientPage() {
                 onClick={() => router.push('/search')}
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-system-blue-light focus:border-transparent"
               />
-              <svg 
+              <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            
+
             {/* Filter Button */}
             <button
               onClick={() => setShowFilter(true)}
@@ -96,6 +99,7 @@ export default function ShopClientPage() {
           </div>
         </div>
 
+        <div className="p-4 pt-4">
         {/* Hero Slider */}
         <div className="mb-6">
           <HeroSlider isLoading={productsLoading} />
@@ -131,6 +135,7 @@ export default function ShopClientPage() {
           ) : (
             <ProductGrid products={products} hideAddToCart={true} />
           )}
+        </div>
         </div>
 
         {/* Filter Modal */}
