@@ -3,36 +3,28 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { Product, useAddToCartMutation, useAddToWishlistMutation, useRemoveFromWishlistMutation, useGetCartQuery, useGetWishlistQuery, useRemoveFromCartMutation } from '@/lib/api/publicApi';
+import { Product, useAddToCartMutation, useAddToWishlistMutation, useRemoveFromWishlistMutation, useRemoveFromCartMutation } from '@/lib/api/publicApi';
 import { useAppSelector } from '@/lib/hooks';
+import { useCartStatus, useWishlistStatus } from '@/lib/hooks/use-product-status';
 import toast from 'react-hot-toast';
+import { memo } from 'react';
 
 interface ProductCardProps {
   product: Product;
   hideAddToCart?: boolean;
 }
 
-export default function ProductCard({ product, hideAddToCart = false }: ProductCardProps) {
+function ProductCard({ product, hideAddToCart = false }: ProductCardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  const { data: cartResponse } = useGetCartQuery(undefined, {
-    skip: !isAuthenticated
-  });
-  const { data: wishlistResponse } = useGetWishlistQuery(undefined, {
-    skip: !isAuthenticated
-  });
+  const { isInCart, cartItem } = useCartStatus(product.slug);
+  const { isInWishlist } = useWishlistStatus(product.slug);
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
   const [removeFromCart, { isLoading: isRemovingFromCart }] = useRemoveFromCartMutation();
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
   const [removeFromWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveFromWishlistMutation();
-
-  const cartItems = cartResponse?.data?.items || [];
-  const wishlistItems = wishlistResponse || [];
-  
-  const isInCart = cartItems.some((item: any) => item.product_details?.slug === product.slug);
-  const isInWishlist = wishlistItems.some((item: any) => item.product_details?.slug === product.slug);
 
   const handleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -76,9 +68,6 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
       router.push(`/product/${product.slug}`);
       return;
     }
-
-    // For the generic card, find the first matching item in cart
-    const cartItem = cartItems.find((item: any) => item.product_details?.slug === product.slug);
 
     try {
       if (isInCart && cartItem) {
@@ -187,3 +176,5 @@ export default function ProductCard({ product, hideAddToCart = false }: ProductC
     </Link>
   );
 }
+
+export default memo(ProductCard);
