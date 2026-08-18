@@ -7,7 +7,8 @@ import ProductGrid from '@/components/ProductGrid';
 import FilterModal from '@/components/FilterModal';
 import HeroSlider from '@/components/HeroSlider';
 import CategorySlider from '@/components/CategorySlider';
-import { useGetProductsQuery, useGetRecommendationsQuery } from '@/lib/api/publicApi';
+import { Product, useGetProductsQuery, useGetRecommendationsQuery } from '@/lib/api/publicApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
 import RecommendationSection from '@/components/RecommendationSection';
 import { CATEGORIES_FOR_NAV } from '@/lib/categories';
@@ -25,13 +26,23 @@ export default function ShopClientPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [ordering, setOrdering] = useState('');
 
-  const { data: productsData, isLoading: productsLoading, isFetching, error: productsError, refetch } = useGetProductsQuery({
+  const filters = {
     category: selectedCategory || undefined,
     min_price: minPrice > 0 ? minPrice : undefined,
     max_price: maxPrice < 500 ? maxPrice : undefined,
     price: price > 0 ? price : undefined,
     ordering: ordering || undefined,
-  });
+  };
+  const {
+    items: products,
+    isInitialLoading: productsLoading,
+    isFetchingMore,
+    loadMore,
+    hasMore,
+    error: productsError,
+    refresh,
+  } = useInfiniteList(useGetProductsQuery, filters, selectStandardEnvelope<Product>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
   // Personalised when we know who's asking, trending otherwise. Deliberately
   // independent of the filter state below: this row is a way out of the
@@ -50,8 +61,6 @@ export default function ShopClientPage() {
     setSelectedCategory(filters.category || '');
     setShowFilter(false);
   };
-
-  const products = productsData?.data || [];
 
   return (
     <AppLayout showBottomNav={true}>
@@ -120,20 +129,28 @@ export default function ShopClientPage() {
         {/* Products Section */}
         <div className="pb-4">
           <h2 className="text-xl font-bold text-gray-900 mb-4">All Products</h2>
-          {isFetching ? (
+          {productsLoading ? (
             <ProductGridSkeleton hideAddToCart={true} />
           ) : productsError ? (
             <div className="text-center">
               <p className="text-red-600 mb-4">Failed to load products.</p>
               <button 
-                onClick={() => refetch()}
+                onClick={() => refresh()}
                 className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
               >
                 Retry
               </button>
             </div>
           ) : (
-            <ProductGrid products={products} hideAddToCart={true} />
+            <>
+              <ProductGrid products={products} hideAddToCart={true} />
+              <div ref={sentinelRef} className="h-1" />
+              {isFetchingMore && (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </>
           )}
         </div>
         </div>

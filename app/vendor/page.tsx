@@ -14,11 +14,11 @@ import Skeleton from '@/components/ui/Skeleton';
 export default function VendorHomePage() {
   const { data: analytics, isLoading: analyticsLoading } = useGetVendorAnalyticsSelfQuery();
   const { data: profile, isLoading: profileLoading } = useGetVendorProfileQuery();
-  const { data: ordersData, isLoading: ordersLoading } = useGetVendorOrdersListQuery({ limit: 5 });
+  const { data: ordersData, isLoading: ordersLoading } = useGetVendorOrdersListQuery({ page_size: 5 });
 
   const vendorName = profile?.data?.user?.full_name || profile?.data?.store_name || 'Vendor';
   const { total_balance: totalBalance, total_orders: totalOrders } = analytics?.data || {};
-  const recentOrders = ordersData?.data || [];
+  const recentOrders = ordersData?.data?.results || [];
 
   return (
     <AppLayout showBottomNav={true} userRole="vendor">

@@ -5,21 +5,38 @@ import { Users, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAllUsersQuery, useGetRefundFlagsQuery } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectBareEnvelope } from '@/lib/hooks/use-infinite-list';
 import UserListItemSkeleton from '@/components/UserListItemSkeleton';
 import Skeleton from '@/components/ui/Skeleton';
 import { User } from '@/lib/api/adminApi';
 
 export default function UserManagement() {
   const router = useRouter();
-  const { data: usersData, isLoading, error } = useGetAllUsersQuery({});
+
+  const {
+    items: users,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error,
+  } = useInfiniteList(useGetAllUsersQuery, {}, selectBareEnvelope<User>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
+
+  // Total/active/suspended used to be counted client-side over the fetched
+  // array, which only worked because the whole (unpaginated) user list was
+  // always in memory. Now that only one page is loaded at a time, those
+  // counts need to come from the backend's `count` field instead - each a
+  // cheap page_size=1 request, since DRF still returns the true total count
+  // for the filter regardless of page size.
+  const { data: totalResponse } = useGetAllUsersQuery({ page_size: 1 });
+  const { data: activeResponse } = useGetAllUsersQuery({ status: 'ACTIVE', page_size: 1 });
+  const totalUsers = totalResponse?.count ?? 0;
+  const activeUsers = activeResponse?.count ?? 0;
+  const suspendedUsers = Math.max(totalUsers - activeUsers, 0);
+
   const { data: refundFlagsData } = useGetRefundFlagsQuery();
-
   const flaggedCount = refundFlagsData?.data?.count ?? 0;
-
-  const users = usersData?.data || [];
-  const totalUsers = users.length;
-  const activeUsers = users.filter((user: User) => user.status === 'ACTIVE').length;
-  const suspendedUsers = totalUsers - activeUsers;
 
   const handleUserClick = (userId: string) => {
     router.push(`/admin/users/${userId}`);
@@ -102,6 +119,12 @@ export default function UserManagement() {
                   </span>
                 </button>
               ))}
+              <div ref={sentinelRef} className="h-1" />
+              {isFetchingMore && (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
           )}
         </div>

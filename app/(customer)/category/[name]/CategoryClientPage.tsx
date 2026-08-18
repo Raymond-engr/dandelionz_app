@@ -3,7 +3,8 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
-import { useGetCategoriesQuery, useGetProductsQuery } from '@/lib/api/publicApi';
+import { Product, useGetCategoriesQuery, useGetProductsQuery } from '@/lib/api/publicApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import ProductGrid from '@/components/ProductGrid';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -11,11 +12,21 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 export default function CategoryClientPage({ categoryName: categorySlug }: { categoryName: string }) {
   const router = useRouter();
 
-  const { data: productsData, isFetching, error, refetch } = useGetProductsQuery({
-    category: categorySlug,
-  }, {
-    skip: !categorySlug, // Skip query if categorySlug is not yet defined
-  });
+  const {
+    items: products,
+    isInitialLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error,
+    refresh,
+  } = useInfiniteList(
+    useGetProductsQuery,
+    { category: categorySlug },
+    selectStandardEnvelope<Product>,
+    { skip: !categorySlug },
+  );
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
   // The slug isn't fit for display (it may lose characters like "&" that don't
   // survive slugification) - look up the real category name by slug instead of
@@ -27,8 +38,6 @@ export default function CategoryClientPage({ categoryName: categorySlug }: { cat
   );
   const displayName =
     matchedCategory?.name || (categorySlug || '').replace(/-/g, ' ');
-
-  const products = productsData?.data || [];
 
   return (
     <AppLayout showBottomNav={true}>
@@ -46,20 +55,28 @@ export default function CategoryClientPage({ categoryName: categorySlug }: { cat
         {/* Products Grid for Category */}
         <div className="pb-4 pt-4">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Products in {displayName}</h2>
-          {isFetching ? (
+          {isInitialLoading ? (
             <LoadingSpinner />
           ) : error ? (
             <div className="text-center">
               <p className="text-red-600 mb-4">Failed to load products for category: {displayName}</p>
               <button 
-                onClick={() => refetch()}
+                onClick={() => refresh()}
                 className="px-4 py-2 bg-system-blue-light text-white rounded-lg"
               >
                 Retry
               </button>
             </div>
           ) : (
-            <ProductGrid products={products} />
+            <>
+              <ProductGrid products={products} />
+              <div ref={sentinelRef} className="h-1" />
+              {isFetchingMore && (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
