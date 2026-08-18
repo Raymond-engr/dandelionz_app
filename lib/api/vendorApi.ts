@@ -61,7 +61,7 @@ interface Product {
   updated_at: string;
 }
 
-interface Order {
+export interface Order {
   uuid: string;
   order_id: string;
   customer: {
@@ -343,12 +343,17 @@ export const vendorApi = baseApi.injectEndpoints({
       providesTags: ["Draft"],
     }),
 
-    getDraftDetails: builder.query<{ success: boolean; data: Product }, string>({
-      query: (slug) => `/store/vendor/drafts/${slug}/`,
-      providesTags: ["Draft"],
-    }),
+    getDraftDetails: builder.query<{ success: boolean; data: Product }, string>(
+      {
+        query: (slug) => `/store/vendor/drafts/${slug}/`,
+        providesTags: ["Draft"],
+      },
+    ),
 
-    createDraft: builder.mutation<{ success: boolean; data: Product }, FormData>({
+    createDraft: builder.mutation<
+      { success: boolean; data: Product },
+      FormData
+    >({
       query: (body) => ({
         url: "/store/products/create/",
         method: "POST",
@@ -403,14 +408,43 @@ export const vendorApi = baseApi.injectEndpoints({
     }),
 
     getVendorOrdersList: builder.query<
-      { success: boolean; data: Order[] },
-      { limit?: number; offset?: number; status?: string } // Example params
+      {
+        success: boolean;
+        data: {
+          count: number;
+          next: string | null;
+          previous: string | null;
+          results: Order[];
+        };
+      },
+      {
+        limit?: number;
+        offset?: number;
+        status?: string;
+        page?: number;
+        page_size?: number;
+      }
     >({
       query: (params) => ({
         url: "/user/vendor/orders/list/",
         params,
       }),
       providesTags: ["Order"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...queryArgs };
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg.page || arg.page === 1 || !currentCache?.data?.results) {
+          return newItems;
+        }
+        currentCache.data.results.push(...newItems.data.results);
+        currentCache.data.next = newItems.data.next;
+        currentCache.data.count = newItems.data.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     getVendorOrderDetails: builder.query<
@@ -609,7 +643,10 @@ export const vendorApi = baseApi.injectEndpoints({
       query: () => "/user/utility/banks/",
     }),
 
-    verifyBankAccount: builder.mutation<BankVerificationResponse, { account_number: string; bank_code: string }>({
+    verifyBankAccount: builder.mutation<
+      BankVerificationResponse,
+      { account_number: string; bank_code: string }
+    >({
       query: (body) => ({
         url: "/user/utility/verify-account/",
         method: "POST",

@@ -11,10 +11,12 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useRecentSearches } from '@/lib/hooks/use-recent-searches';
 import { RECOMMENDATION_LIMIT } from '@/lib/recommendations';
 import {
+  Product,
   useGetProductsQuery,
   useGetRecommendationsQuery,
   useGetSearchSuggestionsQuery,
 } from '@/lib/api/publicApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useState } from 'react';
 
@@ -52,12 +54,19 @@ function SearchPageContent() {
       !showSuggestions || debouncedQuery.trim().length < MIN_SUGGESTION_LENGTH,
   });
 
-  const { data: resultData, isFetching } = useGetProductsQuery(
-    { search: submitted || undefined, ...filters },
+  const {
+    items: products,
+    isInitialLoading: isFetching,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+  } = useInfiniteList(
+    useGetProductsQuery,
+    { search: submitted, ...filters },
+    selectStandardEnvelope<Product>,
     { skip: !submitted },
   );
-
-  const products = resultData?.data ?? [];
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
   // A zero-result search is a dead end, so offer trending as a way onward.
   // Only asked for once a search has actually settled on nothing: skipping
@@ -212,6 +221,12 @@ function SearchPageContent() {
           &ldquo;{submitted}&rdquo;
         </p>
         <ProductGrid products={products} />
+        <div ref={sentinelRef} className="h-1" />
+        {isFetchingMore && (
+          <div className="flex justify-center py-6">
+            <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
       </div>
     );
   };

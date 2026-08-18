@@ -239,7 +239,7 @@ interface AdminProduct {
   name: string;
   description: string;
   price: string;
-  category: number; 
+  category: number;
   category_name: string;
   stock: number;
   image: string | null; // Product image URL
@@ -251,7 +251,7 @@ interface AdminProduct {
     store_name: string;
     email: string;
   };
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Specific status for admin actions
+  status: "PENDING" | "APPROVED" | "REJECTED"; // Specific status for admin actions
   commission_rate?: string | null; // Per-product commission override (decimal); null = vendor/platform rate
 }
 
@@ -537,17 +537,26 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Admin Wallet & Withdrawals
-    getWalletStats: builder.query<{ success: boolean; data: WalletStats }, void>({
+    getWalletStats: builder.query<
+      { success: boolean; data: WalletStats },
+      void
+    >({
       query: () => "/user/admin/wallet/",
       providesTags: ["Wallet"],
     }),
 
-    getWalletTransactions: builder.query<{ success: boolean; data: WalletTransaction[] }, void>({
+    getWalletTransactions: builder.query<
+      { success: boolean; data: WalletTransaction[] },
+      void
+    >({
       query: () => "/user/admin/wallet/transactions/",
       providesTags: ["Wallet"],
     }),
 
-    adminRequestWithdrawal: builder.mutation<{ success: boolean; message: string }, { amount: string; pin: string }>({
+    adminRequestWithdrawal: builder.mutation<
+      { success: boolean; message: string },
+      { amount: string; pin: string }
+    >({
       query: (body) => ({
         url: "/user/admin/wallet/withdraw/",
         method: "POST",
@@ -557,12 +566,18 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Admin Payment Settings
-    getAdminPaymentSettings: builder.query<{ success: boolean; data: AdminPaymentSettings }, void>({
+    getAdminPaymentSettings: builder.query<
+      { success: boolean; data: AdminPaymentSettings },
+      void
+    >({
       query: () => "/user/admin/payment-settings/",
       providesTags: ["AdminPaymentSettings"],
     }),
 
-    updateAdminPaymentSettings: builder.mutation<{ success: boolean; data: AdminPaymentSettings }, Partial<AdminPaymentSettings>>({
+    updateAdminPaymentSettings: builder.mutation<
+      { success: boolean; data: AdminPaymentSettings },
+      Partial<AdminPaymentSettings>
+    >({
       query: (body) => ({
         url: "/user/admin/payment-settings/",
         method: "PUT",
@@ -571,7 +586,10 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ["AdminPaymentSettings"],
     }),
 
-    changePaymentPin: builder.mutation<{ success: boolean; message: string }, { current_pin?: string; new_pin: string; confirm_pin: string }>({
+    changePaymentPin: builder.mutation<
+      { success: boolean; message: string },
+      { current_pin?: string; new_pin: string; confirm_pin: string }
+    >({
       query: (body) => ({
         url: "/user/admin/payment-settings/pin/",
         method: "POST",
@@ -579,20 +597,29 @@ export const adminApi = baseApi.injectEndpoints({
       }),
     }),
 
-    forgotPaymentPin: builder.mutation<{ success: boolean; message: string }, void>({
+    forgotPaymentPin: builder.mutation<
+      { success: boolean; message: string },
+      void
+    >({
       query: () => ({
         url: "/user/admin/payment-settings/pin/forgot/",
         method: "POST",
       }),
     }),
-    
+
     // Settlements & Payouts (Platform Dashboard)
-    getSettlementSummary: builder.query<{ success: boolean; data: SettlementSummary }, void>({
+    getSettlementSummary: builder.query<
+      { success: boolean; data: SettlementSummary },
+      void
+    >({
       query: () => "/user/admin/settlements/summary/",
       providesTags: ["Settlement"],
     }),
 
-    getVendorSettlements: builder.query<{ success: boolean; data: VendorSettlement[] }, { status?: string }>({
+    getVendorSettlements: builder.query<
+      { success: boolean; data: VendorSettlement[] },
+      { status?: string }
+    >({
       query: (params) => ({
         url: "/user/admin/settlements/vendor/",
         params,
@@ -601,7 +628,10 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Disputes
-    getAllDisputes: builder.query<{ success: boolean; data: Dispute[] }, { status?: string }>({
+    getAllDisputes: builder.query<
+      { success: boolean; data: Dispute[] },
+      { status?: string }
+    >({
       query: (params) => ({
         url: "/user/admin/settlements/disputes/",
         params,
@@ -609,7 +639,10 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Settlement"],
     }),
 
-    resolveDispute: builder.mutation<{ success: boolean; message: string }, { id: string; action: string; admin_note?: string }>({
+    resolveDispute: builder.mutation<
+      { success: boolean; message: string },
+      { id: string; action: string; admin_note?: string }
+    >({
       query: ({ id, ...body }) => ({
         url: `/user/admin/settlements/disputes/${id}/resolve/`,
         method: "POST",
@@ -619,7 +652,15 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Refunds
-    getAdminRefunds: builder.query<{ success: boolean; data: RefundRequest[]; count: number; pending_count: number }, { status?: string } | void>({
+    getAdminRefunds: builder.query<
+      {
+        success: boolean;
+        data: RefundRequest[];
+        count: number;
+        pending_count: number;
+      },
+      { status?: string } | void
+    >({
       query: (params) => ({
         url: "/user/admin/finance/refunds/",
         params: params || undefined,
@@ -627,7 +668,14 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Refunds"],
     }),
 
-    processAdminRefund: builder.mutation<{ success: boolean; message: string }, { refund_id: number; action: "APPROVE" | "REJECT"; rejection_reason?: string }>({
+    processAdminRefund: builder.mutation<
+      { success: boolean; message: string },
+      {
+        refund_id: number;
+        action: "APPROVE" | "REJECT";
+        rejection_reason?: string;
+      }
+    >({
       query: (body) => ({
         url: "/user/admin/finance/refunds/process/",
         method: "POST",
@@ -639,7 +687,12 @@ export const adminApi = baseApi.injectEndpoints({
     // Finance ledger. The list, the summary and the export all take the same filter
     // params, so a downloaded file always matches what was on screen.
     getLedger: builder.query<
-      { count: number; next: string | null; previous: string | null; results: LedgerEntry[] },
+      {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: LedgerEntry[];
+      },
       LedgerFilters | void
     >({
       query: (params) => ({
@@ -672,7 +725,10 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Analytics
-    getAnalytics: builder.query<{ success: boolean; data: Analytics }, AnalyticsQueryParams | void>({
+    getAnalytics: builder.query<
+      { success: boolean; data: Analytics },
+      AnalyticsQueryParams | void
+    >({
       query: (params) => ({
         url: "/user/admin/analytics/",
         params: params || undefined,
@@ -692,15 +748,46 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // User Management
+    // AdminUserListView's paginated branch returns DRF's paginated envelope
+    // directly (count/next/previous/results) with no outer {success, data}
+    // wrapper - that wrapper only applies to its unpaginated fallback path,
+    // which this app never hits now that pagination_class is set. See
+    // authentication/views_admin.py AdminUserListView.list().
     getAllUsers: builder.query<
-      { success: boolean; data: User[] },
-      { role?: string; status?: string }
+      {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: User[];
+      },
+      {
+        role?: string;
+        status?: string;
+        search?: string;
+        page?: number;
+        page_size?: number;
+      }
     >({
       query: (params) => ({
         url: "/user/admin/users/",
         params,
       }),
       providesTags: ["User"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...queryArgs };
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg.page || arg.page === 1 || !currentCache?.results) {
+          return newItems;
+        }
+        currentCache.results.push(...newItems.results);
+        currentCache.next = newItems.next;
+        currentCache.count = newItems.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     getUserDetails: builder.query<{ success: boolean; data: User }, string>({
@@ -784,7 +871,7 @@ export const adminApi = baseApi.injectEndpoints({
       {
         query: (uuid) => `/user/admin/vendors/${uuid}/`,
         providesTags: ["Vendor"],
-      }
+      },
     ),
 
     approveVendor: builder.mutation<
@@ -853,12 +940,13 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ["Product"],
     }),
 
-    adminGetVendorOrders: builder.query<{ success: boolean; data: Order[] }, string>(
-      {
-        query: (uuid) => `/user/admin/vendors/${uuid}/orders/`,
-        providesTags: ["Order"],
-      }
-    ),
+    adminGetVendorOrders: builder.query<
+      { success: boolean; data: Order[] },
+      string
+    >({
+      query: (uuid) => `/user/admin/vendors/${uuid}/orders/`,
+      providesTags: ["Order"],
+    }),
 
     adminGetVendorAnalytics: builder.query<
       { success: boolean; data: Analytics },
@@ -885,13 +973,15 @@ export const adminApi = baseApi.injectEndpoints({
         url: "/user/admin/orders/",
         params,
       }),
-      transformResponse: (response: { success: boolean; data: Order[] }) => response.data,
+      transformResponse: (response: { success: boolean; data: Order[] }) =>
+        response.data,
       providesTags: ["Order"],
     }),
 
     getAdminOrderDetails: builder.query<Order, string>({
       query: (order_id) => `/user/admin/orders/${order_id}/`,
-      transformResponse: (response: { success: boolean; data: Order }) => response.data,
+      transformResponse: (response: { success: boolean; data: Order }) =>
+        response.data,
       providesTags: ["Order"],
     }),
 
@@ -924,7 +1014,8 @@ export const adminApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      transformResponse: (response: { success: boolean; data: Order }) => response.data,
+      transformResponse: (response: { success: boolean; data: Order }) =>
+        response.data,
       invalidatesTags: ["Order"],
     }),
 
@@ -1320,7 +1411,10 @@ export const adminApi = baseApi.injectEndpoints({
       query: () => "/user/utility/banks/",
     }),
 
-    verifyBankAccount: builder.mutation<BankVerificationResponse, { account_number: string; bank_code: string }>({
+    verifyBankAccount: builder.mutation<
+      BankVerificationResponse,
+      { account_number: string; bank_code: string }
+    >({
       query: (body) => ({
         url: "/user/utility/verify-account/",
         method: "POST",

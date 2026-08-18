@@ -113,7 +113,7 @@ export interface InstallmentPayment {
   id: number;
   payment_number: number;
   amount: string;
-  status: 'PAID' | 'PENDING' | 'FAILED';
+  status: "PAID" | "PENDING" | "FAILED";
   due_date: string;
   payment_date: string | null;
   reference: string;
@@ -133,7 +133,7 @@ export interface InstallmentPlan {
   number_of_installments: number;
   paid_installments_count: number;
   pending_installments_count: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DEFAULTED';
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED" | "DEFAULTED";
   is_fully_paid: boolean;
   start_date: string;
   created_at: string;
@@ -168,9 +168,16 @@ export interface Cart {
   updated_at: string;
 }
 
+// /store/products/ now returns DRF's standard paginated envelope
+// (see backend store/views.py ProductListView / StoreListPagination).
 type GetProductsResponse = {
   success: boolean;
-  data: Product[];
+  data: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Product[];
+  };
 };
 
 export type SearchSuggestion = {
@@ -211,9 +218,9 @@ export const publicApi = baseApi.injectEndpoints({
     // Products
     getProducts: builder.query<
       GetProductsResponse,
-      { 
-        category?: string; 
-        search?: string; 
+      {
+        category?: string;
+        search?: string;
         page?: number;
         store?: string;
         min_price?: number;
@@ -227,9 +234,36 @@ export const publicApi = baseApi.injectEndpoints({
         params,
       }),
       providesTags: ["Product"],
+      // Cache one growing list per filter combination, ignoring `page` - so
+      // scrolling further appends to the same cache entry instead of RTK
+      // Query treating each page as an unrelated cached result.
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...queryArgs };
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        // An explicit refetch re-requests page 1 even when several pages
+        // are already accumulated in cache. Without this check that would
+        // append page 1 on top of everything already loaded instead of
+        // replacing it. arg.page is undefined (not 1) for any caller that
+        // omits the page param entirely and relies on the server's default
+        // - that's still effectively page 1.
+        if (!arg.page || arg.page === 1 || !currentCache?.data?.results) {
+          return newItems;
+        }
+        currentCache.data.results.push(...newItems.data.results);
+        currentCache.data.next = newItems.data.next;
+        currentCache.data.count = newItems.data.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
-    getProductBySlug: builder.query<{ success: boolean; data: Product }, string>({
+    getProductBySlug: builder.query<
+      { success: boolean; data: Product },
+      string
+    >({
       query: (slug) => `/store/products/${slug}/`,
       providesTags: ["Product"],
     }),
@@ -243,7 +277,10 @@ export const publicApi = baseApi.injectEndpoints({
       // invalidating them on every product mutation would refetch constantly.
     }),
 
-    getRecommendations: builder.query<RecommendationsResponse, RecommendationParams>({
+    getRecommendations: builder.query<
+      RecommendationsResponse,
+      RecommendationParams
+    >({
       query: ({ type, product, category, limit }) => ({
         url: "/store/recommendations/",
         // fetchBaseQuery drops undefined params, so the optional ones simply
@@ -282,7 +319,11 @@ export const publicApi = baseApi.injectEndpoints({
 
     addToCart: builder.mutation<
       { success: boolean; data: CartItem; message?: string },
-      { slug: string; quantity: number; selected_variants?: Record<string, string> }
+      {
+        slug: string;
+        quantity: number;
+        selected_variants?: Record<string, string>;
+      }
     >({
       query: (body) => ({
         url: "/store/cart/add/",
@@ -312,7 +353,11 @@ export const publicApi = baseApi.injectEndpoints({
 
     updateCartItem: builder.mutation<
       { success: boolean; data?: CartItem; message: string },
-      { slug: string; quantity: number; selected_variants?: Record<string, string> }
+      {
+        slug: string;
+        quantity: number;
+        selected_variants?: Record<string, string>;
+      }
     >({
       query: (body) => ({
         url: "/store/cart/update/",
@@ -352,10 +397,7 @@ export const publicApi = baseApi.injectEndpoints({
     }),
 
     // Orders
-    getCustomerOrders: builder.query<
-      Order[],
-      { status?: string }
-    >({
+    getCustomerOrders: builder.query<Order[], { status?: string }>({
       query: (params) => ({
         url: "/transactions/orders/",
         params,
@@ -395,14 +437,18 @@ export const publicApi = baseApi.injectEndpoints({
     }),
 
     cancelOrder: builder.mutation<
-      { success: boolean; data: { order_id: string; status: string; refund_pending: boolean }; message: string },
+      {
+        success: boolean;
+        data: { order_id: string; status: string; refund_pending: boolean };
+        message: string;
+      },
       string // order_id
     >({
       query: (order_id) => ({
         url: `/transactions/orders/${order_id}/cancel/`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: ['Order'],
+      invalidatesTags: ["Order"],
     }),
 
     // Reviews
@@ -418,12 +464,10 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
-    getProductReviews: builder.query<any[], string>(
-      {
-        query: (slug) => `/store/products/${slug}/reviews/`,
-        providesTags: ["Product"],
-      }
-    ),
+    getProductReviews: builder.query<any[], string>({
+      query: (slug) => `/store/products/${slug}/reviews/`,
+      providesTags: ["Product"],
+    }),
 
     // Payments
     initializeCheckout: builder.mutation<
@@ -583,7 +627,7 @@ export const publicApi = baseApi.injectEndpoints({
           order_id: string;
           amount_paid: number;
           balance_remaining: number;
-          plan_status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DEFAULTED';
+          plan_status: "ACTIVE" | "COMPLETED" | "CANCELLED" | "DEFAULTED";
         };
       },
       { reference: string }
@@ -617,14 +661,19 @@ export const publicApi = baseApi.injectEndpoints({
           /** Null when the wallet covered everything and there is no card leg. */
           authorization_url?: string | null;
           reference: string;
-          method: 'WALLET' | 'CARD';
+          method: "WALLET" | "CARD";
           amount: number;
           plan_id: number;
           order_id: string;
         };
         message?: string;
       },
-      { plan_id: number; amount?: number; clear_balance?: boolean; use_wallet?: boolean }
+      {
+        plan_id: number;
+        amount?: number;
+        clear_balance?: boolean;
+        use_wallet?: boolean;
+      }
     >({
       query: (body) => ({
         url: "/transactions/installment-plans/init-payment/",
@@ -635,18 +684,28 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order", "CustomerWallet"],
     }),
 
-    getInstallmentPlans: builder.query<{ success: boolean; data: InstallmentPlan[] }, void>({
+    getInstallmentPlans: builder.query<
+      { success: boolean; data: InstallmentPlan[] },
+      void
+    >({
       query: () => "/transactions/installment-plans/",
       providesTags: ["Order"],
     }),
 
-    getInstallmentPlanDetails: builder.query<{ success: boolean; data: InstallmentPlan }, number>({
+    getInstallmentPlanDetails: builder.query<
+      { success: boolean; data: InstallmentPlan },
+      number
+    >({
       query: (id) => `/transactions/installment-plans/${id}/`,
       providesTags: ["Order"],
     }),
 
-    getInstallmentPayments: builder.query<{ success: boolean; data: InstallmentPayment[] }, number>({
-      query: (plan_id) => `/transactions/installment-plans/${plan_id}/payments/`,
+    getInstallmentPayments: builder.query<
+      { success: boolean; data: InstallmentPayment[] },
+      number
+    >({
+      query: (plan_id) =>
+        `/transactions/installment-plans/${plan_id}/payments/`,
       providesTags: ["Order"],
     }),
   }),

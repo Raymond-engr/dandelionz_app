@@ -2,15 +2,23 @@
 
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useGetVendorOrdersSummaryQuery, useGetVendorOrdersListQuery } from '@/lib/api/vendorApi';
+import { useGetVendorOrdersSummaryQuery, useGetVendorOrdersListQuery, Order } from '@/lib/api/vendorApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import OrderListItemSkeleton from '@/components/OrderListItemSkeleton';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function VendorOrdersPage() {
   const { data: orderSummaryData, isLoading: isLoadingSummary, error: summaryError } = useGetVendorOrdersSummaryQuery();
-  const { data: orderListData, isLoading: isLoadingList, error: listError } = useGetVendorOrdersListQuery({});
+  const {
+    items: orders,
+    isInitialLoading: isLoadingList,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error: listError,
+  } = useInfiniteList(useGetVendorOrdersListQuery, {}, selectStandardEnvelope<Order>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
-  const orders = orderListData?.data || [];
   const stats = orderSummaryData?.data;
 
   const isLoading = isLoadingSummary || isLoadingList;
@@ -122,6 +130,12 @@ export default function VendorOrdersPage() {
                   </div>
                 </div>
               ))}
+              <div ref={sentinelRef} className="h-1" />
+              {isFetchingMore && (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
           )}
         </div>
