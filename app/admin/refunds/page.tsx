@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { useGetAdminRefundsQuery, useProcessAdminRefundMutation } from '@/lib/api/adminApi';
+import { useGetAdminRefundsQuery, useProcessAdminRefundMutation, RefundRequest } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectFlatEnvelope } from '@/lib/hooks/use-infinite-list';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
@@ -19,11 +20,26 @@ export default function AdminRefundsPage() {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [approveModal, setApproveModal] = useState<{ id: number, customerName: string, amount: string } | null>(null);
 
-  const { data, isLoading, refetch } = useGetAdminRefundsQuery(
-    filter ? { status: filter } : undefined
+  // Was a single unpaginated useGetAdminRefundsQuery() - every matching
+  // refund request in one response, growing over time.
+  const {
+    items: refunds,
+    rawData,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = useInfiniteList(
+    useGetAdminRefundsQuery,
+    filter ? { status: filter } : {},
+    selectFlatEnvelope<RefundRequest>,
   );
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
+  // pending_count is a badge count independent of scroll position - read it
+  // straight off the same query's raw data instead of a second subscription.
+  const pendingCount = rawData?.pending_count ?? 0;
   const [processRefund, { isLoading: isProcessing }] = useProcessAdminRefundMutation();
-  const refunds = data?.data || [];
 
   const confirmApprove = async () => {
     if (!approveModal) return;
@@ -31,7 +47,7 @@ export default function AdminRefundsPage() {
       await processRefund({ refund_id: approveModal.id, action: 'APPROVE' }).unwrap();
       toast.success('Refund approved — customer wallet credited.');
       setApproveModal(null);
-      refetch();
+      refresh();
     } catch (err: any) {
       toast.error(apiError(err, 'Failed to approve refund.'));
     }
@@ -44,7 +60,7 @@ export default function AdminRefundsPage() {
       toast.success('Refund rejected. Customer has been notified.');
       setRejectingId(null);
       setRejectionReason('');
-      refetch();
+      refresh();
     } catch (err: any) {
       toast.error(apiError(err, 'Failed to reject refund.'));
     }
@@ -55,9 +71,9 @@ export default function AdminRefundsPage() {
       <div className="min-h-screen bg-white pb-24">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900">Refund Requests</h1>
-          {data?.pending_count ? (
+          {pendingCount ? (
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {data.pending_count} pending
+              {pendingCount} pending
             </span>
           ) : null}
         </div>
@@ -132,6 +148,12 @@ export default function AdminRefundsPage() {
                 </div>
               ))
             )}
+          </div>
+        )}
+        <div ref={sentinelRef} className="h-1" />
+        {isFetchingMore && (
+          <div className="flex justify-center py-6">
+            <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>

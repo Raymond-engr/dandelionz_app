@@ -5,16 +5,33 @@ import { Store, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAllVendorsQuery, Vendor } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import UserListItemSkeleton from '@/components/UserListItemSkeleton';
 import Skeleton from '@/components/ui/Skeleton';
 
 export default function VendorManagement() {
   const router = useRouter();
-  const { data, isLoading, error } = useGetAllVendorsQuery();
 
-  const vendors = data?.data || [];
-  const activeVendors = vendors.filter((v: Vendor) => v.is_active).length;
-  const suspendedVendors = vendors.filter((v: Vendor) => !v.is_active).length;
+  // Was a single unpaginated useGetAllVendorsQuery() - every vendor on the
+  // platform, in one response, growing with signups.
+  const {
+    items: vendors,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error,
+  } = useInfiniteList(useGetAllVendorsQuery, {}, selectStandardEnvelope<Vendor>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
+
+  // Total/Active/Suspended used to be computed from vendors array
+  // .length/.filter() - correct only while every vendor was fetched at
+  // once. Now sourced from the backend's count field instead.
+  const { data: totalResp } = useGetAllVendorsQuery({ page_size: 1 });
+  const { data: activeResp } = useGetAllVendorsQuery({ is_active: true, page_size: 1 });
+  const totalVendors = totalResp?.data?.count ?? 0;
+  const activeVendors = activeResp?.data?.count ?? 0;
+  const suspendedVendors = Math.max(totalVendors - activeVendors, 0);
 
   const handleVendorClick = (vendorId: string) => {
     router.push(`/admin/vendor/${vendorId}`);
@@ -55,7 +72,7 @@ export default function VendorManagement() {
               {isLoading ? (
                 <Skeleton className="h-10 w-16 bg-white/20" />
               ) : (
-                <p className="text-3xl font-bold">{vendors.length}</p>
+                <p className="text-3xl font-bold">{totalVendors}</p>
               )}
             </div>
             <Store className="w-12 h-12 opacity-80" />
@@ -123,6 +140,12 @@ export default function VendorManagement() {
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+          <div ref={sentinelRef} className="h-1" />
+          {isFetchingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </div>
