@@ -14,6 +14,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import VendorProductListItemSkeleton from '@/components/VendorProductListItemSkeleton';
 import { apiError } from '@/lib/utils';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
+import { Product } from '@/lib/api/publicApi';
 
 type ProductType = 'store' | 'draft';
 
@@ -23,7 +25,18 @@ interface DeleteConfirmState {
 }
 
 export default function VendorProductsPage() {
-  const { data: storeProductsData, isLoading: isLoadingStore, error: storeError } = useGetStoreProductsQuery({});
+  // Was a single unpaginated useGetStoreProductsQuery({}) - every submitted
+  // product for this vendor, in one response, growing with their catalog.
+  const {
+    items: publishedProducts,
+    isInitialLoading: isLoadingStore,
+    isFetchingMore: isFetchingMoreStore,
+    hasMore: hasMoreStore,
+    loadMore: loadMoreStore,
+    error: storeError,
+  } = useInfiniteList(useGetStoreProductsQuery, {}, selectStandardEnvelope<Product>);
+  const storeSentinelRef = useInfiniteScrollTrigger(loadMoreStore, hasMoreStore && !isFetchingMoreStore);
+
   const { data: draftProductsData, isLoading: isLoadingDrafts, error: draftError } = useGetDraftsQuery();
   
   const [deleteStoreProduct, { isLoading: isDeletingStore }] = useDeleteStoreProductMutation();
@@ -32,7 +45,6 @@ export default function VendorProductsPage() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<DeleteConfirmState | null>(null);
 
-  const publishedProducts = storeProductsData?.data || [];
   const draftProducts = draftProductsData?.data || [];
   
   const isLoading = isLoadingStore || isLoadingDrafts;
@@ -190,6 +202,12 @@ export default function VendorProductsPage() {
                     </div>
                   ))}
                 </div>
+                <div ref={storeSentinelRef} className="h-1" />
+                {isFetchingMoreStore && (
+                  <div className="flex justify-center py-6">
+                    <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
             )}
 

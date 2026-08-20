@@ -4,14 +4,23 @@ import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import { useGetAllPaymentsQuery } from '@/lib/api/adminApi';
+import { useGetAllPaymentsQuery, Payment } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 
 export default function TransactionHistoryPage() {
   const router = useRouter();
-  const { data, isLoading } = useGetAllPaymentsQuery();
-  const transactions = data?.data || [];
+  // Was a single unpaginated useGetAllPaymentsQuery() - every payment ever
+  // processed on the platform, in one response, ever-growing.
+  const {
+    items: transactions,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+  } = useInfiniteList(useGetAllPaymentsQuery, {}, selectStandardEnvelope<Payment>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -53,6 +62,12 @@ export default function TransactionHistoryPage() {
                   </div>
                 </div>
              ))
+          )}
+          <div ref={sentinelRef} className="h-1" />
+          {isFetchingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
         </div>
       </div>

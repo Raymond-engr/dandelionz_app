@@ -268,7 +268,7 @@ export interface Category {
   total_sales: string;
 }
 
-interface Payment {
+export interface Payment {
   id: string;
   order_uuid: string;
   amount: string;
@@ -658,14 +658,33 @@ export const adminApi = baseApi.injectEndpoints({
         data: RefundRequest[];
         count: number;
         pending_count: number;
+        next?: string | null;
+        previous?: string | null;
       },
-      { status?: string } | void
+      { status?: string; page?: number; page_size?: number } | void
     >({
       query: (params) => ({
         url: "/user/admin/finance/refunds/",
         params: params || undefined,
       }),
       providesTags: ["Refunds"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...(queryArgs || {}) } as Record<string, unknown>;
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page;
+        if (!page || page === 1 || !currentCache?.data) {
+          return newItems;
+        }
+        currentCache.data.push(...newItems.data);
+        currentCache.next = newItems.next;
+        currentCache.count = newItems.count;
+        currentCache.pending_count = newItems.pending_count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     processAdminRefund: builder.mutation<
@@ -714,14 +733,41 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     getFailedPayments: builder.query<
-      { count: number; results: FailedPaymentEvent[] },
-      { status?: string; event_type?: string; reference?: string } | void
+      {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: FailedPaymentEvent[];
+      },
+      {
+        status?: string;
+        event_type?: string;
+        reference?: string;
+        page?: number;
+        page_size?: number;
+      } | void
     >({
       query: (params) => ({
         url: "/transactions/admin/failed-payments/",
         params: params || undefined,
       }),
       providesTags: ["Ledger"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...(queryArgs || {}) } as Record<string, unknown>;
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page;
+        if (!page || page === 1 || !currentCache?.results) {
+          return newItems;
+        }
+        currentCache.results.push(...newItems.results);
+        currentCache.next = newItems.next;
+        currentCache.count = newItems.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     // Analytics
@@ -862,9 +908,44 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Vendor Management
-    getAllVendors: builder.query<{ success: boolean; data: Vendor[] }, void>({
-      query: () => "/user/admin/vendors/",
+    getAllVendors: builder.query<
+      {
+        success: boolean;
+        data: {
+          count: number;
+          next: string | null;
+          previous: string | null;
+          results: Vendor[];
+        };
+      },
+      {
+        search?: string;
+        is_active?: boolean;
+        page?: number;
+        page_size?: number;
+      } | void
+    >({
+      query: (params) => ({
+        url: "/user/admin/vendors/",
+        params: params || undefined,
+      }),
       providesTags: ["Vendor"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...(queryArgs || {}) } as Record<string, unknown>;
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page;
+        if (!page || page === 1 || !currentCache?.data?.results) {
+          return newItems;
+        }
+        currentCache.data.results.push(...newItems.data.results);
+        currentCache.data.next = newItems.data.next;
+        currentCache.data.count = newItems.data.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     getVendorDetails: builder.query<{ success: boolean; data: Vendor }, string>(
@@ -1083,14 +1164,43 @@ export const adminApi = baseApi.injectEndpoints({
 
     // Product Management
     getAllProducts: builder.query<
-      { success: boolean; data: Product[] },
-      { status?: string; category?: string }
+      {
+        success: boolean;
+        data: {
+          count: number;
+          next: string | null;
+          previous: string | null;
+          results: Product[];
+        };
+      },
+      {
+        status?: string;
+        category?: string;
+        search?: string;
+        page?: number;
+        page_size?: number;
+      }
     >({
       query: (params) => ({
         url: "/user/admin/products/",
         params,
       }),
       providesTags: ["Product"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...queryArgs };
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg.page || arg.page === 1 || !currentCache?.data?.results) {
+          return newItems;
+        }
+        currentCache.data.results.push(...newItems.data.results);
+        currentCache.data.next = newItems.data.next;
+        currentCache.data.count = newItems.data.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     getProductDetails: builder.query<
@@ -1227,9 +1337,39 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Payment Management
-    getAllPayments: builder.query<{ success: boolean; data: Payment[] }, void>({
-      query: () => "/user/admin/payments/",
+    getAllPayments: builder.query<
+      {
+        success: boolean;
+        data: {
+          count: number;
+          next: string | null;
+          previous: string | null;
+          results: Payment[];
+        };
+      },
+      { status?: string; page?: number; page_size?: number } | void
+    >({
+      query: (params) => ({
+        url: "/user/admin/payments/",
+        params: params || undefined,
+      }),
       providesTags: ["Payment"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...(queryArgs || {}) } as Record<string, unknown>;
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page;
+        if (!page || page === 1 || !currentCache?.data?.results) {
+          return newItems;
+        }
+        currentCache.data.results.push(...newItems.data.results);
+        currentCache.data.next = newItems.data.next;
+        currentCache.data.count = newItems.data.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     getPaymentDetails: builder.query<

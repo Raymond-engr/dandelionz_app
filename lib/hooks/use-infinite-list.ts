@@ -31,6 +31,16 @@ export function selectBareEnvelope<T>(
   return { results: data?.results ?? [], next: data?.next ?? null };
 }
 
+// A third shape: AdminFinanceViewSet.list_refunds keeps its historical flat
+// response ({success, data: T[], count, pending_count}) rather than the
+// nested envelope, since pending_count sits alongside data rather than
+// inside it. `next`/`previous` were added at this same top level.
+export function selectFlatEnvelope<T>(
+  data: { data?: T[]; next?: string | null } | undefined,
+): PageInfo<T> {
+  return { results: data?.data ?? [], next: data?.next ?? null };
+}
+
 /**
  * Drives infinite-scroll over any RTK Query endpoint that returns pages of
  * results and is configured with the serializeQueryArgs/merge pattern (see
@@ -96,6 +106,7 @@ export function useInfiniteList<T>(
 
   return {
     items,
+    rawData: result.data,
     hasMore,
     isFetchingMore,
     isInitialLoading,

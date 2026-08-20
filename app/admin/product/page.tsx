@@ -11,6 +11,8 @@ import {
   useDeleteProductMutation
 } from '@/lib/api/adminApi';
 import { useGetDraftsQuery, useSubmitDraftMutation, useDeleteDraftMutation } from '@/lib/api/vendorApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import AdminCategoryListItem from '@/components/AdminCategoryListItem';
 import Link from 'next/link';
 import { Category, Product } from '@/lib/api/adminApi';
@@ -31,10 +33,39 @@ export default function ProductManagement() {
   const categories = categoriesData || [];
   const filteredCategories = categories.filter((c: Category) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Fetch products
-  const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useGetAllProductsQuery({});
-  const products = productsData?.data || [];
-  const filteredProducts = products.filter((p: Product) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Was a single unpaginated useGetAllProductsQuery({}) - the admin products
+  // endpoint returned the entire products table (every vendor, every
+  // status) in one response, growing on every upload. Now infinite-scroll
+  // paginated, same pattern as ShopClientPage / admin users / vendor orders.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
+  const {
+    items: products,
+    isInitialLoading: isLoadingProducts,
+    isFetchingMore: isFetchingMoreProducts,
+    hasMore: hasMoreProducts,
+    loadMore: loadMoreProducts,
+    error: productsError,
+    refresh: refreshProducts,
+  } = useInfiniteList(
+    useGetAllProductsQuery,
+    { search: activeTab === 'products' ? (debouncedSearch || undefined) : undefined },
+    selectStandardEnvelope<Product>,
+  );
+  const productsSentinelRef = useInfiniteScrollTrigger(loadMoreProducts, hasMoreProducts && !isFetchingMoreProducts);
+
+  // Total/Approved/Rejected/Pending counters below used to be computed from
+  // `products.length`/`.filter()` over the fully-loaded array - correct only
+  // while the whole catalog was fetched at once. Now that only one page is
+  // loaded at a time, each count needs the backend's true total instead, via
+  // a cheap page_size=1 request per status.
+  const { data: totalResp } = useGetAllProductsQuery({ page_size: 1 });
+  const { data: approvedResp } = useGetAllProductsQuery({ status: 'APPROVED', page_size: 1 });
+  const { data: rejectedResp } = useGetAllProductsQuery({ status: 'REJECTED', page_size: 1 });
+  const { data: pendingResp } = useGetAllProductsQuery({ status: 'PENDING', page_size: 1 });
+  const totalProductsCount = totalResp?.data?.count ?? 0;
+  const approvedCount = approvedResp?.data?.count ?? 0;
+  const rejectedCount = rejectedResp?.data?.count ?? 0;
+  const pendingCount = pendingResp?.data?.count ?? 0;
 
   // Mutations
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
@@ -64,7 +95,7 @@ export default function ProductManagement() {
   const handleDeleteProduct = async (productSlug: string) => {
     try {
       const result = await deleteProduct(productSlug).unwrap();
-      refetchProducts();
+      refreshProducts();
       toast.success(`Product "${result.data?.name || 'Unknown'}" deleted successfully`);
       setShowDeleteConfirm(null);
     } catch (err: any) {
@@ -81,7 +112,7 @@ export default function ProductManagement() {
     try {
       await submitDraft(slug).unwrap();
       toast.success('Draft submitted successfully');
-      refetchProducts();
+      refreshProducts();
     } catch (err: any) {
       toast.error(apiError(err, 'Failed to submit draft'));
     }
@@ -178,7 +209,7 @@ export default function ProductManagement() {
                 <div className="bg-system-blue-light text-white rounded-lg p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm opacity-90 mb-1">Total Products</p>
-                    <p className="text-3xl font-bold">{products.length}</p>
+                    <p className="text-3xl font-bold">{totalProductsCount}</p>
                   </div>
                   <Package className="w-12 h-12 opacity-80" />
                 </div>
@@ -186,17 +217,17 @@ export default function ProductManagement() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[rgba(77,255,151,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Approved Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'APPROVED').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{approvedCount}</p>
                   </div>
                   <div className="bg-[rgba(255,77,77,0.25)] rounded-lg p-3">
                     <p className="text-xs text-gray-700 mb-1">Rejected Products</p>
-                    <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'REJECTED').length}</p>
+                    <p className="text-xl font-bold text-gray-900">{rejectedCount}</p>
                   </div>
                 </div>
 
                 <div className="bg-[rgba(255,212,59,0.5)] rounded-lg p-3">
                   <p className="text-xs text-gray-700 mb-1">Pending Products</p>
-                  <p className="text-xl font-bold text-gray-900">{products.filter((p: Product) => p.status === 'PENDING').length}</p>
+                  <p className="text-xl font-bold text-gray-900">{pendingCount}</p>
                   </div>
                 </div>
 
@@ -220,7 +251,7 @@ export default function ProductManagement() {
                 <div className="text-center text-red-500">Failed to load products.</div>
               ) : (
                 <div className="space-y-3">
-                  {filteredProducts.map((product: Product) => (
+                  {products.map((product: Product) => (
                     <div
                       key={product.slug}
                       className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-start gap-3"
@@ -274,6 +305,12 @@ export default function ProductManagement() {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+              <div ref={productsSentinelRef} className="h-1" />
+              {isFetchingMoreProducts && (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
               
