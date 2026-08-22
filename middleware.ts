@@ -19,11 +19,13 @@ export function middleware(request: NextRequest) {
     "/contact",
     "/product",
     "/category",
+    "/search",
     "/checkout/success",
   ];
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  ) || pathname === "/" || pathname === "/account";
+  const isPublicRoute =
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    pathname === "/" ||
+    pathname === "/account";
 
   // If no token and trying to access protected route
   if (!token && !isPublicRoute) {
