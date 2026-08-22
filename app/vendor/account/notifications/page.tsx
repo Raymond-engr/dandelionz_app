@@ -8,9 +8,11 @@ import {
   useGetVendorNotificationsQuery, 
   useVendorMarkNotificationAsReadMutation, 
   useVendorMarkAllNotificationsAsReadMutation,
-  useVendorDeleteNotificationMutation
+  useVendorDeleteNotificationMutation,
+  Notification,
 } from '@/lib/api/vendorApi';
 import { useAppSelector } from '@/lib/hooks';
+import { useInfiniteList, useInfiniteScrollTrigger, selectBareEnvelope } from '@/lib/hooks/use-infinite-list';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
@@ -22,19 +24,27 @@ export default function VendorNotificationsPage() {
   const token = useAppSelector((state) => state.auth.accessToken);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  
-  // Pass filter param if 'unread', else void/undefined for all
-  const queryParams = filter === 'unread' ? { is_read: false } : undefined;
-  const { data: notificationsResponse, isLoading, error, refetch } = useGetVendorNotificationsQuery(queryParams);
-  
-  // Handle pagination structure (results array) or flat array
-  const notifications = (notificationsResponse as any)?.results || (notificationsResponse?.data as any)?.results || notificationsResponse?.data || [];
 
-  // Client-side filtering to ensure UI consistency (in case API doesn't filter)
-  const filteredNotifications = notifications.filter((notification: any) => {
-    if (filter === 'unread') return !notification.is_read;
-    return true;
-  });
+  // Was a single unpaginated fetch with no page ever requested beyond the
+  // first (the response shape was also declared wrong in the API type,
+  // which is why this page used to fall back through three different
+  // possible shapes defensively). Backend already filters by is_read
+  // server-side, so the "unread" tab needs no client-side re-filter.
+  const {
+    items: filteredNotifications,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error,
+    refresh,
+  } = useInfiniteList(
+    useGetVendorNotificationsQuery,
+    filter === 'unread' ? { is_read: false } : {},
+    selectBareEnvelope<Notification>,
+  );
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
+  const refetch = refresh;
 
   const [markAsRead] = useVendorMarkNotificationAsReadMutation();
   const [markAllAsRead, { isLoading: isMarkingAll }] = useVendorMarkAllNotificationsAsReadMutation();
@@ -228,6 +238,12 @@ export default function VendorNotificationsPage() {
                 )}
               </div>
             ))
+          )}
+          <div ref={sentinelRef} className="h-1" />
+          {isFetchingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
         </div>
 

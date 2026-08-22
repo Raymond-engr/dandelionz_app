@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, AlertTriangle } from 'lucide-react';
-import { useGetFailedPaymentsQuery } from '@/lib/api/adminApi';
+import { useGetFailedPaymentsQuery, FailedPaymentEvent } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectBareEnvelope } from '@/lib/hooks/use-infinite-list';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format as formatDate } from 'date-fns';
 
@@ -34,10 +35,21 @@ export default function AdminFailedPaymentsPage() {
   const router = useRouter();
   const [status, setStatus] = useState('');
 
-  const { data, isLoading } = useGetFailedPaymentsQuery(
-    status ? { status } : undefined
+  // Backend was already correctly paginated (FinancePagination); this page
+  // just never read .next or requested another page, so it silently capped
+  // at the first 20 events regardless of how many actually needed attention.
+  const {
+    items: events,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+  } = useInfiniteList(
+    useGetFailedPaymentsQuery,
+    status ? { status } : {},
+    selectBareEnvelope<FailedPaymentEvent>,
   );
-  const events = data?.results ?? [];
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
 
   return (
     <AppLayout showBottomNav={false} userRole="admin">
@@ -125,6 +137,12 @@ export default function AdminFailedPaymentsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          <div ref={sentinelRef} className="h-1" />
+          {isFetchingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </div>

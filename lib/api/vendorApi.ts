@@ -150,7 +150,7 @@ interface NotificationType {
   color: string;
 }
 
-interface Notification {
+export interface Notification {
   id: string;
   title: string;
   message: string;
@@ -587,7 +587,12 @@ export const vendorApi = baseApi.injectEndpoints({
 
     // Notifications
     getVendorNotifications: builder.query<
-      { success: boolean; data: Notification[] },
+      {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: Notification[];
+      },
       { page?: number; page_size?: number; is_read?: boolean } | void
     >({
       query: (params) => ({
@@ -595,6 +600,22 @@ export const vendorApi = baseApi.injectEndpoints({
         params: params || undefined,
       }),
       providesTags: ["Notification"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        const filterArgs = { ...(queryArgs || {}) } as Record<string, unknown>;
+        delete filterArgs.page;
+        return filterArgs;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page;
+        if (!page || page === 1 || !currentCache?.results) {
+          return newItems;
+        }
+        currentCache.results.push(...newItems.results);
+        currentCache.next = newItems.next;
+        currentCache.count = newItems.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     vendorMarkNotificationAsRead: builder.mutation<
