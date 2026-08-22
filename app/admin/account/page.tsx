@@ -187,6 +187,18 @@ export default function AdminAccountPage() {
             </svg>
           </Link>
 
+          <a
+            href="https://dandelionz.com.ng/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-900">Privacy Policy</span>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+
           <Link
             href="/contact"
             className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
