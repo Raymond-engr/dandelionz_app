@@ -35,7 +35,7 @@ export default function AccountPage() {
     { label: 'Delivery Address', href: '/account/address', icon: LocationIcon },
   ];
 
-  const otherLinks: { label: string; href: string; icon: () => JSX.Element; external?: boolean }[] = [
+  const otherLinks: { label: string; href: string; icon: () => React.ReactElement; external?: boolean }[] = [
     { label: 'FAQs', href: '/faqs', icon: QuestionIcon },
     { label: 'Terms and Conditions', href: '/terms', icon: DocumentIcon },
     { label: 'Privacy Policy', href: 'https://dandelionz.com.ng/privacy.html', icon: ShieldIcon, external: true },
