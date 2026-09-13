@@ -14,7 +14,7 @@ export default function OrdersPage() {
   const { data: plansResponse, isLoading: isLoadingPlans } = useGetInstallmentPlansQuery();
 
   const allOrders = response || [];
-  const installmentPlans = plansResponse?.data || [];
+  const installmentPlans = plansResponse?.data?.results || [];
 
   // Helper to check if an order is an installment order
   const getInstallmentPlan = (orderId: string) => {

@@ -12,6 +12,7 @@ export default function CreateNotification() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [recipient, setRecipient] = useState('customer');
+  const [sendPush, setSendPush] = useState(true);
   const [showSchedule, setShowSchedule] = useState(false);
   
   // Scheduling State
@@ -117,6 +118,7 @@ export default function CreateNotification() {
       priority: 'normal',
       is_draft: false,
       scheduled_for: scheduledFor,
+      send_push: sendPush,
     };
 
     if (recipient === 'all') {
@@ -152,6 +154,7 @@ export default function CreateNotification() {
       priority: 'normal',
       is_draft: true,
       scheduled_for: scheduledFor,
+      send_push: sendPush,
     };
 
     if (recipient === 'all') {
@@ -219,6 +222,22 @@ export default function CreateNotification() {
                     <option value="all">Everyone (Broadcast)</option>
                   </select>
                 </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={sendPush}
+                    onChange={(e) => setSendPush(e.target.checked)}
+                    disabled={isLoading}
+                    className="w-4 h-4 rounded border-gray-300 text-system-blue-light focus:ring-system-blue-light"
+                  />
+                  <span className="text-sm text-gray-700">Also send as push notification</span>
+                </label>
+                {sendPush && recipient === 'all' && (
+                  <p className="text-xs text-gray-500 -mt-2">
+                    Push to everyone is sent in the background and may take a few minutes to reach every device.
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3 mb-4">

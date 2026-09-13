@@ -5,16 +5,31 @@ import { ShoppingCart, Filter } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import { useGetAllOrdersQuery, useGetDeliveryAttentionQuery } from '@/lib/api/adminApi';
+import { useInfiniteList, useInfiniteScrollTrigger, selectBareEnvelope } from '@/lib/hooks/use-infinite-list';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { format } from 'date-fns';
 import { Order } from '@/lib/api/adminApi';
 
 export default function OrderManagement() {
   const router = useRouter();
-  const { data: orders = [], isLoading, error } = useGetAllOrdersQuery({});
+  // Was a single unpaginated useGetAllOrdersQuery({}) - AdminOrderListView
+  // had no pagination_class at all, so this returned every order on the
+  // platform, on every load.
+  const {
+    items: orders,
+    rawData,
+    isInitialLoading: isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    error,
+  } = useInfiniteList(useGetAllOrdersQuery, {}, selectBareEnvelope<Order>);
+  const sentinelRef = useInfiniteScrollTrigger(loadMore, hasMore && !isFetchingMore);
   const { data: attention } = useGetDeliveryAttentionQuery();
 
-  const totalOrders = orders.length;
+  // Was orders.length - correct only while every order was fetched at once.
+  // Now sourced from the backend's true count.
+  const totalOrders = rawData?.count ?? orders.length;
   const counts = attention?.data?.counts;
   const needsAttention = counts ? counts.unscheduled + counts.awaiting_fee + counts.ready_to_ship > 0 : false;
 
@@ -112,6 +127,12 @@ export default function OrderManagement() {
                   <p className="text-base font-bold text-gray-900 text-left">₦{parseFloat(order.total_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </button>
               ))}
+            </div>
+          )}
+          <div ref={sentinelRef} className="h-1" />
+          {isFetchingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-system-blue-light border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </div>

@@ -74,7 +74,7 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const installmentPlans = plansResponse?.data || [];
+  const installmentPlans = plansResponse?.data?.results || [];
   
   // Find the plan linked to this order
   const plan = order ? installmentPlans.find((p: any) => p.order_id === order.order_id) : null;

@@ -19,6 +19,7 @@ import {
     Product,
     ProductImage
 } from '@/lib/api/publicApi';
+import { useInfiniteList, selectBareEnvelope } from '@/lib/hooks/use-infinite-list';
 import { useAppSelector } from '@/lib/hooks';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import RecommendationSection from '@/components/RecommendationSection';
@@ -84,9 +85,20 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
     return options;
   }, [product?.variants]);
 
-  // Fetch reviews
-  const { data: reviewsResponse, isLoading: isLoadingReviews, refetch: refetchReviews } = useGetProductReviewsQuery(slug);
-  const reviews = reviewsResponse || [];
+  // Fetch reviews. Was a single unpaginated fetch - a popular product can
+  // accumulate hundreds of reviews.
+  const {
+    items: reviews,
+    rawData: reviewsRawData,
+    isInitialLoading: isLoadingReviews,
+    isFetchingMore: isFetchingMoreReviews,
+    hasMore: hasMoreReviews,
+    loadMore: loadMoreReviews,
+    refresh: refetchReviews,
+  } = useInfiniteList(useGetProductReviewsQuery, { slug }, selectBareEnvelope<any>);
+  // The true total review count, not just what's loaded on the current
+  // page - used for the JSON-LD structured data and the visible heading.
+  const reviewCount = reviewsRawData?.count ?? reviews.length;
   
   const [addProductReview, { isLoading: isSubmittingReview }] = useAddProductReviewMutation();
 
@@ -311,7 +323,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
             "aggregateRating": product.rating ? {
               "@type": "AggregateRating",
               "ratingValue": product.rating,
-              "reviewCount": reviews.length || 1
+              "reviewCount": reviewCount || 1
             } : undefined
           }),
         }}
@@ -485,7 +497,7 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
 
           {/* Reviews Section */}
           <div className="border-t pt-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Reviews ({reviews.length})</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Reviews ({reviewCount})</h3>
             
             {/* Add Review Form */}
             {isAuthenticated ? (
@@ -563,6 +575,15 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
               </div>
             ) : (
               <p className="text-base text-gray-500 italic">No reviews yet. Be the first to review!</p>
+            )}
+            {hasMoreReviews && (
+              <button
+                onClick={loadMoreReviews}
+                disabled={isFetchingMoreReviews}
+                className="mt-4 text-system-blue-light font-medium text-sm hover:underline disabled:opacity-50"
+              >
+                {isFetchingMoreReviews ? 'Loading…' : 'Load more reviews'}
+              </button>
             )}
           </div>
 
