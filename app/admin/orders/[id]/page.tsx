@@ -38,10 +38,14 @@ export default function OrderDetails({ params: paramsPromise }: OrderDetailsProp
   }
 
   // Read-only installment plan for this order, if it has one.
-  const { data: plansResponse } = useGetInstallmentPlansQuery(undefined, { skip: !order });
-  const installmentPlan = order
-    ? (plansResponse?.data || []).find((p) => p.order_id === order?.order_id)
-    : undefined;
+  // Was fetching every installment plan on the platform (no filter) just to
+  // find the one for this order client-side. order_id lets the backend do
+  // that filtering instead.
+  const { data: plansResponse } = useGetInstallmentPlansQuery(
+    order ? { order_id: order.order_id } : undefined,
+    { skip: !order },
+  );
+  const installmentPlan = (plansResponse?.data?.results || [])[0];
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderWithReasonMutation();
   const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();

@@ -464,9 +464,31 @@ export const publicApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product"],
     }),
 
-    getProductReviews: builder.query<any[], string>({
-      query: (slug) => `/store/products/${slug}/reviews/`,
+    getProductReviews: builder.query<
+      {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: any[];
+      },
+      { slug: string; page?: number }
+    >({
+      query: ({ slug, page }) => ({
+        url: `/store/products/${slug}/reviews/`,
+        params: page ? { page } : undefined,
+      }),
       providesTags: ["Product"],
+      serializeQueryArgs: ({ queryArgs }) => ({ slug: queryArgs.slug }),
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg.page || arg.page === 1 || !currentCache?.results) {
+          return newItems;
+        }
+        currentCache.results.push(...newItems.results);
+        currentCache.next = newItems.next;
+        currentCache.count = newItems.count;
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page,
     }),
 
     // Payments
@@ -685,10 +707,21 @@ export const publicApi = baseApi.injectEndpoints({
     }),
 
     getInstallmentPlans: builder.query<
-      { success: boolean; data: InstallmentPlan[] },
-      void
+      {
+        success: boolean;
+        data: {
+          count: number;
+          next: string | null;
+          previous: string | null;
+          results: InstallmentPlan[];
+        };
+      },
+      { order_id?: string } | void
     >({
-      query: () => "/transactions/installment-plans/",
+      query: (params) => ({
+        url: "/transactions/installment-plans/",
+        params: params || undefined,
+      }),
       providesTags: ["Order"],
     }),
 
