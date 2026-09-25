@@ -153,6 +153,8 @@ export const baseApi = createApi({
     "Refunds",
     "Ledger",
     "RefundFlags",
+    "BlockedVendors",
+    "Reports",
   ],
   endpoints: () => ({}),
 });

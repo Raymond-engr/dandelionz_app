@@ -19,6 +19,7 @@ export default function RegisterClientPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -68,6 +69,12 @@ export default function RegisterClientPage() {
       return;
     }
 
+    // Validate terms acceptance
+    if (!termsAccepted) {
+      setValidationError('You must accept the Terms of Use to create an account.');
+      return;
+    }
+
     try {
       const result = await register({
         email: formData.email,
@@ -75,6 +82,7 @@ export default function RegisterClientPage() {
         phone_number: formData.phoneNumber,
         full_name: formData.fullName,
         role: role,
+        terms_accepted: termsAccepted,
         ...(role === 'CUSTOMER' && formData.referralCode && { referral_code: formData.referralCode }),
       }).unwrap();
 
@@ -249,6 +257,23 @@ export default function RegisterClientPage() {
             </div>
           )}
 
+          {/* Terms of Use Acceptance */}
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="w-4 h-4 mt-0.5 text-system-blue-light border-gray-300 rounded focus:ring-system-blue-light"
+              required
+            />
+            <span className="text-sm text-gray-700">
+              I have read and agree to the{' '}
+              <Link href="/terms" target="_blank" className="text-system-blue-light font-medium">
+                Terms of Use
+              </Link>
+            </span>
+          </label>
+
           {/* Remember Password Checkbox */}
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -263,7 +288,7 @@ export default function RegisterClientPage() {
           {/* Register Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !termsAccepted}
             className="w-full py-3.5 bg-system-blue-light text-white rounded-lg font-medium hover:bg-[#020360] transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating Account...' : 'Register'}

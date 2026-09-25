@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, Filter, Edit2, Trash2, Plus } from 'lucide-react';
+import { Package, Filter, Edit2, Trash2, Plus, Flag } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useRouter } from 'next/navigation';
 import {
   useGetAllCategoriesQuery,
   useGetAllProductsQuery,
   useDeleteCategoryMutation,
-  useDeleteProductMutation
+  useDeleteProductMutation,
+  useGetAdminReportsQuery,
+  useDismissReportMutation,
+  useTakedownReportedProductMutation
 } from '@/lib/api/adminApi';
 import { useGetDraftsQuery, useSubmitDraftMutation, useDeleteDraftMutation } from '@/lib/api/vendorApi';
 import { useInfiniteList, useInfiniteScrollTrigger, selectStandardEnvelope } from '@/lib/hooks/use-infinite-list';
@@ -25,6 +28,7 @@ import { apiError } from '@/lib/utils';
 export default function ProductManagement() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('categories');
+  const [reportsFilter, setReportsFilter] = useState<'pending' | 'reviewed' | 'dismissed'>('pending');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'category' | 'product' | 'draft'; slug: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -66,6 +70,38 @@ export default function ProductManagement() {
   const approvedCount = approvedResp?.data?.count ?? 0;
   const rejectedCount = rejectedResp?.data?.count ?? 0;
   const pendingCount = pendingResp?.data?.count ?? 0;
+
+  // Reports (Apple App Review Guideline 1.2 - UGC moderation)
+  const { data: reportsResp, isLoading: isLoadingReports, refetch: refetchReports } = useGetAdminReportsQuery(
+    { status: reportsFilter },
+    { skip: activeTab !== 'reports' }
+  );
+  const { data: pendingReportsResp } = useGetAdminReportsQuery({ status: 'pending' });
+  const reports = reportsResp?.data || [];
+  const pendingReportsCount = pendingReportsResp?.data?.length ?? 0;
+  const [dismissReport, { isLoading: isDismissingReport }] = useDismissReportMutation();
+  const [takedownReport, { isLoading: isTakingDown }] = useTakedownReportedProductMutation();
+
+  const handleDismissReport = async (reportId: number) => {
+    try {
+      await dismissReport(reportId).unwrap();
+      toast.success('Report dismissed');
+      refetchReports();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Failed to dismiss report'));
+    }
+  };
+
+  const handleTakedownReport = async (reportId: number) => {
+    try {
+      const result = await takedownReport(reportId).unwrap();
+      toast.success(result.message || 'Listing taken down');
+      refetchReports();
+      refreshProducts();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Failed to take down listing'));
+    }
+  };
 
   // Mutations
   const [deleteCategory, { isLoading: isDeletingCategory }] = useDeleteCategoryMutation();
@@ -167,6 +203,21 @@ export default function ProductManagement() {
             >
               Products
             </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+                activeTab === 'reports'
+                  ? 'border-system-blue-light text-system-blue-light'
+                  : 'border-transparent text-gray-600'
+              }`}
+            >
+              Reports
+              {pendingReportsCount > 0 && (
+                <span className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] rounded-full font-bold leading-none">
+                  {pendingReportsCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {activeTab === 'categories' ? (
@@ -202,6 +253,82 @@ export default function ProductManagement() {
                         >                <Plus className="w-8 h-8" />
                 Add New Category
               </Link>
+            </div>
+          ) : activeTab === 'reports' ? (
+            <div>
+              <div className="flex gap-2 mb-4">
+                {(['pending', 'reviewed', 'dismissed'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setReportsFilter(s)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full capitalize transition-colors ${
+                      reportsFilter === s
+                        ? 'bg-system-blue-light text-white'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {isLoadingReports ? (
+                <div className="space-y-3">
+                  <ProductListItemSkeleton />
+                  <ProductListItemSkeleton />
+                </div>
+              ) : reports.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <Flag className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No {reportsFilter} reports</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reports.map((report: any) => (
+                    <div key={report.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <button
+                            onClick={() => router.push(`/admin/product/${report.product_slug}`)}
+                            className="text-sm font-semibold text-gray-900 hover:underline text-left"
+                          >
+                            {report.product_name}
+                          </button>
+                          <p className="text-xs text-gray-600">Vendor: {report.vendor_name || 'N/A'}</p>
+                          <p className="text-xs text-gray-600">Reported by: {report.reporter_email}</p>
+                        </div>
+                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-medium capitalize whitespace-nowrap">
+                          {report.reason}
+                        </span>
+                      </div>
+                      {report.details && (
+                        <p className="text-xs text-gray-700 bg-white rounded p-2 mb-2">{report.details}</p>
+                      )}
+                      <p className="text-[11px] text-gray-400 mb-3">
+                        {new Date(report.created_at).toLocaleString()}
+                      </p>
+                      {report.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDismissReport(report.id)}
+                            disabled={isDismissingReport || isTakingDown}
+                            className="flex-1 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Dismiss
+                          </button>
+                          <button
+                            onClick={() => handleTakedownReport(report.id)}
+                            disabled={isDismissingReport || isTakingDown}
+                            className="flex-1 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Take down listing
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div>

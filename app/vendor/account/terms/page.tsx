@@ -20,6 +20,14 @@ export default function TermsPage() {
     "Vendors should bear in mind that is subject to return if it has any issues within the warranty period."
   ];
 
+  const ugcTerms = [
+    "As a vendor, you are solely responsible for the accuracy, legality, and appropriateness of every product listing, photo, video, and description you upload to the platform.",
+    "Dandelionz has zero tolerance for objectionable content of any kind, including but not limited to fraudulent, counterfeit, abusive, harassing, hateful, sexually explicit, or otherwise inappropriate listings, images, or videos.",
+    "Customers may report any listing directly from the app. Dandelionz reviews every report and reserves the right, at its sole discretion, to remove any listing that violates these terms, without prior notice.",
+    "Dandelionz reserves the right to suspend or permanently ban any vendor account found to have posted objectionable content, engaged in fraudulent activity, or abused another user, at any time and without prior notice.",
+    "Customers may block a vendor at any time, which hides that vendor's listings from the blocking customer going forward.",
+  ];
+
   return (
     <AppLayout showBottomNav={false}>
       <div className="min-h-screen bg-white">
@@ -42,6 +50,18 @@ export default function TermsPage() {
               </li>
             ))}
           </ol>
+
+          {/* User-Generated Content & Conduct */}
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">User-Generated Content &amp; Conduct</h2>
+            <ol className="space-y-4" start={terms.length + 1}>
+              {ugcTerms.map((term, index) => (
+                <li key={index} className="text-sm text-gray-700 leading-relaxed">
+                  <span className="font-medium">{index + terms.length + 1}.</span> {term}
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </div>
     </AppLayout>
