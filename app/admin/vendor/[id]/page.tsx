@@ -237,6 +237,14 @@ export default function VendorDetails({ params: paramsPromise }: VendorDetailsPr
                   }`}>
                     {vendor.is_verified_vendor ? 'Verified' : 'Unverified'}
                   </span>
+                  {!!vendor.blocked_by_count && (
+                    <span
+                      className="px-3 py-1 text-xs rounded-full font-medium bg-gray-100 text-gray-700"
+                      title="Number of customers who have blocked this vendor"
+                    >
+                      Blocked by {vendor.blocked_by_count} {vendor.blocked_by_count === 1 ? 'customer' : 'customers'}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

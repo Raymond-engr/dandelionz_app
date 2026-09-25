@@ -10,7 +10,10 @@ import {
   useApproveProductAdminMutation,
   useRejectProductAdminMutation,
   useDeleteProductMutation,
-  useSetProductCommissionMutation
+  useSetProductCommissionMutation,
+  useGetProductReportsQuery,
+  useDismissReportMutation,
+  useTakedownReportedProductMutation
 } from '@/lib/api/adminApi';
 import toast from 'react-hot-toast';
 import { apiError } from '@/lib/utils';
@@ -44,6 +47,33 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
   // Per-product commission override
   const [setProductCommission, { isLoading: isSavingCommission }] = useSetProductCommissionMutation();
   const [commissionInput, setCommissionInput] = useState('');
+
+  // Reports filed against this product (Apple App Review Guideline 1.2)
+  const { data: reportsResp, refetch: refetchReports } = useGetProductReportsQuery(productId);
+  const productReports = reportsResp?.data || [];
+  const [dismissReport, { isLoading: isDismissingReport }] = useDismissReportMutation();
+  const [takedownReport, { isLoading: isTakingDown }] = useTakedownReportedProductMutation();
+
+  const handleDismissReport = async (reportId: number) => {
+    try {
+      await dismissReport(reportId).unwrap();
+      toast.success('Report dismissed');
+      refetchReports();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Failed to dismiss report'));
+    }
+  };
+
+  const handleTakedownReport = async (reportId: number) => {
+    try {
+      const result = await takedownReport(reportId).unwrap();
+      toast.success(result.message || 'Listing taken down');
+      refetchReports();
+      refetchProduct();
+    } catch (err: any) {
+      toast.error(apiError(err, 'Failed to take down listing'));
+    }
+  };
 
   // Seed the input from the product's stored override once it loads (decimal -> percent).
   useEffect(() => {
@@ -282,6 +312,47 @@ export default function ProductDetails({ params: paramsPromise }: ProductDetails
                   </p>
                 </div>
               </div>
+
+              {productReports.length > 0 && (
+                <>
+                  <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    Reports
+                    <span className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] rounded-full font-bold leading-none">
+                      {productReports.length}
+                    </span>
+                  </h2>
+                  <div className="space-y-3 mb-6">
+                    {productReports.map((report: any) => (
+                      <div key={report.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-red-700 capitalize">{report.reason}</span>
+                          <span className="text-[11px] text-gray-400 capitalize">{report.status}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-1">By {report.reporter_email}</p>
+                        {report.details && <p className="text-xs text-gray-700 bg-white rounded p-2 mb-2">{report.details}</p>}
+                        {report.status === 'pending' && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleDismissReport(report.id)}
+                              disabled={isDismissingReport || isTakingDown}
+                              className="flex-1 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Dismiss
+                            </button>
+                            <button
+                              onClick={() => handleTakedownReport(report.id)}
+                              disabled={isDismissingReport || isTakingDown}
+                              className="flex-1 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Take down
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <h2 className="text-sm font-semibold text-gray-900 mb-3">Commission</h2>
               <div className="mb-6">

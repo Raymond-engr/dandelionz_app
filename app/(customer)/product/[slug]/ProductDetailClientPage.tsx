@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
+import Modal from '@/components/Modal';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -16,6 +17,10 @@ import {
     useAddProductReviewMutation,
     useGetRecommendationsQuery,
     useRecordInteractionMutation,
+    useReportProductMutation,
+    useGetBlockedVendorsQuery,
+    useBlockVendorMutation,
+    useUnblockVendorMutation,
     Product,
     ProductImage
 } from '@/lib/api/publicApi';
@@ -66,6 +71,10 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState<'fraudulent' | 'counterfeit' | 'inappropriate' | 'other' | ''>('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
 
   // Fetch real product data (hook will use cache if available)
   const { data: response, isLoading, isError, refetch: refetchProduct } = useGetProductBySlugQuery(slug);
@@ -159,6 +168,18 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddToWishlistMutation();
   const [removeFromWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveFromWishlistMutation();
 
+  // Report + block vendor (Apple App Review Guideline 1.2 - user-generated content)
+  const [reportProduct, { isLoading: isSubmittingReport }] = useReportProductMutation();
+  const { data: blockedVendorsResponse } = useGetBlockedVendorsQuery(undefined, {
+    skip: !isAuthenticated
+  });
+  const blockedVendors = blockedVendorsResponse?.data || [];
+  const isVendorBlocked = product?.vendor
+    ? blockedVendors.some((b: any) => b.vendor === product.vendor!.id)
+    : false;
+  const [blockVendor, { isLoading: isBlocking }] = useBlockVendorMutation();
+  const [unblockVendor, { isLoading: isUnblocking }] = useUnblockVendorMutation();
+
   const handleVariantSelect = (category: string, value: string) => {
     setSelectedVariants(prev => ({
       ...prev,
@@ -230,6 +251,66 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
         toast.error('Failed to update wishlist');
     }
   };
+
+  const handleOpenReportModal = () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+    setReportReason('');
+    setReportDetails('');
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!product?.slug || !reportReason) {
+      toast.error('Please select a reason');
+      return;
+    }
+    try {
+      const res = await reportProduct({
+        slug: product.slug,
+        reason: reportReason,
+        details: reportDetails.trim() || undefined,
+      }).unwrap();
+      toast.success(res.message || 'Report submitted. Thank you.');
+      setShowReportModal(false);
+    } catch (err: any) {
+      console.error('Failed to submit report:', err);
+      toast.error(apiError(err, 'Failed to submit report'));
+    }
+  };
+
+  const handleToggleBlockVendor = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${pathname}`);
+      return;
+    }
+    if (!product?.vendor?.id) return;
+
+    if (isVendorBlocked) {
+      try {
+        await unblockVendor(product.vendor.id).unwrap();
+        toast.success('Vendor unblocked');
+      } catch (err: any) {
+        toast.error(apiError(err, 'Failed to unblock vendor'));
+      }
+      return;
+    }
+
+    setShowBlockConfirm(true);
+  };
+
+  const handleConfirmBlockVendor = async () => {
+    if (!product?.vendor?.id) return;
+    try {
+      await blockVendor(product.vendor.id).unwrap();
+      toast.success(`You won't see listings from ${product.vendor.store_name} anymore`);
+    } catch (err: any) {
+      toast.error(apiError(err, 'Failed to block vendor'));
+    }
+  };
+
   
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
@@ -425,9 +506,20 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
               {product.description}
             </p>
             {product.store_name && (
-                <p className="text-base font-medium text-system-blue-light">
-                    Store: {product.store_name}
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-base font-medium text-system-blue-light">
+                      Store: {product.store_name}
+                  </p>
+                  {product.vendor?.id && (
+                    <button
+                      onClick={handleToggleBlockVendor}
+                      disabled={isBlocking || isUnblocking}
+                      className="text-xs font-medium text-gray-500 hover:text-red-600 underline disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isVendorBlocked ? 'Unblock vendor' : 'Block vendor'}
+                    </button>
+                  )}
+                </div>
             )}
           </div>
 
@@ -493,7 +585,91 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
               </svg>
               {isAddingToCart ? 'Adding...' : isRemovingFromCart ? 'Removing...' : isInCart ? 'Remove from Cart' : (product.in_stock ? 'Add to cart' : 'Out of Stock')}
             </button>
+
+            {/* Report Listing Button */}
+            <button
+              onClick={handleOpenReportModal}
+              title="Report this listing"
+              className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-red-200 transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18M3 4h11l-1.5 4L14 12H3" />
+              </svg>
+            </button>
           </div>
+
+          {/* Report Modal */}
+          {showReportModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                onClick={() => setShowReportModal(false)}
+              />
+              <div className="relative w-full max-w-sm bg-white rounded-xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Report this listing</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Tell us what's wrong with this product. Our team reviews every report.
+                </p>
+
+                <div className="space-y-2 mb-4">
+                  {([
+                    ['fraudulent', 'Fraudulent'],
+                    ['counterfeit', 'Counterfeit'],
+                    ['inappropriate', 'Inappropriate'],
+                    ['other', 'Other'],
+                  ] as const).map(([value, label]) => (
+                    <label key={value} className="flex items-center gap-2 text-sm text-gray-800">
+                      <input
+                        type="radio"
+                        name="report-reason"
+                        value={value}
+                        checked={reportReason === value}
+                        onChange={() => setReportReason(value)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+
+                <textarea
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Additional details (optional)"
+                  maxLength={1000}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-system-blue-light"
+                />
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowReportModal(false)}
+                    className="flex-1 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitReport}
+                    disabled={isSubmittingReport || !reportReason}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isSubmittingReport ? 'Submitting...' : 'Submit report'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Block Vendor Confirmation */}
+          <Modal
+            isOpen={showBlockConfirm}
+            onClose={() => setShowBlockConfirm(false)}
+            title="Block this vendor?"
+            description={`You won't see listings from ${product.vendor?.store_name || 'this vendor'} anymore. You can unblock them anytime from this page.`}
+            confirmText="Block vendor"
+            cancelText="Cancel"
+            isDestructive
+            onConfirm={handleConfirmBlockVendor}
+          />
 
           {/* Reviews Section */}
           <div className="border-t pt-6">

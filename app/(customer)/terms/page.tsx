@@ -26,6 +26,15 @@ export default function TermsPage() {
     "Only items will factory fault are subject to return",
   ];
 
+  const ugcTerms = [
+    "Vendors are solely responsible for the accuracy, legality, and appropriateness of every product listing, photo, video, and description they upload to the platform.",
+    "Dandelionz has zero tolerance for objectionable content of any kind, including but not limited to fraudulent, counterfeit, abusive, harassing, hateful, sexually explicit, or otherwise inappropriate listings, images, videos, or messages.",
+    "Any customer may report a listing or a vendor directly from the app. Dandelionz reviews every report and reserves the right, at its sole discretion, to remove any listing or other content that violates these terms, without prior notice.",
+    "Dandelionz reserves the right to suspend or permanently ban any account, vendor or customer, found to have posted objectionable content, engaged in fraudulent activity, or abused another user, at any time and without prior notice.",
+    "A customer may block a vendor at any time from that vendor's product listings; blocking hides that vendor's listings from the blocking customer and is reversible from the same screen.",
+    "Concerns about content, conduct, or account actions can be sent directly to our support team; see the Contact Us page for our current email and phone number.",
+  ];
+
   return (
     <AppLayout showBottomNav={false}>
       <div className="min-h-screen bg-white">
@@ -63,6 +72,18 @@ export default function TermsPage() {
               </li>
             ))}
           </ol>
+
+          {/* User-Generated Content & Conduct */}
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">User-Generated Content &amp; Conduct</h2>
+            <ol className="space-y-4" start={8 + additionalTerms.length}>
+              {ugcTerms.map((term, index) => (
+                <li key={index} className="text-sm text-gray-700 leading-relaxed">
+                  <span className="font-medium">{index + 8 + additionalTerms.length}.</span> {term}
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </div>
     </AppLayout>
