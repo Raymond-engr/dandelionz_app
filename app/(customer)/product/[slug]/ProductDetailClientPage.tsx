@@ -505,10 +505,10 @@ export default function ProductDetailClientPage({ initialProduct }: ProductDetai
             <p className="text-base text-gray-600 leading-relaxed mb-3">
               {product.description}
             </p>
-            {product.store_name && (
+            {product.vendor?.store_name && (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-base font-medium text-system-blue-light">
-                      Store: {product.store_name}
+                      Store: {product.vendor.store_name}
                   </p>
                   {product.vendor?.id && (
                     <button
